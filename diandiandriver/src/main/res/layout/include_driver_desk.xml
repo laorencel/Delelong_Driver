@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_driver02">
+
+    <RelativeLayout
+        android:id="@+id/rl_onLine"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:padding="20dp">
+
+        <Button
+            android:id="@+id/btn_createOrder"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_centerVertical="true"
+            android:background="@drawable/bg_circle_online"
+            android:text="创建\n订单"
+            android:textColor="#ffff" />
+
+        <Button
+            android:id="@+id/btn_onLine"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_centerInParent="true"
+            android:background="@drawable/bg_circle_online"
+            android:text="上线"
+            android:textColor="#ffff"
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/btn_backToCity"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:background="@drawable/bg_circle_online"
+            android:text="返城"
+            android:textColor="#ffff" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/ly_desk01"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:padding="10dp">
+
+            <ImageView
+                android:id="@+id/img_head"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/img_head_actionbar" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_gravity="center_horizontal"
+                android:text="工作台"
+                android:textColor="#ffff"
+                android:textSize="20sp" />
+
+            <ImageView
+                android:id="@+id/img_menu"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_alignParentRight="true"
+                android:src="@drawable/img_l_m_settings" />
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:background="#ffff"></View>
+
+        <LinearLayout
+            android:id="@+id/ly_sum_yesterday"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginLeft="36dp"
+                android:background="@mipmap/ic_diandian" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:text="昨日收入："
+                android:textColor="#ffff"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/tv_sum_yesterday"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="￥0.0"
+                android:textColor="#11ca26"
+                android:textSize="18sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_marginLeft="46dp"
+            android:layout_marginRight="46dp"
+            android:background="#ffff"></View>
+
+        <LinearLayout
+            android:id="@+id/ly_sum_today"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginLeft="36dp"
+                android:background="@mipmap/ic_diandian" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:text="今日收入："
+                android:textColor="#ffff"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/tv_sum_today"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="￥0.0"
+                android:textColor="#11ca26"
+                android:textSize="18sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:text="继续加油哦"
+                android:textColor="#ffff"
+                android:textSize="18sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/rl_onLine"
+        android:layout_below="@id/ly_desk01"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <LinearLayout
+            android:id="@+id/ly_desk_detail"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="5"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_today_detail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="今天暂无收入\n还需努力哦"
+                android:textColor="#ffff"
+                android:textSize="20sp" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:id="@+id/ly_desk_show"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_gravity="center"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:background="#ffff"></View>
+
+            <ImageView
+                android:id="@+id/img_desk_show"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@mipmap/ic_diandian" />
+        </FrameLayout>
+    </LinearLayout>
+
+</RelativeLayout>

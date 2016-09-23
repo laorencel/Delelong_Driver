@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v4.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/drawerly"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_height="match_parent">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:id="@+id/rl_driver_desk"
+            android:layout_height="0dp"
+            android:layout_weight="7">
+            <include
+                layout="@layout/include_driver_desk"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"></include>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/rl_map"
+            android:layout_below="@id/rl_driver_desk"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+        </RelativeLayout>
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/menu_left"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="left"></RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/menu_right"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="right"></RelativeLayout>
+</android.support.v4.widget.DrawerLayout>
