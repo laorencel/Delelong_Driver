@@ -64,6 +64,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
 
     HttpUtils httpUtils;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -115,8 +116,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             @Override
             public void getDrivePath(DrivePath drivePath) {
                 mDrivePath = drivePath;
-                if (mDrivePath!=null){//根据路径获取里程数等
-                    Log.i(TAG, "getDrivePath: "+drivePath.getTollDistance());
+                if (mDrivePath != null) {//根据路径获取里程数等
+                    Log.i(TAG, "getDrivePath: " + drivePath.getTollDistance());
 
                 }
             }
@@ -127,6 +128,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     List<PoiItem> pois;
     LatLng centerOfMap;
     private List<CarInfo> carInfos;
+
     /**
      * 地图移动状态监听
      */
@@ -153,9 +155,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             @Override
             public void getLatlng(LatLng center) {
                 centerOfMap = center;
-                LatLng leftTop = new LatLng(centerOfMap.latitude-0.000015,centerOfMap.longitude-0.000015);//半径2公里
-                LatLng rightBottom = new LatLng(centerOfMap.latitude+0.000015,centerOfMap.longitude+0.000015);
-                carInfos = httpUtils.getCarInfos(Str.URL_GETCARINFO,leftTop,rightBottom);//获取车辆列表
+                LatLng leftTop = new LatLng(centerOfMap.latitude - 0.000015, centerOfMap.longitude - 0.000015);//半径2公里
+                LatLng rightBottom = new LatLng(centerOfMap.latitude + 0.000015, centerOfMap.longitude + 0.000015);
+                carInfos = httpUtils.getCarInfos(Str.URL_GETCARINFO, leftTop, rightBottom);//获取车辆列表
                 //测试
 //                List<CarInfo> list = new ArrayList<CarInfo>();
 //                for (int i = 0; i < 10; i++) {
@@ -165,7 +167,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 //                    carInfo.setOrientation(i*10);
 //                    list.add(carInfo);
 //                }
-                if (carInfos.size()>=1){
+                if (carInfos.size() >= 1) {
                     //显示车辆
                     addCars(carInfos);
                 }
@@ -173,17 +175,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         });
     }
 
-    private void addCars(List<CarInfo> carInfos){
+    private void addCars(List<CarInfo> carInfos) {
         aMap.clear(true);
         BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.drawable.car);
         Marker marker = null;
         MarkerOptions options = null;
         LatLng latlng = null;
-        for (CarInfo info : carInfos){
-            latlng = new LatLng(info.getLatitude(),info.getLongitude());
+        for (CarInfo info : carInfos) {
+            latlng = new LatLng(info.getLatitude(), info.getLongitude());
             options = new MarkerOptions().icon(icon).position(latlng);
             marker = aMap.addMarker(options);
-            marker.setRotateAngle(Float.parseFloat(info.getOrientation()+""));
+            marker.setRotateAngle(Float.parseFloat(info.getOrientation() + ""));
             marker.setObject(info);
         }
     }
@@ -312,9 +314,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     private boolean isFirstIn = true;
-    private LatLng startLat,endLat;
+    private LatLng startLat, endLat;
     public MyAMapLocation myAMapLocation;
     AMapLocation mAMapLocation;
+
     /**
      * 定位
      *
@@ -329,7 +332,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 aMap.setMyLocationRotateAngle(mCurrentX);
 
                 //判断是否上传位置
-                if (mAMapLocation!=null){
+                if (mAMapLocation != null) {
 //                    upDateLocation();
                 }
 
@@ -342,7 +345,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 if (isFirstIn) {
                     centerToMyLocation(aMap, mLocationClient, myOrientationListener, mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
                     myPosition.setText(aMapLocation.getPoiName());
-                    startLat = new LatLng(mAMapLocation.getLatitude(),mAMapLocation.getLongitude());
+                    startLat = new LatLng(mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
                     isFirstIn = false;
                 }
             } else {
@@ -357,14 +360,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
      * 上传会员位置(判断与原位置相差10米)
      */
     private void upDateLocation() {
-        endLat = new LatLng(mAMapLocation.getLatitude(),mAMapLocation.getLongitude());
-        float distance = AMapUtils.calculateLineDistance(startLat,endLat);
-        if (distance>10){
-            startLat = new LatLng(endLat.latitude,endLat.longitude);
+        endLat = new LatLng(mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
+        float distance = AMapUtils.calculateLineDistance(startLat, endLat);
+        if (distance > 10) {
+            startLat = new LatLng(endLat.latitude, endLat.longitude);
             //上传位置
-            ClientLocationInfo locationInfo = new ClientLocationInfo(mAMapLocation.getLongitude()+"",
-                    mAMapLocation.getLatitude()+"",mAMapLocation.getSpeed()+"",mCurrentX+"");
-            List<String> list = httpUtils.upDateLocation(Str.URL_UPDATELOCATION,locationInfo);
+            ClientLocationInfo locationInfo = new ClientLocationInfo(mAMapLocation.getLongitude() + "",
+                    mAMapLocation.getLatitude() + "", mAMapLocation.getSpeed() + "", mCurrentX + "");
+            List<String> list = httpUtils.upDateLocation(Str.URL_UPDATELOCATION, locationInfo);
             Log.i(TAG, "upDateLocation: ");
         }
     }
@@ -401,7 +404,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     public void setLogining(boolean isLogining) {
         this.isLogining = isLogining;
     }
-    public boolean getLogining(){
+
+    public boolean getLogining() {
         return isLogining;
     }
 
@@ -472,7 +476,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 break;
             case R.id.tv_confirm:
                 if (mPositionPoiItem == null || mDestinationPoiItem == null
-                ||myDestination.getText().toString().equals("")||myPosition.getText().toString().equals("")) {
+                        || myDestination.getText().toString().equals("") || myPosition.getText().toString().equals("")) {
                     ToastUtil.show(context, "请先设置起始点");
                     return;
                 }
@@ -567,14 +571,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     RelativeLayout rl_confirm;//显示隐藏
     TextView tv_pinChe, tv_buPinChe, tv_coupon, tv_confirm;
 
-    private void hidePinChe(){
+    private void hidePinChe() {
         ly_pinChe.setVisibility(View.GONE);
         rl_confirm.setVisibility(View.GONE);
     }
-    private void showPinChe(){
+
+    private void showPinChe() {
         ly_pinChe.setVisibility(View.VISIBLE);
         rl_confirm.setVisibility(View.VISIBLE);
     }
+
     /**
      * 拼车及确认按钮
      */
@@ -600,21 +606,21 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     @Override
     public void activate(OnLocationChangedListener onLocationChangedListener) {
         mListener = onLocationChangedListener;
-    if (mLocationClient == null) {
-        mLocationClient = new AMapLocationClient(context);
-        mLocationOption = new AMapLocationClientOption();
-        //设置定位监听
-        mLocationClient.setLocationListener(this);
-        //设置为高精度定位模式
-        mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
-        // 此方法为每隔固定时间会发起一次定位请求，为了减少电量消耗或网络流量消耗，
-        mLocationOption.setInterval(5000);
-        mLocationClient.setLocationOption(mLocationOption);
-        aMap.setMyLocationType(AMap.LOCATION_TYPE_LOCATE);
+        if (mLocationClient == null) {
+            mLocationClient = new AMapLocationClient(context);
+            mLocationOption = new AMapLocationClientOption();
+            //设置定位监听
+            mLocationClient.setLocationListener(this);
+            //设置为高精度定位模式
+            mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
+            // 此方法为每隔固定时间会发起一次定位请求，为了减少电量消耗或网络流量消耗，
+            mLocationOption.setInterval(5000);
+            mLocationClient.setLocationOption(mLocationOption);
+            aMap.setMyLocationType(AMap.LOCATION_TYPE_LOCATE);
 
-        mLocationClient.startLocation();
+            mLocationClient.startLocation();
+        }
     }
-}
 
     @Override
     public void deactivate() {

@@ -1,6 +1,5 @@
 package com.delelong.diandiandriver;
 
-import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,29 +9,20 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
-import android.support.v4.view.ViewCompat;
-import android.support.v7.app.AppCompatActivity;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
-import android.view.Display;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
-import android.view.animation.BounceInterpolator;
-import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.view.animation.TranslateAnimation;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.amap.api.location.AMapLocationClient;
@@ -43,7 +33,6 @@ import com.amap.api.maps.model.LatLng;
 import com.delelong.diandiandriver.bean.Client;
 import com.delelong.diandiandriver.listener.MyOrientationListener;
 import com.delelong.diandiandriver.pace.MyAMapLocation;
-import com.delelong.diandiandriver.utils.SystemUtils;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -57,7 +46,7 @@ import java.net.URL;
 import cn.jpush.android.api.JPushInterface;
 
 
-public class BaseActivity extends AppCompatActivity {
+public class BaseActivity1 extends FragmentActivity {
     private static final String TAG = "BAIDUMAPFORTEST";
     //    public static final String URL_LOGIN = "http://121.40.142.141:8090/Jfinal/api/login";
     private String registrationId;
@@ -66,68 +55,7 @@ public class BaseActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         initJPush();
-        setSysBar();
-        Log.i(TAG, "getStatusBarHeight: "+getStatusBarHeight());
     }
-
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    private void setSysBar() {
-        String version = SystemUtils.getSystemVersion();
-        if (version.startsWith("5")) {//android 5.0及以上系统
-            Window window = getWindow();
-            //设置透明状态栏,这样才能让 ContentView 向上
-            window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-
-            //需要设置这个 flag 才能调用 setStatusBarColor 来设置状态栏颜色
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            //设置状态栏颜色
-            window.setStatusBarColor(getResources().getColor(R.color.colorPinChe));
-
-            ViewGroup mContentView = (ViewGroup) findViewById(Window.ID_ANDROID_CONTENT);
-            View mChildView = mContentView.getChildAt(0);
-            if (mChildView != null) {
-                //注意不是设置 ContentView 的 FitsSystemWindows, 而是设置 ContentView 的第一个子 View . 使其不为系统 View 预留空间.
-                ViewCompat.setFitsSystemWindows(mChildView, false);
-            }
-        } else {//android 4.0-5.0系统
-
-            Window window = getWindow();
-            ViewGroup mContentView = (ViewGroup) findViewById(Window.ID_ANDROID_CONTENT);
-
-            //首先使 ChildView 不预留空间
-            View mChildView = mContentView.getChildAt(0);
-            if (mChildView != null) {
-                ViewCompat.setFitsSystemWindows(mChildView, false);
-            }
-
-            int statusBarHeight = getStatusBarHeight();
-            //需要设置这个 flag 才能设置状态栏
-            window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            //避免多次调用该方法时,多次移除了 View
-            if (mChildView != null && mChildView.getLayoutParams() != null && mChildView.getLayoutParams().height == statusBarHeight) {
-                //移除假的 View.
-                mContentView.removeView(mChildView);
-                mChildView = mContentView.getChildAt(0);
-            }
-            if (mChildView != null) {
-                FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) mChildView.getLayoutParams();
-                //清除 ChildView 的 marginTop 属性
-                if (lp != null && lp.topMargin >= statusBarHeight) {
-                    lp.topMargin -= statusBarHeight;
-                    mChildView.setLayoutParams(lp);
-                }
-            }
-        }
-    }
-    public int getStatusBarHeight() {
-        int result = 0;
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            result = getResources().getDimensionPixelSize(resourceId);
-        }
-        return result;
-    }
-
 
     //////////////////////////////////////////////////////////////////////////定位
     /**
@@ -401,24 +329,14 @@ public class BaseActivity extends AppCompatActivity {
         //设置动画结束后效果保留
         animation.setFillAfter(true);
         //控制动画先慢后快
-        //LinearInterpolator(匀速）
-        //AccelerateInterpolator（先慢后快）
-        //AccelerateDecelerateInterpolator（先慢中快后慢）
-        //DecelerateInterpolator（先快后慢）
-        //CycleInterpolator（循环播放，速度为正弦曲线）
-        //AnticipateInterpolator（先回撤，再匀速向前）
-        //OvershootInterpolator（超过，拉回）
-        //BounceInterpolator(回弹）
-
-        animation.setInterpolator(new BounceInterpolator());
+        animation.setInterpolator(new LinearInterpolator());
         view.setAnimation(animation);
 
         final View view1 = view;
         final int toYDelta1 = (int) toYDelta;
         animation.setAnimationListener(new Animation.AnimationListener() {
             @Override
-            public void onAnimationStart(Animation animation) {
-            }
+            public void onAnimationStart(Animation animation) {}
 
             @Override
             public void onAnimationEnd(Animation animation) {
@@ -426,24 +344,13 @@ public class BaseActivity extends AppCompatActivity {
                 view1.clearAnimation();
                 //重新设置view位置，以响应点击事件
                 LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) view1.getLayoutParams();
-                params.topMargin = params.topMargin + toYDelta1;
+                params.topMargin = params.topMargin +toYDelta1;
                 view1.setLayoutParams(params);
             }
 
             @Override
-            public void onAnimationRepeat(Animation animation) {
-            }
+            public void onAnimationRepeat(Animation animation) {}
         });
-    }
-
-    public void setDecelerateTransAnim(View view, float fromXDelta, float toXDelta, float fromYDelta, float toYDelta) {
-        TranslateAnimation translateAnimation = new TranslateAnimation(fromXDelta,toXDelta,fromYDelta,toYDelta);
-        translateAnimation.setDuration(500);
-        //设置动画结束后效果保留
-        translateAnimation.setFillAfter(false);
-        //控制动画先快后慢
-        translateAnimation.setInterpolator(new DecelerateInterpolator());
-        view.setAnimation(translateAnimation);
     }
 
     /**
@@ -477,24 +384,4 @@ public class BaseActivity extends AppCompatActivity {
         alphaAnimation.setFillAfter(true);
         view.setAnimation(alphaAnimation);
     }
-
-    /**
-     * 按屏幕大小（比例）设置LayoutParams(for MapView in Fragment)
-     * @param view
-     * @param weightScale
-     * @param hightScale
-     * @return
-     */
-    public RelativeLayout.LayoutParams setViewParams(View view, int weightScale, int hightScale) {
-        WindowManager wm = (WindowManager)this.getSystemService(Context.WINDOW_SERVICE);
-        Display display = wm.getDefaultDisplay();
-        int hight = display.getHeight();
-        int width = display.getWidth();
-        RelativeLayout.LayoutParams params;
-        params= (RelativeLayout.LayoutParams) view.getLayoutParams();
-        params.height=hight/hightScale;
-        params.width=width/weightScale;
-        return params;
-    }
-
 }

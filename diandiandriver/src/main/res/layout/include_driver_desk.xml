@@ -5,11 +5,28 @@
     android:background="@drawable/bg_driver02">
 
     <RelativeLayout
-        android:id="@+id/rl_onLine"
+        android:id="@+id/rl_showMap"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:padding="20dp">
+        android:padding="10dp">
+
+        <ImageView
+            android:id="@+id/img_showMap"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_centerInParent="true"
+            android:layout_marginRight="10dp"
+            android:src="@drawable/arrow_up" />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/rl_onLine"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/rl_showMap"
+        android:padding="10dp">
 
         <Button
             android:id="@+id/btn_createOrder"
@@ -50,6 +67,7 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
             android:gravity="center_vertical"
             android:padding="10dp">
 
@@ -167,8 +185,7 @@
         android:layout_height="match_parent"
         android:layout_above="@id/rl_onLine"
         android:layout_below="@id/ly_desk01"
-        android:orientation="vertical"
-        android:padding="10dp">
+        android:orientation="vertical">
 
         <LinearLayout
             android:id="@+id/ly_desk_detail"
@@ -182,6 +199,7 @@
                 android:id="@+id/tv_today_detail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:padding="10dp"
                 android:text="今天暂无收入\n还需努力哦"
                 android:textColor="#ffff"
                 android:textSize="20sp" />
@@ -190,8 +208,7 @@
         <FrameLayout
             android:id="@+id/ly_desk_show"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="5dp">
+            android:layout_height="wrap_content">
 
             <View
                 android:layout_width="match_parent"

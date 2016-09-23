@@ -4,15 +4,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:orientation="vertical"
         android:layout_height="match_parent">
+
         <RelativeLayout
-            android:layout_width="match_parent"
             android:id="@+id/rl_driver_desk"
-            android:layout_height="0dp"
-            android:layout_weight="7">
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
             <include
                 layout="@layout/include_driver_desk"
                 android:layout_width="match_parent"
@@ -21,12 +21,10 @@
 
         <RelativeLayout
             android:id="@+id/rl_map"
-            android:layout_below="@id/rl_driver_desk"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-        </RelativeLayout>
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"></RelativeLayout>
+    </FrameLayout>
 
     <RelativeLayout
         android:id="@+id/menu_left"
