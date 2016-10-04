@@ -13,11 +13,11 @@
 
         <ImageView
             android:id="@+id/img_showMap"
-            android:layout_width="30dp"
+            android:layout_width="40dp"
             android:layout_height="30dp"
             android:layout_centerInParent="true"
             android:layout_marginRight="10dp"
-            android:src="@drawable/arrow_up" />
+            android:src="@drawable/icon_arrow_up_map" />
 
     </RelativeLayout>
 
@@ -30,17 +30,18 @@
 
         <Button
             android:id="@+id/btn_createOrder"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
             android:layout_centerVertical="true"
             android:background="@drawable/bg_circle_online"
             android:text="创建\n订单"
+            android:textSize="14sp"
             android:textColor="#ffff" />
 
         <Button
             android:id="@+id/btn_onLine"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
             android:layout_centerInParent="true"
             android:background="@drawable/bg_circle_online"
             android:text="上线"
@@ -49,12 +50,13 @@
 
         <Button
             android:id="@+id/btn_backToCity"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
             android:background="@drawable/bg_circle_online"
             android:text="返城"
+            android:textSize="14sp"
             android:textColor="#ffff" />
     </RelativeLayout>
 
@@ -72,10 +74,10 @@
             android:padding="10dp">
 
             <ImageView
-                android:id="@+id/img_head"
+                android:id="@+id/img_menu"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
-                android:src="@drawable/img_head_actionbar" />
+                android:src="@drawable/icon_driver_menu" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -87,11 +89,11 @@
                 android:textSize="20sp" />
 
             <ImageView
-                android:id="@+id/img_menu"
+                android:id="@+id/img_function"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:layout_alignParentRight="true"
-                android:src="@drawable/img_l_m_settings" />
+                android:src="@drawable/icon_driver_fun" />
         </RelativeLayout>
 
         <View
@@ -114,7 +116,7 @@
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:layout_marginLeft="36dp"
-                android:background="@mipmap/ic_diandian" />
+                android:background="@drawable/icon_driver_income_today" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -146,13 +148,15 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="10dp">
+            android:paddingTop="10dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp">
 
             <ImageView
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:layout_marginLeft="36dp"
-                android:background="@mipmap/ic_diandian" />
+                android:background="@drawable/icon_driver_income_yesterday" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -205,17 +209,18 @@
                 android:textSize="20sp" />
         </LinearLayout>
 
-        <FrameLayout
+        <LinearLayout
             android:id="@+id/ly_desk_show"
+            android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
             <View
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="0.5dp"
                 android:layout_gravity="center"
                 android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
                 android:background="#ffff"></View>
 
             <ImageView
@@ -223,8 +228,16 @@
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_gravity="center"
-                android:src="@mipmap/ic_diandian" />
-        </FrameLayout>
+                android:layout_centerInParent="true"
+                android:src="@drawable/icon_arrow_up_desk_show" />
+            <View
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="0.5dp"
+                android:layout_gravity="center"
+                android:layout_marginRight="10dp"
+                android:background="#ffff"></View>
+        </LinearLayout>
     </LinearLayout>
 
 </RelativeLayout>

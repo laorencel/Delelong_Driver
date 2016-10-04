@@ -49,7 +49,7 @@ import com.delelong.diandiandriver.bean.Str;
 import com.delelong.diandiandriver.fragment.MenuFrag;
 import com.delelong.diandiandriver.fragment.TimeFrag;
 import com.delelong.diandiandriver.http.ClientLocationInfo;
-import com.delelong.diandiandriver.http.HttpUtils;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.listener.MyCameraChangeListener;
 import com.delelong.diandiandriver.listener.MyOrientationListener;
 import com.delelong.diandiandriver.listener.MyRouteSearchListener;
@@ -63,7 +63,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     private static final String TAG = "BAIDUMAPFORTEST";
 
 
-    HttpUtils httpUtils;
+    MyHttpUtils myHttpUtils;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +72,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         setContentView(R.layout.activity_main);
 
         isFirstIn = true;
-        httpUtils = new HttpUtils(this);
+        myHttpUtils = new MyHttpUtils(this);
         setUpMap(savedInstanceState);
         initView();
         setMyCameraChangeListenerListener();
@@ -157,7 +157,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 centerOfMap = center;
                 LatLng leftTop = new LatLng(centerOfMap.latitude - 0.000015, centerOfMap.longitude - 0.000015);//半径2公里
                 LatLng rightBottom = new LatLng(centerOfMap.latitude + 0.000015, centerOfMap.longitude + 0.000015);
-                carInfos = httpUtils.getCarInfos(Str.URL_GETCARINFO, leftTop, rightBottom);//获取车辆列表
+                carInfos = myHttpUtils.getCarInfos(Str.URL_GETCARINFO, leftTop, rightBottom);//获取车辆列表
                 //测试
 //                List<CarInfo> list = new ArrayList<CarInfo>();
 //                for (int i = 0; i < 10; i++) {
@@ -367,7 +367,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             //上传位置
             ClientLocationInfo locationInfo = new ClientLocationInfo(mAMapLocation.getLongitude() + "",
                     mAMapLocation.getLatitude() + "", mAMapLocation.getSpeed() + "", mCurrentX + "");
-            List<String> list = httpUtils.upDateLocation(Str.URL_UPDATELOCATION, locationInfo);
+            List<String> list = myHttpUtils.upDateLocation(Str.URL_UPDATELOCATION, locationInfo);
             Log.i(TAG, "upDateLocation: ");
         }
     }

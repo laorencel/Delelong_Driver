@@ -7,10 +7,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.HttpUtils;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 
 import java.util.List;
 
@@ -21,30 +22,37 @@ public class StartActivity extends BaseActivity {
 
     private static final String TAG = "BAIDUMAPFORTEST";
     Handler handler;
+    ImageView img_ad;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getSupportActionBar().hide();
         setContentView(R.layout.activity_start);
+        img_ad = (ImageView) findViewById(R.id.img_ad);
 
-        handler = new Handler(){
+        handler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
-                switch (msg.what){
+                switch (msg.what) {
                     case 0:
+//                        task.execute();
                         init();
+                        break;
+                    case 1:
+                        //广告位
+//                        MyHeadTask myHeadTask = new MyHeadTask(img_ad);
+//                        myHeadTask.execute(Str.URL_HEAD_PORTRAIT, head_portrait);
                         break;
                 }
             }
         };
-
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 handler.sendEmptyMessage(0);
             }
-        },3000);
+        }, 1000);
     }
 
     String phone, pwd;
@@ -59,20 +67,21 @@ public class StartActivity extends BaseActivity {
         } else {
             phone = preferences.getString("phone", null);
             pwd = preferences.getString("pwd", null);
-//            List<String> loginResult = loginApp(URL_LOGIN, phone, pwd);
-            HttpUtils httpUtils = new HttpUtils(this);
-            List<String> loginResult = httpUtils.login(Str.URL_LOGIN, phone, pwd);
+            MyHttpUtils myHttpUtils = new MyHttpUtils(this);
+            List<String> loginResult = myHttpUtils.login(Str.URL_LOGIN, phone, pwd);
 
-            if (loginResult.get(0).equalsIgnoreCase("OK")){
-                startActivity(new Intent(this, MainActivity.class));
-            }
-            else if (loginResult.get(0).equals("ERROR")) {
+            if (loginResult.get(0).equalsIgnoreCase("OK")) {
+                //从服务器获取app更新信息，有新版本提示下载安装，无则直接进入app主界面
+                startActivity(new Intent(this, DriverActivity.class));
+            } else if (loginResult.get(0).equals("ERROR")) {
                 Toast.makeText(this, "登陆出错,请重新登陆", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, LoginActivity.class));
-            }else if (loginResult.get(0).equals("FAILURE")) {
+            } else if (loginResult.get(0).equals("FAILURE")) {
                 startActivity(new Intent(this, LoginActivity.class));
             }
             finish();
         }
     }
+
+
 }

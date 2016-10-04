@@ -6,7 +6,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.MenuListItem;
@@ -41,21 +40,21 @@ public class MyMenuGridAdapter extends BaseAdapter {
             holder = new ViewHolder();
 
             holder.img = (ImageView) convertView.findViewById(R.id.img);
-            holder.tv = (TextView) convertView.findViewById(R.id.text);
+//            holder.tv = (TextView) convertView.findViewById(R.id.text);
             convertView.setTag(holder);
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
 
         holder.img.setImageResource(item.getImg());
-        holder.tv.setText(item.getTv());
+//        holder.tv.setText(item.getTv());
 
         return convertView;
     }
 
     class ViewHolder {
         ImageView img;
-        TextView tv;
+//        TextView tv;
     }
     @Override
     public Object getItem(int position) {

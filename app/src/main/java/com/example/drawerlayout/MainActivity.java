@@ -1,100 +1,108 @@
 package com.example.drawerlayout;
 
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.widget.DrawerLayout;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Gravity;
 import android.view.View;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.DecelerateInterpolator;
-import android.view.animation.TranslateAnimation;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.widget.AdapterView;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.RelativeLayout;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+import com.example.drawerlayout.adapter.ContentAdapter;
+import com.example.drawerlayout.fragment.NewsFragment;
+import com.example.drawerlayout.fragment.PictureFragment;
+import com.example.drawerlayout.fragment.SubscriptionFragment;
+import com.example.drawerlayout.model.ContentModel;
 
-    private static final String TAG = "BAIDUMAPFORTEST";
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity {
+
+    private DrawerLayout mDrawerLayout;
+    private RelativeLayout rightLayout;
+    private List<ContentModel> list;
+    private ContentAdapter adapter;
+    private ImageView leftMenu,rightMenu;
+    private ListView listView;
+    private FragmentManager frgmentManager;
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
         getSupportActionBar().hide();
-        setContentView(R.layout.activity_driver);
 
-        initView();
-    }
+        leftMenu = (ImageView)findViewById(R.id.left_menu);
+        rightMenu = (ImageView)findViewById(R.id.right_menu);
+        mDrawerLayout = (DrawerLayout)findViewById(R.id.drawerLayout);
+        rightLayout = (RelativeLayout)findViewById(R.id.right);
+        listView=(ListView)findViewById(R.id.left_listView);
+        frgmentManager=getSupportFragmentManager();
 
-    LinearLayout ly_desk03;
-    FrameLayout ly_desk02;
-    TextView tv_today_detail;
-    Button btn_onLine;
+        initData();
 
-    private void initView() {
+        adapter = new ContentAdapter(this,list);
+        listView.setAdapter(adapter);
+        leftMenu.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mDrawerLayout.openDrawer(Gravity.LEFT);
+            }
+        });
 
-        ly_desk03 = (LinearLayout) findViewById(R.id.ly_desk03);
-        ly_desk02 = (FrameLayout) findViewById(R.id.ly_desk_show);
-        tv_today_detail = (TextView) findViewById(R.id.tv_today_detail);
-        btn_onLine = (Button) findViewById(R.id.btn_onLine);
-        btn_onLine.setOnClickListener(this);
-    }
-
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.btn_onLine:
-                if (ly_desk03.getVisibility() == View.VISIBLE) {
-                    ly_desk03.setVisibility(View.INVISIBLE);
-
-                    int[] distance = animDistance(ly_desk02, ly_desk03);
-                    setTranslateAnimation(ly_desk02, 0, 0, 0, distance[1]);
-                } else {
-                    ly_desk03.setVisibility(View.VISIBLE);
-                    AlphaAnimation alphaAnimation = new AlphaAnimation(0, 1.0f);
-                    alphaAnimation.setDuration(500);
-                    alphaAnimation.setFillAfter(true);
-                    ly_desk03.setAnimation(alphaAnimation);
-
-                    int[] distance = animDistance(ly_desk02, ly_desk03);
-                    setTranslateAnimation(ly_desk02, 0, 0, distance[1], 0);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                FragmentTransaction fragmentTransaction = frgmentManager.beginTransaction();
+                switch((int)id){
+                    case 1:
+                        fragmentTransaction.replace(R.id.content,new NewsFragment());
+                        break;
+                    case 2:
+                        fragmentTransaction.replace(R.id.content,new SubscriptionFragment());
+                        break;
+                    case 3:
+                        fragmentTransaction.replace(R.id.content,new PictureFragment());
+                        break;
+                    default:
+                        break;
                 }
 
-                break;
-        }
+                fragmentTransaction.commit();
+                mDrawerLayout.closeDrawer(Gravity.LEFT);
+            }
+        });
+
+        rightMenu.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mDrawerLayout.openDrawer(Gravity.RIGHT);
+            }
+        });
+
+        rightLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mDrawerLayout.closeDrawer(Gravity.RIGHT);
+            }
+        });
     }
 
-    public int[] animDistance(View from, View to) {
-        int[] fromView = new int[2];
-        int[] toView = new int[2];//to - from
-        from.getLocationOnScreen(fromView);
-        to.getLocationOnScreen(toView);
+    private void initData(){
 
-        int[] distance = new int[2];
-        for (int i = 0; i < fromView.length; i++) {
-            distance[i] = toView[i] - fromView[i];
-        }
-        return distance;
-    }
+        list = new ArrayList<ContentModel>();
 
-    private void setTranslateAnimation(View view, float fromXDelta, float toXDelta, float fromYDelta, float toYDelta) {
-        TranslateAnimation animation = new TranslateAnimation(fromXDelta, toXDelta, fromYDelta, toYDelta);
-        //设置动画持续时间
-        animation.setDuration(1000);
-        //设置动画结束后效果保留
-        animation.setFillAfter(true);
-        //控制动画先慢后快
-        /**
-         （Interpolator的实现类):
-         LinearInterpolator(匀速）
-         AccelerateInterpolator（先慢后快）
-         AccelerateDecelerateInterpolator（先慢中快后慢）
-         DecelerateInterpolator（先快后慢）
-         CycleInterpolator（循环播放，速度为正弦曲线）
-         AnticipateInterpolator（先回撤，再匀速向前）
-         OvershootInterpolator（超过，拉回）
-         BounceInterpolator(回弹）
-         */
-        animation.setInterpolator(new DecelerateInterpolator());
-        view.setAnimation(animation);
+        list.add(new ContentModel(R.drawable.news,"新闻",1));
+        list.add(new ContentModel(R.drawable.subscription,"订阅",2));
+        list.add(new ContentModel(R.drawable.picture, "图片", 3));
+        list.add(new ContentModel(R.drawable.video, "视频", 4));
+        list.add(new ContentModel(R.drawable.followposter, "跟帖", 5));
+        list.add(new ContentModel(R.drawable.vote, "投票", 6));
     }
 }

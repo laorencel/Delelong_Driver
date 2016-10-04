@@ -17,7 +17,7 @@
             android:id="@+id/rl_top"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#cf8752f1"
+            android:background="#cfcacaca"
             android:padding="10dp">
 
             <ImageView
@@ -43,7 +43,7 @@
                 android:layout_centerVertical="true"
                 android:layout_marginLeft="10dp"
                 android:layout_toRightOf="@id/tv_map_top01"
-                android:text="当前地址："
+                android:text="北京天安门"
                 android:textColor="#43b760"
                 android:textSize="16sp" />
 
@@ -51,8 +51,9 @@
                 android:id="@+id/img_map_top02"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
+                android:layout_centerVertical="true"
                 android:layout_alignParentRight="true"
-                android:src="@drawable/arrow_up" />
+                android:src="@drawable/icon_arrow_down_map" />
         </RelativeLayout>
 
         <ImageButton

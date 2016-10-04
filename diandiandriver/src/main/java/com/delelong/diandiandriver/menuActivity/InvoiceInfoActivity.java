@@ -14,7 +14,7 @@ import com.delelong.diandiandriver.BaseActivity;
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.Client;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.HttpUtils;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.numberPicker.ChooseCityInterface;
 import com.delelong.diandiandriver.numberPicker.ChooseCityUtil;
 import com.delelong.diandiandriver.pace.MyAMapLocation;
@@ -38,18 +38,18 @@ public class InvoiceInfoActivity extends BaseActivity implements View.OnClickLis
     }
 
     Double totalSum;
-    HttpUtils httpUtils;
+    MyHttpUtils myHttpUtils;
     Bundle bundle;
     Client client;
     MyAMapLocation myAMapLocation;
     private void initMsg() {
-        httpUtils = new HttpUtils(this);
+        myHttpUtils = new MyHttpUtils(this);
         bundle = getIntent().getBundleExtra("bundle");
         myAMapLocation = (MyAMapLocation) bundle.getSerializable("myAMapLocation");
         client = (Client) bundle.getSerializable("client");//从上级activity获取
         totalSum = bundle.getDouble("totalSum");
         if (client == null){
-            client = httpUtils.getClientByGET(Str.URL_MEMBER);
+            client = myHttpUtils.getClientByGET(Str.URL_MEMBER);
         }
 
         String province_bundle, city_bundle, district_bundle, address_bundle, postCode_bundle;

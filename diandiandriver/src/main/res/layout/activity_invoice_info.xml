@@ -274,7 +274,7 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
-        android:background="@drawable/bg_login"
+        android:background="@drawable/bg_login3"
         android:padding="10dp"
         android:text="提交"
         android:textColor="#ffff"

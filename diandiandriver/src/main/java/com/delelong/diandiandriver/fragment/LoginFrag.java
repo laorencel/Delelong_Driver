@@ -13,16 +13,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
+import com.delelong.diandiandriver.DriverActivity;
 import com.delelong.diandiandriver.LoginActivity;
-import com.delelong.diandiandriver.MainActivity;
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.HttpUtils;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.utils.MD5;
+import com.delelong.diandiandriver.utils.ToastUtil;
 
 import java.util.List;
 
@@ -47,8 +48,7 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
 
     EditText edt_phone, edt_pwd;
     Button btn_login;
-    TextView tv_register, tv_forgotPwd;
-
+    CheckBox chb_agree_service,chb_remember;//同意服务，记住密码
     /**
      * 初始化view
      */
@@ -58,28 +58,36 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
         btn_login = (Button) view.findViewById(R.id.btn_login);
         btn_login.setOnClickListener(this);
 
-        tv_forgotPwd = (TextView) view.findViewById(R.id.tv_forgotPwd);
-        tv_register = (TextView) view.findViewById(R.id.tv_register);
+        chb_agree_service = (CheckBox) view.findViewById(R.id.chb_agree_service);
+        chb_remember = (CheckBox) view.findViewById(R.id.chb_remember);
 
         //如果以前有登陆过，获取登陆的手机号
         preferences = getActivity().getSharedPreferences("user", Context.MODE_PRIVATE);
         String preferenceName = preferences.getString("phone", null);
         if (preferenceName != null) {
             edt_phone.setText(preferenceName);
+            if (preferences.getBoolean("rememberPwd",false)){
+                edt_pwd.setText(preferences.getString("pwd_edt",null));
+            }
         }
     }
 
     String phone, pwd_edt, pwd;
     SharedPreferences preferences;
-
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_login:
+                if (!chb_agree_service.isChecked()){
+                    ToastUtil.show(getActivity(),"未同意《服务人员合作协议》");
+                    return;
+                }
+                preferences.edit()
+                        .putBoolean("rememberPwd", chb_remember.isChecked())
+                        .apply();
                 phone = edt_phone.getText().toString();
                 pwd_edt = edt_pwd.getText().toString();
                 pwd = MD5.getMD5Str(pwd_edt);
-                Log.i(TAG, "onClick: " + pwd);
                 login();
                 break;
         }
@@ -98,12 +106,11 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
                 Toast.makeText(activity, "号码或密码长度不够", Toast.LENGTH_SHORT).show();
                 return;
             } else {
-                HttpUtils httpUtils = new HttpUtils(activity);
-//                List<String> result = activity.loginApp(URL_LOGIN, phone, pwd);
-                List<String> result = httpUtils.login(Str.URL_LOGIN, phone, pwd);
+                MyHttpUtils myHttpUtils = new MyHttpUtils(activity);
+                List<String> result = myHttpUtils.login(Str.URL_LOGIN, phone, pwd);
                 if (result.get(0).equals("OK")) {
                     LoginActivity finish = (LoginActivity) getActivity();
-                    startActivity(new Intent(getActivity(), MainActivity.class));
+                    startActivity(new Intent(getActivity(), DriverActivity.class));
                     //存储用户(token)、密码(sercet)
                     boolean firstLogin = false;
 
@@ -113,8 +120,9 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
                             .putString("sercet", result.get(3))
                             .putString("phone", phone)
                             .putString("pwd", pwd)
+                            .putString("pwd_edt", pwd_edt)
                             .putBoolean("firstLogin", firstLogin)
-                            .apply();
+                            .commit();
                     finish.finish();
                 } else if (result.get(0).equals("ERROR")) {
                     Toast.makeText(getActivity(), "登陆出错,请重新登陆", Toast.LENGTH_SHORT).show();

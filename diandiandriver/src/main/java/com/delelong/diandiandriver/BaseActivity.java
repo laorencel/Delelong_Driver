@@ -67,9 +67,11 @@ public class BaseActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         initJPush();
         setSysBar();
-        Log.i(TAG, "getStatusBarHeight: "+getStatusBarHeight());
     }
 
+    /**
+     * 设置通知栏全屏模式
+     */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void setSysBar() {
         String version = SystemUtils.getSystemVersion();

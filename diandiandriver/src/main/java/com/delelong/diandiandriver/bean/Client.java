@@ -9,29 +9,29 @@ import java.util.List;
 public class Client implements Serializable {
 
     private int level;//会员等级
-    private String phone;//手机号码
-    private String post_code;//邮编
+    private String type;//类型(1:代驾司机;2:专车司机;3:全部)-
+    private String phone;//手机号码-
+    private String post_code;//邮编-
     private String urgent_name;//紧急联系人名称
     private String urgent_phone;//紧急号码
-    private String nick_name;//昵称
-    private String certificate_type;//
-    private String head_portrait;//
-    private String county;//
-    private String province;//
-    private String city;//
-    private String address;//
-    private String email;//
-    private int gender;//
-    private String certificate_no;//
-    private String real_name;//
-
+    private String nick_name;//昵称-
+    private String certificate_type;//-
+    private String head_portrait;//-
+    private String county;//-
+    private String province;//-
+    private String city;//-
+    private String address;//-
+    private String email;//-
+    private int gender;//-
+    private String certificate_no;//-
+    private String real_name;//-
 
     public Client() {
-
     }
 
     /**
      * @param level//会员等级
+     * @param type//类型(1:代驾司机;2:专车司机;3:全部)-
      * @param phone//手机号码
      * @param post_code//邮编
      * @param urgent_name//紧急联系人名称
@@ -46,12 +46,13 @@ public class Client implements Serializable {
      * @param email//邮箱
      * @param gender//性别(Number:1:男;2:女;)
      * @param certificate_no//证件号
-     * @param real_name 真实姓名
+     * @param real_name                             真实姓名
      */
-    public Client(int level,String phone, String post_code, String urgent_name, String urgent_phone,
+    public Client(int level, String type, String phone, String post_code, String urgent_name, String urgent_phone,
                   String nick_name, String certificate_type, String head_portrait, String county,
-                  String province, String city, String address, String email, int gender, String certificate_no,String real_name) {
+                  String province, String city, String address, String email, int gender, String certificate_no, String real_name) {
         this.level = level;
+        this.type = type;
         this.real_name = real_name;
         this.phone = phone;
         this.post_code = post_code;
@@ -70,10 +71,14 @@ public class Client implements Serializable {
     }
 
     List<String> statusList;
-    public void setStatusList(List<String> statusList){
+
+    public void setStatusList(List<String> statusList) {
         this.statusList = statusList;
     }
-    public List<String> getStatusList(){return statusList;}
+
+    public List<String> getStatusList() {
+        return statusList;
+    }
 
     public int getLevel() {
         return level;
@@ -81,6 +86,14 @@ public class Client implements Serializable {
 
     public void setLevel(int level) {
         this.level = level;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getPhone() {

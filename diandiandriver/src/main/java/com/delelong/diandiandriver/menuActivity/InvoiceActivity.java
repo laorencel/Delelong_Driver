@@ -19,7 +19,7 @@ import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.Client;
 import com.delelong.diandiandriver.bean.InvoiceInfo;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.HttpUtils;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.pace.MyAMapLocation;
 
 import java.util.ArrayList;
@@ -58,7 +58,7 @@ public class InvoiceActivity extends BaseActivity implements View.OnClickListene
         btn_next.setOnClickListener(this);
     }
 
-    HttpUtils httpUtils;
+    MyHttpUtils myHttpUtils;
     Bundle bundle;
     Client client;
     MyAMapLocation myAMapLocation;
@@ -66,7 +66,7 @@ public class InvoiceActivity extends BaseActivity implements View.OnClickListene
     List<InvoiceInfo> invoiceInfos;
     MyInvoiceAdapter adapter;
     private void initMsg() {
-        httpUtils = new HttpUtils(this);
+        myHttpUtils = new MyHttpUtils(this);
         bundle = getIntent().getBundleExtra("bundle");
         if (bundle != null){
             myAMapLocation = (MyAMapLocation) bundle.getSerializable("myAMapLocation");
@@ -74,7 +74,7 @@ public class InvoiceActivity extends BaseActivity implements View.OnClickListene
         }
         preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
         if (client == null) {
-            client = httpUtils.getClientByGET(Str.URL_MEMBER);
+            client = myHttpUtils.getClientByGET(Str.URL_MEMBER);
         }
 
         initData();//加载发票信息

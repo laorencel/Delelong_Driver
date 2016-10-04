@@ -9,12 +9,12 @@ public class Str implements Serializable {
 
 
 //    private static final String URL_API = "http://121.40.142.141:8090/Jfinal/api";
-    private static final String URL_API = "http://192.168.4.110:8080/Jfinal/api";
+    private static final String URL_API = "http://192.168.4.110:8080/Jfinal/api";//（本地）
 
 //    public static final String URL_UPDATEFILE = "http://121.40.142.141:8090/Jfinal/file";//上传文件
-    public static final String URL_UPDATEFILE = "http://192.168.4.110:8080/Jfinal/file";//上传文件
+    public static final String URL_UPDATEFILE = "http://192.168.4.110:8080/Jfinal/file";//上传文件（本地）
 //    public static final String URL_HEAD_PORTRAIT = "http://121.40.142.141:8090/Jfinal/";//图片头地址
-    public static final String URL_HEAD_PORTRAIT = "http://192.168.4.110:8080/Jfinal/";//图片头地址
+    public static final String URL_HEAD_PORTRAIT = "http://192.168.4.110:8080/Jfinal/";//图片头地址（本地）
 
     public static final String URL_LOGIN = URL_API+"/login";
     public static final String URL_FORGOT = URL_API+"/member/reset/password";
@@ -38,6 +38,14 @@ public class Str implements Serializable {
     public static final String VERIFICATION_TYPE_RESET = "2";
     public static final String VERIFICATION_TYPE_CHANGEPHONE = "3";
     /**
+     * appType：请求的类型，1:表示司机端;2:表示普通会员
+     */
+    public static final String APPTYPE_CLIENT = "1";
+    /**
+     * devicetype：设备序类型，1:android;2:ios
+     */
+    public static final String DEVICE_TYPE = "1";
+    /**
      * 请求码
      */
     public static final int RESULTNOCHOICECODE = 0;
@@ -47,8 +55,13 @@ public class Str implements Serializable {
     public static final int REQUESTCOMPANYCODE = 4;//设置公司地址相册requestCode
     public static final int REQUESTPOSITIONCODE = 5;//设置起点requestCode
     public static final int REQUESTDESTINATIONCODE = 6;//设置终点requestCode
+    /**
+     * js打开系统文件请求码
+     */
+    public static final int FILECHOOSER_RESULTCODE = 10000;
 
     public static final String MESSAGE_RECEIVED_ACTION = "com.example.jpushdemo.MESSAGE_RECEIVED_ACTION";//receiver服务
     public static final String URL_LIANCHENG = "http://www.52liancheng.com";//链城网
-//    public static final String URL_DRIVERENROLL = "http://192.168.4.110:8080/Jfinal/driver/enroll";//司机报名页面
+    public static final String URL_DRIVERENROLL = "http://192.168.4.110:8080/Jfinal/driver/enroll";//司机报名页面
+    public static final String VERSION_URL = "http://223.26.63.3/mobilesafe/update.json";
 }

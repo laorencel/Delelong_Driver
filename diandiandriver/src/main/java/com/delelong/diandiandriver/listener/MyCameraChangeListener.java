@@ -1,6 +1,7 @@
 package com.delelong.diandiandriver.listener;
 
 import android.content.Context;
+import android.util.Log;
 import android.widget.TextView;
 
 import com.amap.api.maps.AMap;
@@ -22,6 +23,7 @@ public class MyCameraChangeListener implements AMap.OnCameraChangeListener {
     public MyCameraChangeListener(TextView textView, Context context) {
         this.textView = textView;
         this.context = context;
+        Log.i(TAG, "MyCameraChangeListener: textView:"+textView+"//"+this.textView);
     }
     private boolean isFirstIn;
     @Override
@@ -30,7 +32,8 @@ public class MyCameraChangeListener implements AMap.OnCameraChangeListener {
             isFirstIn = !isFirstIn;
             return;
         }
-        textView.setText("正在定位起点...");
+        Log.i(TAG, "onCameraChange: "+isFirstIn+"//"+textView);
+        textView.setText("正在定位...");
     }
 
     LatLng centerOfMap;

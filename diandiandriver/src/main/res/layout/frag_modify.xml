@@ -2,96 +2,107 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_login2"
+    android:background="@drawable/bg_login3"
     android:orientation="vertical">
 
-    <ImageButton
-        android:id="@+id/btn_back"
-        android:layout_width="25dp"
-        android:layout_height="25dp"
-        android:layout_margin="15dp"
-        android:background="@drawable/bg_img_back" />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:padding="10dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="20dp"
+            android:background="@drawable/back_arrow_alpha_c" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="修改密码"
+            android:textColor="#ffff"
+            android:textSize="20sp" />
+    </RelativeLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="50dp"
-        android:layout_marginRight="50dp"
+        android:layout_margin="50dp"
         android:orientation="vertical">
 
         <EditText
             android:id="@+id/edt_pwd"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="60dp"
-            android:background="@drawable/shape_text"
+            android:background="@drawable/shape_edt"
+            android:digits="0123456789abcdefghigklmnopqrstuvwxyz"
             android:hint="请输入原密码"
-            android:inputType="phone"
-            android:maxLength="11"
-            android:padding="8dp"
+            android:inputType="textPassword"
+            android:maxLength="18"
+            android:padding="10dp"
             android:singleLine="true"
-            android:textColor="#Fe8a03"
+            android:textColor="#ffff"
+            android:textColorHint="#adbac2"
             android:textSize="15sp" />
-
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="25dp"
-            android:background="@drawable/shape_text"
+            android:background="@drawable/shape_edt"
             android:gravity="center_vertical">
 
             <EditText
                 android:id="@+id/edt_newPwd"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="5"
+                android:layout_weight="1"
                 android:background="@null"
                 android:digits="0123456789abcdefghigklmnopqrstuvwxyz"
-                android:hint="@string/pwd"
+                android:hint="请输入新密码"
                 android:inputType="textPassword"
                 android:maxLength="18"
-                android:padding="8dp"
+                android:padding="10dp"
                 android:singleLine="true"
-                android:textColor="#Fe8a03"
+                android:textColor="#ffff"
+                android:textColorHint="#adbac2"
                 android:textSize="15sp" />
 
-            <ImageButton
-                android:id="@+id/img_showPwd"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="10dp"
-                android:background="@drawable/show_open" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="25dp"
-            android:background="@drawable/shape_text"
+            android:background="@drawable/shape_edt"
             android:gravity="center_vertical">
 
             <EditText
                 android:id="@+id/edt_rePwd"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="5"
+                android:layout_weight="1"
                 android:background="@null"
                 android:digits="0123456789abcdefghigklmnopqrstuvwxyz"
                 android:hint="@string/rePwd"
                 android:inputType="textPassword"
                 android:maxLength="18"
-                android:padding="8dp"
+                android:padding="10dp"
                 android:singleLine="true"
-                android:textColor="#Fe8a03"
+                android:textColor="#ffff"
+                android:textColorHint="#adbac2"
                 android:textSize="15sp" />
 
-            <ImageButton
+            <ImageView
                 android:id="@+id/img_showPwd1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="22dp"
+                android:layout_height="20dp"
                 android:layout_marginRight="10dp"
-                android:background="@drawable/show_open" />
+                android:src="@drawable/show_open" />
         </LinearLayout>
 
         <Button
@@ -104,5 +115,24 @@
             android:text="@string/confirm"
             android:textColor="#ffffff"
             android:textSize="20sp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:gravity="center"
+            android:text="点击提交 完成密码修改"
+            android:textColor="#ffff" />
     </LinearLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="20dp"
+            android:src="@drawable/bg_logo_bottom" />
+    </RelativeLayout>
 </LinearLayout>

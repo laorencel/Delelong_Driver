@@ -13,7 +13,7 @@ import com.delelong.diandiandriver.BaseActivity;
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.Client;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.HttpUtils;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.pace.MyAMapLocation;
 
 /**
@@ -49,19 +49,19 @@ public class WalletActivity extends BaseActivity implements View.OnClickListener
         rl_invoice.setOnClickListener(this);
     }
 
-    HttpUtils httpUtils;
+    MyHttpUtils myHttpUtils;
     Client client;
     MyAMapLocation myAMapLocation;
     SharedPreferences preferences;
     Bundle bundle;
     private void initMsg() {
-        httpUtils = new HttpUtils(this);
+        myHttpUtils = new MyHttpUtils(this);
         bundle = getIntent().getBundleExtra("bundle");
         myAMapLocation = (MyAMapLocation) bundle.getSerializable("myAMapLocation");
         client = (Client) bundle.getSerializable("client");//从上级activity获取
         preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
         if (client == null){
-            client = httpUtils.getClientByGET(Str.URL_MEMBER);
+            client = myHttpUtils.getClientByGET(Str.URL_MEMBER);
         }
 
 

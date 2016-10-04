@@ -13,12 +13,13 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.delelong.diandiandriver.LoginActivity;
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.HttpUtils;
-import com.delelong.diandiandriver.menuActivity.SettingActivity;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.utils.MD5;
 
 import java.util.List;
@@ -40,7 +41,7 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
 
     ImageButton btn_back;
     EditText edt_phone,edt_newPwd,edt_rePwd,edt_verificationCode;
-    ImageButton img_showPwd,img_showPwd1;
+    ImageView img_showPwd1;
     Button btn_verificationCode,btn_confirm;
     private void initView() {
         btn_back = (ImageButton) view.findViewById(R.id.btn_back);
@@ -54,10 +55,10 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
         btn_verificationCode.setOnClickListener(this);
         btn_confirm.setOnClickListener(this);
 
-        img_showPwd = (ImageButton) view.findViewById(R.id.img_showPwd);
-        img_showPwd1 = (ImageButton) view.findViewById(R.id.img_showPwd1);
+//        img_showPwd = (ImageView) view.findViewById(R.id.img_showPwd);
+        img_showPwd1 = (ImageView) view.findViewById(R.id.img_showPwd1);
         btn_back = (ImageButton) view.findViewById(R.id.btn_back);
-        img_showPwd.setOnClickListener(this);
+//        img_showPwd.setOnClickListener(this);
         img_showPwd1.setOnClickListener(this);
         btn_back.setOnClickListener(this);
     }
@@ -74,7 +75,6 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
         rePwd = MD5.getMD5Str(rePwd_edt);
 
         switch (v.getId()) {
-            case R.id.img_showPwd:
             case R.id.img_showPwd1:
                 showPwd();
                 break;
@@ -114,17 +114,17 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
                     return;
                 }
 
-                HttpUtils httpUtils = new HttpUtils(activity);
+                MyHttpUtils myHttpUtils = new MyHttpUtils(activity);
 //                resultForReset = activity.resetPwd(URL_FORGOT, phone, verificationCode, pwd, rePwd);
-                resultForReset = httpUtils.resetPwd(Str.URL_FORGOT, phone, verificationCode, pwd, rePwd);
+                resultForReset = myHttpUtils.resetPwd(Str.URL_FORGOT, phone, verificationCode, pwd, rePwd);
                 if (resultForReset.get(0).equals("FAILURE")) {
-                    resultForReset = httpUtils.resetPwd(Str.URL_FORGOT, phone, verificationCode, pwd, rePwd);
+                    resultForReset = myHttpUtils.resetPwd(Str.URL_FORGOT, phone, verificationCode, pwd, rePwd);
                     if (resultForReset.get(0).equals("FAILURE")) {
                         Toast.makeText(activity, "修改失败"+resultForReset.get(1), Toast.LENGTH_SHORT).show();
                         return;
                     }
                 } else if (resultForReset.get(0).equals("ERROR")) {
-                    resultForReset = httpUtils.resetPwd(Str.URL_FORGOT, phone, verificationCode, pwd, rePwd);
+                    resultForReset = myHttpUtils.resetPwd(Str.URL_FORGOT, phone, verificationCode, pwd, rePwd);
                     if (resultForReset.get(0).equals("ERROR")) {
                         Toast.makeText(activity, "修改错误"+resultForReset.get(1), Toast.LENGTH_SHORT).show();
                         return;
@@ -153,12 +153,12 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
         if (showPwd) {
             edt_newPwd.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
             edt_rePwd.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-            img_showPwd.setImageResource(R.drawable.show_open);
+//            img_showPwd.setImageResource(R.drawable.show_open);
             img_showPwd1.setImageResource(R.drawable.show_open);
         } else {
             edt_newPwd.setInputType(InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
             edt_rePwd.setInputType(InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-            img_showPwd.setImageResource(R.drawable.show_close);
+//            img_showPwd.setImageResource(R.drawable.show_close);
             img_showPwd1.setImageResource(R.drawable.show_close);
         }
         showPwd = !showPwd;
@@ -179,19 +179,19 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
     public class MyHttpRun implements Runnable {
         @Override
         public void run() {
+            MyHttpUtils myHttpUtils = new MyHttpUtils(activity);
             //type:(1:注册;2:忘记密码;3:更换手机号;)
-            HttpUtils httpUtils = new HttpUtils(activity);
 //            resultForVerific =activity.getHttpResultForVerification(URL_SMSCODE, phone, TYPE_RESET);
-            resultForVerific =httpUtils.getVerification(Str.URL_SMSCODE, phone, Str.VERIFICATION_TYPE_RESET);
+            resultForVerific = myHttpUtils.getVerification(Str.URL_SMSCODE, phone, Str.VERIFICATION_TYPE_RESET);
         }
     }
-    SettingActivity activity;
+    LoginActivity activity;
     SharedPreferences preferences;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        activity = (SettingActivity) getActivity();
+        activity = (LoginActivity) getActivity();
         preferences = activity.getSharedPreferences("user", Context.MODE_PRIVATE);
     }
 }

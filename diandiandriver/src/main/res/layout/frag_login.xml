@@ -2,39 +2,39 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_login2">
+    android:background="@drawable/bg_function">
 
     <ImageView
         android:id="@+id/img_logo"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="60dp"
-        android:background="@drawable/logo" />
+        android:layout_marginTop="50dp"
+        android:background="@drawable/bg_logo_b" />
 
     <LinearLayout
         android:id="@+id/ly"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/img_logo"
-        android:layout_marginLeft="50dp"
-        android:layout_marginRight="50dp"
+        android:layout_marginLeft="40dp"
+        android:layout_marginRight="40dp"
         android:orientation="vertical">
 
         <EditText
             android:id="@+id/edt_phone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/img_logo"
             android:layout_marginTop="40dp"
-            android:background="@drawable/shape_text"
+            android:background="@drawable/shape_edt"
             android:hint="@string/phone"
+            android:textColorHint="#adbac2"
             android:inputType="phone"
             android:maxLength="11"
-            android:padding="8dp"
+            android:padding="10dp"
             android:singleLine="true"
-            android:textColor="#Fe8a03"
+            android:textColor="#ffff"
             android:textSize="15sp" />
 
         <EditText
@@ -42,13 +42,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="25dp"
-            android:background="@drawable/shape_text"
+            android:background="@drawable/shape_edt"
             android:hint="@string/pwd"
+            android:textColorHint="#adbac2"
             android:inputType="textPassword"
+            android:digits="0123456789abcdefghigklmnopqrstuvwxyz"
             android:maxLength="18"
-            android:padding="8dp"
+            android:padding="10dp"
             android:singleLine="true"
-            android:textColor="#Fe8a03"
+            android:textColor="#ffff"
             android:textSize="15sp" />
 
 
@@ -56,38 +58,85 @@
             android:id="@+id/btn_login"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
             android:layout_marginTop="25dp"
             android:background="@drawable/bg_login"
             android:padding="8dp"
             android:text="@string/login"
             android:textColor="#ffffff"
             android:textSize="20sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="50dp"
+            android:layout_marginRight="50dp"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <TextView
+                android:id="@+id/tv_register"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="我要注册"
+                android:textColor="#ffff" />
+
+            <View
+                android:layout_width="0.5dp"
+                android:layout_height="match_parent"
+                android:background="#ffff"></View>
+
+            <TextView
+                android:id="@+id/tv_forgotPwd"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="忘记密码"
+                android:textColor="#ffff" />
+
+        </LinearLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <CheckBox
+                android:id="@+id/chb_agree_service"
+                style="@style/CustomCheckboxTheme"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@id/chb_agree_service"
+                android:layout_marginLeft="5dp"
+                android:text="同意《服务人员合作协议》"
+                android:textColor="#ffff" />
+
+            <TextView
+                android:id="@+id/tv_remember"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:text="记住密码"
+                android:textColor="#ffff" />
+
+            <CheckBox
+                android:id="@+id/chb_remember"
+                style="@style/CustomCheckboxTheme"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="5dp"
+                android:layout_toLeftOf="@id/tv_remember" />
+        </RelativeLayout>
     </LinearLayout>
-
-    <Button
-        android:id="@+id/tv_forgotPwd"
-        android:layout_width="wrap_content"
-        android:layout_height="20dp"
-        android:layout_alignParentRight="true"
-        android:layout_below="@id/ly"
-        android:layout_marginRight="50dp"
-        android:layout_marginTop="10dp"
-        android:background="#00000000"
-        android:gravity="center_vertical"
-        android:text="@string/forgotPwd"
-        android:textSize="12sp" />
-
-    <Button
-        android:id="@+id/tv_register"
-        android:layout_width="wrap_content"
-        android:layout_height="20dp"
-        android:layout_below="@id/tv_forgotPwd"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="10dp"
-        android:background="#00000000"
-        android:text="@string/register"
-        android:textColor="#Fe8a03"
-        android:textSize="12sp" />
-
 
 </RelativeLayout>

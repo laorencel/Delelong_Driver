@@ -20,7 +20,7 @@ import com.delelong.diandiandriver.BaseActivity;
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.Client;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.HttpUtils;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.numberPicker.ChooseCityInterface;
 import com.delelong.diandiandriver.numberPicker.ChooseCityUtil;
 import com.delelong.diandiandriver.pace.MyAMapLocation;
@@ -107,12 +107,12 @@ public class MenuModifyInfoActivity extends BaseActivity implements View.OnClick
                 break;
             case R.id.tv_modify:
 //              提交信息到服务器
-                getClientForUpDate(httpUtils);
-                if (client == null) client = httpUtils.getClientByGET(Str.URL_MEMBER);
-                if (httpUtils == null) httpUtils = new HttpUtils(this);
+                getClientForUpDate(myHttpUtils);
+                if (client == null) client = myHttpUtils.getClientByGET(Str.URL_MEMBER);
+                if (myHttpUtils == null) myHttpUtils = new MyHttpUtils(this);
 
                 Log.i(TAG, "onClick: "+client);
-                List<String> result = httpUtils.upDateClient(Str.URL_UPDATECLIENT, client);
+                List<String> result = myHttpUtils.upDateClient(Str.URL_UPDATECLIENT, client);
                 if (result.get(0).equalsIgnoreCase("OK")) {
                     Toast.makeText(MenuModifyInfoActivity.this, "更新成功", Toast.LENGTH_SHORT).show();
                     finish();
@@ -185,13 +185,13 @@ public class MenuModifyInfoActivity extends BaseActivity implements View.OnClick
         dialog_cancel.setOnClickListener(this);
     }
 
-    private void getClientForUpDate(HttpUtils httpUtils) {
+    private void getClientForUpDate(MyHttpUtils myHttpUtils) {
         if (client == null) {
-            client = httpUtils.getClientByGET(Str.URL_MEMBER);
+            client = myHttpUtils.getClientByGET(Str.URL_MEMBER);
         }
         if (headPath !=null){
             //上传头像文件
-            List<String> headImage = httpUtils.upDateFile(Str.URL_UPDATEFILE, headPath);
+            List<String> headImage = myHttpUtils.upDateFile(Str.URL_UPDATEFILE, headPath);
             client.setHead_portrait(headImage.get(2));
         }
 
@@ -238,7 +238,7 @@ public class MenuModifyInfoActivity extends BaseActivity implements View.OnClick
 
     Client client;
     MyAMapLocation myAMapLocation;
-    HttpUtils httpUtils;
+    MyHttpUtils myHttpUtils;
     private void initMsg() {
         Bundle bundle = getIntent().getBundleExtra("bundle");
         myAMapLocation = (MyAMapLocation) bundle.getSerializable("myAMapLocation");
@@ -248,10 +248,10 @@ public class MenuModifyInfoActivity extends BaseActivity implements View.OnClick
         district_bundle = myAMapLocation.getDistrict();
         address_bundle = myAMapLocation.getAddress();
 
-        httpUtils = new HttpUtils(this);
+        myHttpUtils = new MyHttpUtils(this);
         client = (Client) bundle.getSerializable("client");//从上级activity获取
         if (client == null){
-            client = httpUtils.getClientByGET(Str.URL_MEMBER);
+            client = myHttpUtils.getClientByGET(Str.URL_MEMBER);
         }
         int level = client.getLevel();
         String phone = client.getPhone();

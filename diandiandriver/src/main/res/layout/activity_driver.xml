@@ -28,13 +28,13 @@
 
     <RelativeLayout
         android:id="@+id/menu_left"
-        android:layout_width="300dp"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="left"></RelativeLayout>
 
     <RelativeLayout
         android:id="@+id/menu_right"
-        android:layout_width="300dp"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="right"></RelativeLayout>
 </android.support.v4.widget.DrawerLayout>

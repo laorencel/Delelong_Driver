@@ -27,7 +27,7 @@ import com.delelong.diandiandriver.adapter.MyMenuLvAdapter;
 import com.delelong.diandiandriver.bean.Client;
 import com.delelong.diandiandriver.bean.MenuListItem;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.HttpUtils;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.menuActivity.FeedBackActivity;
 import com.delelong.diandiandriver.menuActivity.MallActivity;
 import com.delelong.diandiandriver.menuActivity.MenuInfoActivity;
@@ -61,14 +61,14 @@ public class MenuFrag extends Fragment implements View.OnClickListener, AdapterV
     }
 
     Client client;
-    HttpUtils httpUtils;
+    MyHttpUtils myHttpUtils;
     private void initClient() {
         if (activity == null){
             activity = (MainActivity) getActivity();
         }
-        httpUtils = new HttpUtils(activity);
+        myHttpUtils = new MyHttpUtils(activity);
 //        client = activity.getClientByGET(URL_MEMBER);
-        client = httpUtils.getClientByGET(Str.URL_MEMBER);
+        client = myHttpUtils.getClientByGET(Str.URL_MEMBER);
         String phone = client.getPhone();
         String nick_name = client.getNick_name();
         String head_portrait = client.getHead_portrait();
@@ -91,7 +91,7 @@ public class MenuFrag extends Fragment implements View.OnClickListener, AdapterV
                 hideMenu();//隐藏本菜单界面
                 break;
             case R.id.btn_loginOut:
-                List<String> loginOutResult = httpUtils.getLoginOutResultByGET(Str.URL_LOGINOUT);
+                List<String> loginOutResult = myHttpUtils.getLoginOutResultByGET(Str.URL_LOGINOUT);
                 if (loginOutResult.get(0).equalsIgnoreCase("OK")){
                     hideMenu();//隐藏本菜单界面
                     activity.setLogining(false);

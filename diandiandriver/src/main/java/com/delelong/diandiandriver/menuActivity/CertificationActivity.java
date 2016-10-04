@@ -13,7 +13,7 @@ import com.delelong.diandiandriver.BaseActivity;
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.Client;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.HttpUtils;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.utils.ToastUtil;
 
 import java.util.List;
@@ -41,7 +41,7 @@ public class CertificationActivity extends BaseActivity implements TextWatcher, 
 
     EditText edt_realName, edt_certificateNo;
     Button btn_confirm;
-    HttpUtils httpUtils;
+    MyHttpUtils myHttpUtils;
 
     private void initView() {
         edt_realName = (EditText) findViewById(R.id.edt_realName);
@@ -50,7 +50,7 @@ public class CertificationActivity extends BaseActivity implements TextWatcher, 
         btn_confirm.setEnabled(false);
         edt_certificateNo.addTextChangedListener(this);
 
-        httpUtils = new HttpUtils(this);
+        myHttpUtils = new MyHttpUtils(this);
         Bundle bundle = getIntent().getBundleExtra("bundle");
         client = (Client) bundle.getSerializable("client");//从上级activity获取
     }
@@ -85,7 +85,7 @@ public class CertificationActivity extends BaseActivity implements TextWatcher, 
                 break;
             case R.id.btn_confirm:
                 if (client == null) {
-                    client = httpUtils.getClientByGET(Str.URL_MEMBER);
+                    client = myHttpUtils.getClientByGET(Str.URL_MEMBER);
                 }
                 String name = edt_realName.getText().toString();
                 String certificateNo = edt_certificateNo.getText().toString();
@@ -100,7 +100,7 @@ public class CertificationActivity extends BaseActivity implements TextWatcher, 
                 }
                 client.setReal_name(name);
                 client.setCertificate_no(certificateNo);
-                List<String> result = httpUtils.upDateClient(Str.URL_UPDATECLIENT, client);
+                List<String> result = myHttpUtils.upDateClient(Str.URL_UPDATECLIENT, client);
                 if (result.get(0).equalsIgnoreCase("OK")) {
                     ToastUtil.show(this,"提交成功");
                     finish();

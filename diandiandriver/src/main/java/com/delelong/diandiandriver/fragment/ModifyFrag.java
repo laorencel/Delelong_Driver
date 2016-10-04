@@ -18,7 +18,7 @@ import android.widget.Toast;
 
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.HttpUtils;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.menuActivity.SettingActivity;
 import com.delelong.diandiandriver.utils.MD5;
 
@@ -45,7 +45,6 @@ public class ModifyFrag extends Fragment implements View.OnClickListener {
     ImageButton img_showPwd, img_showPwd1, btn_back;
 
     private void initView() {
-        //隐藏不需要的验证码模块
 
         edt_pwd = (EditText) view.findViewById(R.id.edt_pwd);
         edt_newPwd = (EditText) view.findViewById(R.id.edt_newPwd);
@@ -91,17 +90,17 @@ public class ModifyFrag extends Fragment implements View.OnClickListener {
                     Toast.makeText(activity, "请确认密码一致", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                HttpUtils httpUtils = new HttpUtils(activity);
+                MyHttpUtils myHttpUtils = new MyHttpUtils(activity);
 //                resultForMod = activity.modifyPwd(URL_MODIFY, pwd, newPwd, rePwd);
-                resultForMod = httpUtils.modifyPwd(Str.URL_MODIFY, pwd, newPwd, rePwd);
+                resultForMod = myHttpUtils.modifyPwd(Str.URL_MODIFY, pwd, newPwd, rePwd);
                 if (resultForMod.get(0).equals("FAILURE")) {
-                    resultForMod = httpUtils.modifyPwd(Str.URL_MODIFY, pwd, newPwd, rePwd);
+                    resultForMod = myHttpUtils.modifyPwd(Str.URL_MODIFY, pwd, newPwd, rePwd);
                     if (resultForMod.get(0).equals("FAILURE")) {
                         Toast.makeText(activity, "修改失败，请稍后重试", Toast.LENGTH_SHORT).show();
                         return;
                     }
                 } else if (resultForMod.get(0).equals("ERROR")) {
-                    resultForMod = httpUtils.modifyPwd(Str.URL_MODIFY, pwd, newPwd, rePwd);
+                    resultForMod = myHttpUtils.modifyPwd(Str.URL_MODIFY, pwd, newPwd, rePwd);
                     if (resultForMod.get(0).equals("ERROR")) {
                         Toast.makeText(activity, "修改错误，请稍后重试", Toast.LENGTH_SHORT).show();
                         return;

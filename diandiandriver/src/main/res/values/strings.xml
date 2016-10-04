@@ -12,7 +12,7 @@
     <string name="login">登 录</string>
     <string name="pwd">请输入密码</string>
     <string name="phone">请输入手机号</string>
-    <string name="verificationCode">验证码</string>
+    <string name="verificationCode">短信验证码</string>
     <string name="confirm">提    交</string>
     <string name="getVerificationCode">获 取</string>
     <string name="destination">目的地</string>
@@ -23,4 +23,5 @@
     <string name="no_result">对不起，没有搜索到相关数据！</string>
     <string name="commonAddress">常用地址</string>
     <string name="fanKui">问题反馈</string>
+    <string name="app_update" >发现新版本</string>
 </resources>

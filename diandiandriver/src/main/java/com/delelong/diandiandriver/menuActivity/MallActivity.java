@@ -5,7 +5,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.KeyEvent;
-import android.view.View;
 import android.webkit.ValueCallback;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -64,48 +63,28 @@ public class MallActivity extends BaseActivity {
         //设置显示进度
         String version = SystemUtils.getSystemVersion();
         if (version.startsWith("5")){
-            webView.setWebChromeClient(new WebChromeClientAboveFive(this) {
-                @Override
-                public void onProgressChanged(WebView view, int newProgress) {
-                    if (newProgress == 100) {
-                        progressBar.setVisibility(View.GONE);
-                    } else {
-                        progressBar.setVisibility(View.VISIBLE);
-                        progressBar.setProgress(newProgress);
-                    }
-                    super.onProgressChanged(view, newProgress);
-                }
+            webView.setWebChromeClient(new WebChromeClientAboveFive(this,progressBar) {
                 @Override
                 public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> valueCallback, android.webkit.WebChromeClient.FileChooserParams fileChooserParams) {
                     // TODO Auto-generated method stub
                     return super.onShowFileChooser( webView,  valueCallback,  fileChooserParams);
                 }
                 @Override
-                public void onActivityResult(int resultCode, Intent data) {
-                    super.onActivityResult(resultCode,data);
+                public void onActivityResult(int requestCode,int resultCode, Intent data) {
+                    super.onActivityResult(requestCode,resultCode,data);
                 }
 
             });
         }else {
-            webView.setWebChromeClient(new DefaultWebChromeClient(this) {
-                @Override
-                public void onProgressChanged(WebView view, int newProgress) {
-                    if (newProgress == 100) {
-                        progressBar.setVisibility(View.GONE);
-                    } else {
-                        progressBar.setVisibility(View.VISIBLE);
-                        progressBar.setProgress(newProgress);
-                    }
-                    super.onProgressChanged(view, newProgress);
-                }
+            webView.setWebChromeClient(new DefaultWebChromeClient(this,progressBar) {
                 @Override
                 public void openFileChooser(ValueCallback<Uri> uploadMsg) {
                     // TODO Auto-generated method stub
                     super.openFileChooser( uploadMsg);
                 }
                 @Override
-                public void onActivityResult(int resultCode, Intent data) {
-                    super.onActivityResult(resultCode,data);
+                public void onActivityResult(int requestCode,int resultCode, Intent data) {
+                    super.onActivityResult(requestCode,resultCode,data);
                 }
             });
         }
