@@ -24,4 +24,5 @@
     <string name="commonAddress">常用地址</string>
     <string name="fanKui">问题反馈</string>
     <string name="app_update" >发现新版本</string>
+    <string name="network">未连接网络 请检查wifi或数据是否开启</string>
 </resources>

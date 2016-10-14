@@ -271,7 +271,7 @@ public class MenuModifyInfoActivity extends BaseActivity implements View.OnClick
         String real_name = client.getReal_name();
 
         MyHeadTask myHeadTask = new MyHeadTask(img_head);
-        myHeadTask.execute(Str.URL_HEAD_PORTRAIT, head_portrait);
+        myHeadTask.execute(Str.URL_SERVICE_IMAGEPATH, head_portrait);
         edt_nickName.setText(nick_name);
         edt_gender.setText(gender == 1 ? "男" : "女");
         edt_email.setText(email);

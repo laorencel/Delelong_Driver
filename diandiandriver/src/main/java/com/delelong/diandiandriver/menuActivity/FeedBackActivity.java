@@ -1,11 +1,14 @@
 package com.delelong.diandiandriver.menuActivity;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -20,7 +23,7 @@ import com.delelong.diandiandriver.pace.MyAMapLocation;
 /**
  * Created by Administrator on 2016/9/13.
  */
-public class FeedBackActivity extends BaseActivity implements View.OnClickListener{
+public class FeedBackActivity extends BaseActivity implements View.OnClickListener {
     private static final String TAG = "BAIDUMAPFORTEST";
 
 //    private static final String URL_QQCONTACT="mqqwpa://im/chat?chat_type=wpa&uin=850705356";
@@ -38,6 +41,7 @@ public class FeedBackActivity extends BaseActivity implements View.OnClickListen
     EditText edt_feedBack;
     Button btn_feedBack;
     TextView tv_contact_phone;
+
     private void initView() {
         edt_feedBack = (EditText) findViewById(R.id.edt_feedBack);
         btn_feedBack = (Button) findViewById(R.id.btn_feedBack);
@@ -49,15 +53,17 @@ public class FeedBackActivity extends BaseActivity implements View.OnClickListen
     }
 
     ImageButton arrow_back;
+
     private void initActionBar() {
         arrow_back = (ImageButton) findViewById(R.id.arrow_back);
         arrow_back.setOnClickListener(this);
     }
 
     String phone;
+
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.arrow_back:
                 finish();
                 break;
@@ -69,6 +75,16 @@ public class FeedBackActivity extends BaseActivity implements View.OnClickListen
                 try {
                     Intent callIntent = new Intent(Intent.ACTION_CALL);
                     callIntent.setData(Uri.parse("tel:" + phone));
+                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                        // TODO: Consider calling
+                        //    ActivityCompat#requestPermissions
+                        // here to request the missing permissions, and then overriding
+                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                        //                                          int[] grantResults)
+                        // to handle the case where the user grants the permission. See the documentation
+                        // for ActivityCompat#requestPermissions for more details.
+                        return;
+                    }
                     startActivity(callIntent);
                 } catch (Exception e) {
                     e.printStackTrace();

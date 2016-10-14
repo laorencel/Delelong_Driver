@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.delelong.diandiandriver.MainActivity;
+import com.delelong.diandiandriver.dialog.MyNetworkDialog;
 import com.delelong.diandiandriver.menuActivity.SettingActivity;
 import com.delelong.diandiandriver.utils.ExampleUtil;
 
@@ -34,9 +35,10 @@ public class MyJPushReceiver extends BroadcastReceiver {
 
     private static final String TAG = "BAIDUMAPFORTEST";
     boolean firstLogin;
-
+    MyNetworkDialog dialog;
     @Override
     public void onReceive(Context context, Intent intent) {
+
         SharedPreferences preferences = context.getSharedPreferences("user", Context.MODE_PRIVATE);
         firstLogin = preferences.getBoolean("firstLogin", true);
 
@@ -45,8 +47,8 @@ public class MyJPushReceiver extends BroadcastReceiver {
 
         if (JPushInterface.ACTION_REGISTRATION_ID.equals(intent.getAction())) {
             String registrationId = bundle.getString(JPushInterface.EXTRA_REGISTRATION_ID);
-            if (firstLogin){
-                preferences.edit().putString("registrationId",registrationId);
+            if (firstLogin) {
+                preferences.edit().putString("registrationId", registrationId);
             }
             Log.d(TAG, "[MyReceiver] 接收Registration Id : " + registrationId);
             //send the Registration Id to your server...
@@ -80,6 +82,7 @@ public class MyJPushReceiver extends BroadcastReceiver {
         } else {
             Log.d(TAG, "[MyReceiver] Unhandled intent - " + intent.getAction());
         }
+
     }
 
     // 打印所有的 intent extra 数据
@@ -118,25 +121,23 @@ public class MyJPushReceiver extends BroadcastReceiver {
 
     //send msg to MainActivity
     private void processCustomMessage(Context context, Bundle bundle) {
-        if (MainActivity.isForeground) {
-            String message = bundle.getString(JPushInterface.EXTRA_MESSAGE);
-            String extras = bundle.getString(JPushInterface.EXTRA_EXTRA);
-            Intent msgIntent = new Intent(MainActivity.MESSAGE_RECEIVED_ACTION);
-            msgIntent.putExtra(MainActivity.KEY_MESSAGE, message);
-            if (!ExampleUtil.isEmpty(extras)) {
-                try {
-                    JSONObject extraJson = new JSONObject(extras);
-                    if (null != extraJson && extraJson.length() > 0) {
-                        msgIntent.putExtra(MainActivity.KEY_EXTRAS, extras);
-                    }
-                } catch (JSONException e) {
-
+        String message = bundle.getString(JPushInterface.EXTRA_MESSAGE);
+        String extras = bundle.getString(JPushInterface.EXTRA_EXTRA);
+        Intent msgIntent = new Intent(MainActivity.MESSAGE_RECEIVED_ACTION);
+        msgIntent.putExtra(MainActivity.KEY_MESSAGE, message);
+        if (!ExampleUtil.isEmpty(extras)) {
+            try {
+                JSONObject extraJson = new JSONObject(extras);
+                if (null != extraJson && extraJson.length() > 0) {
+                    msgIntent.putExtra(MainActivity.KEY_EXTRAS, extras);
                 }
+            } catch (JSONException e) {
 
             }
-            context.sendBroadcast(msgIntent);
         }
+        context.sendBroadcast(msgIntent);
     }
+
 }
 
 

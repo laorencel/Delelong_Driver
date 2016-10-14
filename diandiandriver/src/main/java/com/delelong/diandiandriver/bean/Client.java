@@ -14,17 +14,17 @@ public class Client implements Serializable {
     private String post_code;//邮编-
     private String urgent_name;//紧急联系人名称
     private String urgent_phone;//紧急号码
-    private String nick_name;//昵称-
-    private String certificate_type;//-
-    private String head_portrait;//-
-    private String county;//-
-    private String province;//-
-    private String city;//-
-    private String address;//-
-    private String email;//-
-    private int gender;//-
-    private String certificate_no;//-
-    private String real_name;//-
+    private String nick_name;//昵称
+    private String certificate_type;//证件类型(Number:1:身份证;)
+    private String head_portrait;//头像图片地址
+    private String county;//所属县
+    private String province;//所属省
+    private String city;//所属城市
+    private String address;//地址
+    private String email;//邮箱
+    private int gender;//性别(Number:1:男;2:女;)
+    private String certificate_no;//证件号
+    private String real_name;//真实姓名
 
     public Client() {
     }
@@ -46,7 +46,7 @@ public class Client implements Serializable {
      * @param email//邮箱
      * @param gender//性别(Number:1:男;2:女;)
      * @param certificate_no//证件号
-     * @param real_name                             真实姓名
+     * @param real_name //真实姓名
      */
     public Client(int level, String type, String phone, String post_code, String urgent_name, String urgent_phone,
                   String nick_name, String certificate_type, String head_portrait, String county,

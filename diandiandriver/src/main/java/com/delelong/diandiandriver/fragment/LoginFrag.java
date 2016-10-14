@@ -8,7 +8,6 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -112,17 +111,7 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
                     LoginActivity finish = (LoginActivity) getActivity();
                     startActivity(new Intent(getActivity(), DriverActivity.class));
                     //存储用户(token)、密码(sercet)
-                    boolean firstLogin = false;
-
-                    Log.i(TAG, "login: "+result);
-                    preferences.edit()
-                            .putString("token", result.get(2))
-                            .putString("sercet", result.get(3))
-                            .putString("phone", phone)
-                            .putString("pwd", pwd)
-                            .putString("pwd_edt", pwd_edt)
-                            .putBoolean("firstLogin", firstLogin)
-                            .commit();
+                    setPreferences(result);
                     finish.finish();
                 } else if (result.get(0).equals("ERROR")) {
                     Toast.makeText(getActivity(), "登陆出错,请重新登陆", Toast.LENGTH_SHORT).show();
@@ -133,6 +122,19 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
                 }
             }
         }
+    }
+    public void setPreferences(List<String> result){
+        boolean firstLogin = false;
+        int loginTimes = preferences.getInt("loginTimes",0);
+        preferences.edit()
+                .putString("token", result.get(2))
+                .putString("sercet", result.get(3))
+                .putString("phone", phone)
+                .putString("pwd", pwd)
+                .putString("pwd_edt", pwd_edt)
+                .putInt("loginTimes",++loginTimes)
+                .putBoolean("firstLogin", firstLogin)
+                .commit();
     }
 
 

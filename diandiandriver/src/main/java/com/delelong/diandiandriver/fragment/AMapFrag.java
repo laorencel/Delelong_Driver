@@ -19,6 +19,7 @@ import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
 import com.amap.api.maps.AMap;
+import com.amap.api.maps.AMapUtils;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.LocationSource;
 import com.amap.api.maps.MapView;
@@ -29,6 +30,9 @@ import com.amap.api.services.geocoder.RegeocodeResult;
 import com.delelong.diandiandriver.DriverActivity;
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.CarInfo;
+import com.delelong.diandiandriver.bean.Str;
+import com.delelong.diandiandriver.http.ClientLocationInfo;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.listener.MyFragCameraChangeListener;
 import com.delelong.diandiandriver.listener.MyOrientationListener;
 import com.delelong.diandiandriver.numberPicker.ToastUtil;
@@ -41,28 +45,33 @@ import java.util.List;
 public class AMapFrag extends Fragment implements View.OnClickListener, LocationSource, AMapLocationListener {
 
     private static final String TAG = "BAIDUMAPFORTEST";
-    private static AMapFrag fragment=null;
-    public static final int POSITION=0;
+    private static AMapFrag fragment = null;
+    public static final int POSITION = 0;
 
     private MapView mapView;
     private AMap aMap;
     private View view;
+    private MyHttpUtils myHttpUtils;
 
-    public static Fragment newInstance(){
-        if(fragment==null){
-            synchronized(AMapFrag.class){
-                if(fragment==null){
-                    fragment=new AMapFrag();
+    public static Fragment newInstance() {
+        if (fragment == null) {
+            synchronized (AMapFrag.class) {
+                if (fragment == null) {
+                    fragment = new AMapFrag();
                 }
             }
         }
         return fragment;
     }
 
+    public interface MyLocationInterface {
+        void getMyLocation(AMapLocation aMapLocation);
+    }
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        setUpMap(inflater,container,savedInstanceState);
+        setUpMap(inflater, container, savedInstanceState);
         initView();
         return view;
     }
@@ -70,6 +79,7 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
     ImageView img_map_top02;//展开地图箭头
     TextView tv_map_top02;//显示当前位置地名
     ImageButton loc;
+
     private void initView() {
         img_map_top02 = (ImageView) view.findViewById(R.id.img_map_top02);
         tv_map_top02 = (TextView) view.findViewById(R.id.tv_map_top02);
@@ -80,12 +90,12 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.img_map_top02:
                 getFragmentManager().popBackStack();
                 break;
             case R.id.loc:
-                ((DriverActivity)getActivity()).centerToMyLocation(aMap, mLocationClient,
+                ((DriverActivity) getActivity()).centerToMyLocation(aMap, mLocationClient,
                         myOrientationListener, mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
                 break;
         }
@@ -98,7 +108,7 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
         if (isFirstIn) {
             if (aMap != null) {
                 aMap.setMyLocationEnabled(true);
-                if (mLocationClient != null){
+                if (mLocationClient != null) {
                     mLocationClient.startLocation();
                     if (!mLocationClient.isStarted()) {
                         mLocationClient.startLocation();
@@ -110,9 +120,14 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
         }
 
     }
+
+    DriverActivity activity;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        activity = (DriverActivity) getActivity();
+        myHttpUtils = new MyHttpUtils(activity);
     }
 
     @Override
@@ -130,6 +145,7 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
         super.onPause();
         mapView.onPause();
     }
+
     @Override
     public void onStop() {
         super.onStop();
@@ -170,21 +186,22 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
 
     /**
      * 初始化view，AMap
+     *
      * @param inflater
      * @param container
      * @param savedInstanceState
      */
     private void setUpMap(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         if (view == null) {
-            view = inflater.inflate(R.layout.include_driver_map, container,false);
+            view = inflater.inflate(R.layout.include_driver_map, container, false);
             mapView = (MapView) view.findViewById(R.id.mapView);
             mapView.onCreate(savedInstanceState);
 
-            mapView.setLayoutParams(setViewParams(mapView,1,2));
+            mapView.setLayoutParams(setViewParams(mapView, 1, 2));
             if (aMap == null) {
                 aMap = mapView.getMap();
             }
-        }else {
+        } else {
             if (view.getParent() != null) {
                 ((ViewGroup) view.getParent()).removeView(view);
             }
@@ -192,18 +209,18 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
 
         setUpMap();
     }
+
     public RelativeLayout.LayoutParams setViewParams(View view, int weightScale, int hightScale) {
-        WindowManager wm = (WindowManager)this.getContext().getSystemService(Context.WINDOW_SERVICE);
+        WindowManager wm = (WindowManager) this.getContext().getSystemService(Context.WINDOW_SERVICE);
         Display display = wm.getDefaultDisplay();
         int hight = display.getHeight();
         int width = display.getWidth();
         RelativeLayout.LayoutParams params;
-        params= (RelativeLayout.LayoutParams) view.getLayoutParams();
-        params.height=hight/hightScale;
-        params.width=width/weightScale;
+        params = (RelativeLayout.LayoutParams) view.getLayoutParams();
+        params.height = hight / hightScale;
+        params.width = width / weightScale;
         return params;
     }
-
 
 
     private Context context;
@@ -213,6 +230,7 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
     private float mCurrentX;
     private MyOrientationListener myOrientationListener;
     AMapLocation mAMapLocation;
+
     /**
      * 初始化地图、定位
      */
@@ -226,7 +244,7 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
         mUiSettings.setRotateGesturesEnabled(false);//是否允许通过手势来旋转。
         mUiSettings.setScaleControlsEnabled(false);//设置比例尺功能是否可用
 
-        aMap.animateCamera(CameraUpdateFactory.zoomTo( 15.0f), 1000, null);
+        aMap.animateCamera(CameraUpdateFactory.zoomTo(15.0f), 1000, null);
         aMap.setMyLocationType(AMap.LOCATION_TYPE_LOCATE);
         aMap.setLocationSource(this);// 设置定位监听
         aMap.setMyLocationEnabled(true);// 设置为true表示显示定位层并可触发定位，false表示隐藏定位层并不可触发定位，默认是false
@@ -252,11 +270,12 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
     LatLng centerOfMap;
     private List<CarInfo> carInfos;
     String city;
+
     /**
      * 地图移动状态监听
      */
     private void setMyCameraChangeListener() {
-        myCameraChangeListener = new MyFragCameraChangeListener( context);
+        myCameraChangeListener = new MyFragCameraChangeListener(context);
         aMap.setOnCameraChangeListener(myCameraChangeListener);
 
         myCameraChangeListener.getGeoCodeResultListener(new MyFragCameraChangeListener.GeoCodeResulutListener() {
@@ -289,7 +308,9 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
             }
         });
     }
+
     private boolean isFirstIn = true;
+
     @Override
     public void onLocationChanged(AMapLocation aMapLocation) {
         if (mListener != null && aMapLocation != null) {
@@ -299,19 +320,44 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
                 aMap.setMyLocationRotateAngle(mCurrentX);
 
                 //判断是否上传位置
-//                if (mAMapLocation != null) {
-////                    upDateLocation();
-//                }
+                if (mAMapLocation != null) {
+                    upDateLocation();
+                }
                 mAMapLocation = aMapLocation;
+                activity.getMyLocation(aMapLocation);//回调接口，传值给activity
 
                 tv_map_top02.setText(mAMapLocation.getPoiName());
 //                myAMapLocation = new MyAMapLocation(mAMapLocation.getCountry(), mAMapLocation.getProvince(),
 //                        mAMapLocation.getCity(), mAMapLocation.getDistrict(), mAMapLocation.getAddress(), mAMapLocation.getAdCode());
                 city = mAMapLocation.getCity();
+
+                //首次进入定位到我的位置
+                if (isFirstIn) {
+//                    activity.centerToMyLocation(aMap, mLocationClient, myOrientationListener, mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
+                    startLat = new LatLng(mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
+                    isFirstIn = false;
+                }
             } else {
                 String errText = "定位失败," + aMapLocation.getErrorCode() + ": " + aMapLocation.getErrorInfo();
                 ToastUtil.show("errText");
             }
+        }
+    }
+
+    private LatLng startLat, endLat;
+
+    /**
+     * 上传会员位置(判断与原位置相差10米)
+     */
+    private void upDateLocation() {
+        endLat = new LatLng(mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
+        float distance = AMapUtils.calculateLineDistance(startLat, endLat);
+        if (distance > 10) {
+            startLat = new LatLng(endLat.latitude, endLat.longitude);
+            //上传位置
+            ClientLocationInfo locationInfo = new ClientLocationInfo(mAMapLocation.getLongitude() + "",
+                    mAMapLocation.getLatitude() + "", mAMapLocation.getSpeed() + "", mCurrentX + "", mAMapLocation.getLocationType());
+            List<String> list = myHttpUtils.upDateLocation(Str.URL_UPDATELOCATION_DRIVER, locationInfo);
         }
     }
 

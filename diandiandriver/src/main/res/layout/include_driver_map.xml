@@ -58,12 +58,12 @@
 
         <ImageButton
             android:id="@+id/loc"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:layout_below="@id/rl_top"
             android:layout_marginLeft="10dp"
             android:layout_marginTop="20dp"
-            android:src="@drawable/loc" />
+            android:background="@drawable/loc" />
     </RelativeLayout>
 
 </RelativeLayout>

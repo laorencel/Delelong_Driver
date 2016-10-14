@@ -39,13 +39,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".menuActivity.AdActivity"></activity>
+        <activity android:name=".function.ChooseCarBrandActivity"></activity>
         <activity android:name="com.delelong.diandiandriver.MainActivity"></activity>
         <activity android:name="com.delelong.diandiandriver.ChoosePosition"></activity>
-        <activity android:name="com.delelong.diandiandriver.LoginActivity">
-
-        </activity>
+        <activity android:name="com.delelong.diandiandriver.LoginActivity"></activity>
         <activity android:name=".fragment.RegisterActivity"></activity>
         <activity android:name=".fragment.ModifyActivity"></activity>
+        <activity android:name=".function.WeatherActivity"></activity>
+        <activity android:name=".function.WCActivity"></activity>
         <activity android:name="com.delelong.diandiandriver.menuActivity.SettingActivity"> </activity>
         <activity android:name="com.delelong.diandiandriver.menuActivity.MenuInfoActivity"></activity>
         <activity android:name="com.delelong.diandiandriver.menuActivity.MenuModifyInfoActivity"></activity>
@@ -175,7 +177,11 @@
             android:exported="false"
             android:screenOrientation="behind"
             android:windowSoftInputMode="adjustResize|stateHidden" >
-        </activity>
+        </activity><!-- ATTENTION: This was auto-generated to add Google Play services to your project for
+     App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information. -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
     </application>
 
     <!--JPush-->

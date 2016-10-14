@@ -11,12 +11,14 @@ public class ClientLocationInfo implements Serializable {
     private String latitude;//纬度
     private String speed;//速度
     private String orientation;//方向
+    private int type;//定位类型(4:GPS;2::网络和其他;)(AMapLocation.getLocationType)
 
-    public ClientLocationInfo(String longitude, String latitude, String speed, String orientation) {
+    public ClientLocationInfo(String longitude, String latitude, String speed, String orientation,int type) {
         this.longitude = longitude;
         this.latitude = latitude;
         this.speed = speed;
         this.orientation = orientation;
+        this.type = type;
     }
 
     public ClientLocationInfo() {
@@ -52,5 +54,13 @@ public class ClientLocationInfo implements Serializable {
 
     public void setOrientation(String orientation) {
         this.orientation = orientation;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
     }
 }

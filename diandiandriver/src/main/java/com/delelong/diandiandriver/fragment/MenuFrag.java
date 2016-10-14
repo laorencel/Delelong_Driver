@@ -74,7 +74,7 @@ public class MenuFrag extends Fragment implements View.OnClickListener, AdapterV
         String head_portrait = client.getHead_portrait();
 
         MyHeadTask myHeadTask = new MyHeadTask(img_head);
-        myHeadTask.execute(Str.URL_HEAD_PORTRAIT, head_portrait);
+        myHeadTask.execute(Str.URL_SERVICE_IMAGEPATH, head_portrait);
         if (!nick_name.isEmpty()) {
             this.nick_name.setText(nick_name);
         }

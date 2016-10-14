@@ -81,7 +81,7 @@ public class MenuInfoActivity extends BaseActivity implements View.OnClickListen
         String real_name = client.getReal_name();
         //设置头像
         MyHeadTask myHeadTask = new MyHeadTask(img_head);
-        myHeadTask.execute(Str.URL_HEAD_PORTRAIT, head_portrait);
+        myHeadTask.execute(Str.URL_SERVICE_IMAGEPATH, head_portrait);
         if (nick_name.equals("")){
             tv_nick_name.setText(phone);
             tv_signature.setVisibility(View.VISIBLE);
@@ -92,7 +92,7 @@ public class MenuInfoActivity extends BaseActivity implements View.OnClickListen
         }
         if (!certificate_no.equals("")){
             tv_certification_detail.setText("已认证");
-            tv_certification_detail.setTextColor(R.color.colorPinChe);
+            tv_certification_detail.setTextColor(getResources().getColor(R.color.colorPinChe));
         }
     }
 

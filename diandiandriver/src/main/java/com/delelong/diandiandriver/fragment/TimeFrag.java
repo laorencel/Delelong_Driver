@@ -211,6 +211,7 @@ public class TimeFrag extends Fragment implements NumberPicker.OnValueChangeList
         }
 //        Log.i(TAG, "callTime: //" + "mDay" + mDay + "mHour" + mHour + "mMin" + mMin);
         dateTime = new DateTime();
+
         if (mDateChoice == 0) {
             orderedTime = "现在";
         } else {

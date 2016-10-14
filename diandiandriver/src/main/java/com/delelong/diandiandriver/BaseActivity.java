@@ -5,9 +5,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -33,18 +37,29 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 
+import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.maps.AMap;
 import com.amap.api.maps.CameraUpdate;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.model.LatLng;
+import com.delelong.diandiandriver.bean.ADBean;
 import com.delelong.diandiandriver.bean.Client;
+import com.delelong.diandiandriver.bean.Driver;
+import com.delelong.diandiandriver.bean.Str;
+import com.delelong.diandiandriver.dialog.MyNetworkDialog;
+import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.listener.MyOrientationListener;
 import com.delelong.diandiandriver.pace.MyAMapLocation;
 import com.delelong.diandiandriver.utils.SystemUtils;
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.appindexing.Thing;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.common.primitives.Doubles;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -61,12 +76,22 @@ public class BaseActivity extends AppCompatActivity {
     private static final String TAG = "BAIDUMAPFORTEST";
     //    public static final String URL_LOGIN = "http://121.40.142.141:8090/Jfinal/api/login";
     private String registrationId;
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);//禁止横屏
+        getSupportActionBar().hide();
         initJPush();
-        setSysBar();
+        setWindowBar();
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     /**
@@ -75,7 +100,8 @@ public class BaseActivity extends AppCompatActivity {
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void setSysBar() {
         String version = SystemUtils.getSystemVersion();
-        if (version.startsWith("5")) {//android 5.0及以上系统
+        double num = Doubles.tryParse(version.substring(0, 3));
+        if (num>=5) {//android 5.0及以上系统
             Window window = getWindow();
             //设置透明状态栏,这样才能让 ContentView 向上
             window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
@@ -91,7 +117,7 @@ public class BaseActivity extends AppCompatActivity {
                 //注意不是设置 ContentView 的 FitsSystemWindows, 而是设置 ContentView 的第一个子 View . 使其不为系统 View 预留空间.
                 ViewCompat.setFitsSystemWindows(mChildView, false);
             }
-        } else {//android 4.0-5.0系统
+        } else if (num>=4.5&&num<5.0){//android 4.0-5.0系统
 
             Window window = getWindow();
             ViewGroup mContentView = (ViewGroup) findViewById(Window.ID_ANDROID_CONTENT);
@@ -121,6 +147,111 @@ public class BaseActivity extends AppCompatActivity {
             }
         }
     }
+
+    /**
+     * 设置通知栏着色模式
+     */
+    public void setWindowBar() {
+        String version = SystemUtils.getSystemVersion();
+        double num = Doubles.tryParse(version.substring(0, 3));
+        //android 5.0及以上系统(如5.1)
+        if (num >= 5) {
+            setWindowBarAboveFive();
+        } else if (num > 4.5 && num < 5.0) {
+            setWindowBarBelowFive();
+        }
+    }
+
+    /**
+     * 5.0系统以上 设置状态栏颜色（着色模式）
+     */
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    public void setWindowBarAboveFive() {
+        Window window = getWindow();
+        //取消设置透明状态栏,使 ContentView 内容不再覆盖状态栏
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+
+        //需要设置这个 flag 才能调用 setStatusBarColor 来设置状态栏颜色
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        //设置状态栏颜色
+        window.setStatusBarColor(getResources().getColor(R.color.blankColor));
+
+        ViewGroup mContentView = (ViewGroup) findViewById(Window.ID_ANDROID_CONTENT);
+        View mChildView = mContentView.getChildAt(0);
+        if (mChildView != null) {
+            //注意不是设置 ContentView 的 FitsSystemWindows, 而是设置 ContentView 的第一个子 View . 预留出系统 View 的空间.
+            ViewCompat.setFitsSystemWindows(mChildView, true);
+        }
+        Log.i(TAG, "setWindowBarAboveFive: ");
+    }
+
+    /**
+     * 5.0系统以下
+     */
+    public void setWindowBarBelowFive() {
+//        Window window = getWindow();
+//        ViewGroup mContentView = (ViewGroup) findViewById(Window.ID_ANDROID_CONTENT);
+//
+//        //First translucent status bar.
+//        window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+//        int statusBarHeight = getStatusBarHeight();
+//
+//        View mChildView = mContentView.getChildAt(0);
+//        if (mChildView != null) {
+//            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) mChildView.getLayoutParams();
+//            //如果已经为 ChildView 设置过了 marginTop, 再次调用时直接跳过
+//            if (lp != null && lp.topMargin < statusBarHeight && lp.height != statusBarHeight) {
+//                //不预留系统空间
+//                ViewCompat.setFitsSystemWindows(mChildView, false);
+//                lp.topMargin += statusBarHeight;
+//                mChildView.setLayoutParams(lp);
+//            }
+//        }
+//
+//        View statusBarView = mContentView.getChildAt(0);
+//        if (statusBarView != null && statusBarView.getLayoutParams() != null && statusBarView.getLayoutParams().height == statusBarHeight) {
+//            //避免重复调用时多次添加 View
+//            statusBarView.setBackgroundColor(getResources().getColor(R.color.mainColor));
+//            return;
+//        }
+//        statusBarView = new View(this);
+//        ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, statusBarHeight);
+//        statusBarView.setBackgroundColor(getResources().getColor(R.color.mainColor));
+//        //向 ContentView 中添加假 View
+//        mContentView.addView(statusBarView, 0, lp);
+        Window window = getWindow();
+        ViewGroup mContentView = (ViewGroup) findViewById(Window.ID_ANDROID_CONTENT);
+
+//First translucent status bar.
+        window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        int statusBarHeight = getStatusBarHeight();
+
+        View mChildView = mContentView.getChildAt(0);
+        if (mChildView != null) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) mChildView.getLayoutParams();
+            //如果已经为 ChildView 设置过了 marginTop, 再次调用时直接跳过
+            if (lp != null && lp.topMargin < statusBarHeight && lp.height != statusBarHeight) {
+                //不预留系统空间
+                ViewCompat.setFitsSystemWindows(mChildView, false);
+                lp.topMargin += statusBarHeight;
+                mChildView.setLayoutParams(lp);
+            }
+        }
+
+        View statusBarView = mContentView.getChildAt(0);
+        if (statusBarView != null && statusBarView.getLayoutParams() != null && statusBarView.getLayoutParams().height == statusBarHeight) {
+            //避免重复调用时多次添加 View
+            statusBarView.setBackgroundColor(getResources().getColor(R.color.blankColor));
+            return;
+        }
+        statusBarView = new View(this);
+        ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, statusBarHeight);
+        statusBarView.setBackgroundColor(getResources().getColor(R.color.blankColor));
+//向 ContentView 中添加假 View
+        mContentView.addView(statusBarView, 0, lp);
+        Log.i(TAG, "setWindowBarBelowFive: ");
+    }
+
     public int getStatusBarHeight() {
         int result = 0;
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
@@ -130,6 +261,47 @@ public class BaseActivity extends AppCompatActivity {
         return result;
     }
 
+    ////////////////////////////////////////////////////////////
+
+    /**
+     * 判断网络是否连接
+     *
+     * @param context
+     * @return
+     */
+    public static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager cm = (ConnectivityManager) context
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) {
+        } else {
+            //如果仅仅是用来判断网络连接
+            //则可以使用 cm.getActiveNetworkInfo().isAvailable();
+            NetworkInfo[] info = cm.getAllNetworkInfo();
+            if (info != null) {
+                for (int i = 0; i < info.length; i++) {
+                    if (info[i].getState() == NetworkInfo.State.CONNECTED) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 判断网络是否可用，并返回true or false
+     * 不可用弹出对话框
+     *
+     * @param context
+     */
+    public boolean setNetworkDialog(Context context) {
+        boolean isNetworkAvailable = isNetworkAvailable(context);
+        if (!isNetworkAvailable) {
+            MyNetworkDialog dialog = new MyNetworkDialog(this);
+            dialog.show();
+        }
+        return isNetworkAvailable;
+    }
 
     //////////////////////////////////////////////////////////////////////////定位
     /**
@@ -193,6 +365,80 @@ public class BaseActivity extends AppCompatActivity {
     ///////////////////////////////////////////图片获取与存储
 
     /**
+     * 设置启动页广告图片
+     *
+     * @param aMapLocation
+     */
+    public void downloadStartAD(AMapLocation aMapLocation) {
+        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+        String last_update_start = preferences.getString("last_update_start", "null");
+
+        MyHttpUtils myHttpUtils = new MyHttpUtils(this);
+        ADBean adBean_start = myHttpUtils.getADBeanByGET(Str.URL_AD, aMapLocation.getAdCode(), 1);
+
+        ADBean.ADInfo adInfo = adBean_start.getAdInfos().get(0);
+
+        if (adInfo.getLast_update().equals(last_update_start)) {
+            Log.i(TAG, "downloadStartAD: equals");
+            return;
+        }
+        preferences.edit()
+                .putString("last_update_start", adInfo.getLast_update())
+                .putString("url_start", adInfo.getUrl()).commit();
+        File file = new File(Str.ADIMAGEPATH_START);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+        for (int i = 0; i < adInfo.getPics().size(); i++) {
+            String pic = adInfo.getPics().get(i);
+            file = new File(Str.ADIMAGEPATH_START + i + ".JPEG");
+            if (!file.exists()) {
+                try {
+                    file.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            myHttpUtils.createImage(Str.ADIMAGEPATH_START + i + ".JPEG",
+                    myHttpUtils.downloadImage(Str.URL_SERVICE_IMAGEPATH + pic));
+        }
+    }
+
+    public void downloadMainAD(AMapLocation aMapLocation) {
+        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+        String last_update_main = preferences.getString("last_update_main", "null");
+        MyHttpUtils myHttpUtils = new MyHttpUtils(this);
+        ADBean adBean_main = myHttpUtils.getADBeanByGET(Str.URL_AD, aMapLocation.getAdCode(), 2);
+
+        ADBean.ADInfo adInfo = adBean_main.getAdInfos().get(0);
+
+        if (adInfo.getLast_update().equals(last_update_main)) {
+            Log.i(TAG, "downloadMainAD: equals");
+            return;
+        }
+        preferences.edit()
+                .putString("last_update_main", adInfo.getLast_update())
+                .putString("url_main", adInfo.getUrl()).commit();
+        File file = new File(Str.ADIMAGEPATH_MAIN);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+        for (int i = 0; i < adInfo.getPics().size(); i++) {
+            file = new File(Str.ADIMAGEPATH_MAIN + i + ".JPEG");
+            if (!file.exists()) {
+                try {
+                    file.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            String pic = adInfo.getPics().get(i);
+            myHttpUtils.createImage(Str.ADIMAGEPATH_MAIN + i + ".JPEG",
+                    myHttpUtils.downloadImage(Str.URL_SERVICE_IMAGEPATH + pic));
+        }
+    }
+
+    /**
      * 把数据写入文件
      *
      * @param filePath
@@ -206,7 +452,7 @@ public class BaseActivity extends AppCompatActivity {
         try {
             fileOutputStream = new FileOutputStream(path);
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);// 把数据写入文件
-            Toast.makeText(this, "保存图片" + fileName, Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "createImage: " + "保存图片" + fileName);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } finally {
@@ -255,6 +501,42 @@ public class BaseActivity extends AppCompatActivity {
         bitmap = BitmapFactory.decodeFile(imagePath);
         cursor.close();
         return bitmap;
+    }
+
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    public Action getIndexApiAction() {
+        Thing object = new Thing.Builder()
+                .setName("Base Page") // TODO: Define a title for the content shown.
+                // TODO: Make sure this auto-generated URL is correct.
+                .setUrl(Uri.parse("http://[ENTER-YOUR-URL-HERE]"))
+                .build();
+        return new Action.Builder(Action.TYPE_VIEW)
+                .setObject(object)
+                .setActionStatus(Action.STATUS_TYPE_COMPLETED)
+                .build();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        AppIndex.AppIndexApi.start(client, getIndexApiAction());
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        AppIndex.AppIndexApi.end(client, getIndexApiAction());
+        client.disconnect();
     }
 
     public static class MyHeadTask extends AsyncTask<String, Void, Bitmap> {
@@ -315,7 +597,6 @@ public class BaseActivity extends AppCompatActivity {
     private void initJPush() {
         JPushInterface.init(this);
         registerMessageReceiver();
-        Log.i(TAG, "initJPush: " + JPushInterface.getRegistrationID(this));
     }
 
 
@@ -439,7 +720,7 @@ public class BaseActivity extends AppCompatActivity {
     }
 
     public void setDecelerateTransAnim(View view, float fromXDelta, float toXDelta, float fromYDelta, float toYDelta) {
-        TranslateAnimation translateAnimation = new TranslateAnimation(fromXDelta,toXDelta,fromYDelta,toYDelta);
+        TranslateAnimation translateAnimation = new TranslateAnimation(fromXDelta, toXDelta, fromYDelta, toYDelta);
         translateAnimation.setDuration(500);
         //设置动画结束后效果保留
         translateAnimation.setFillAfter(false);
@@ -482,21 +763,52 @@ public class BaseActivity extends AppCompatActivity {
 
     /**
      * 按屏幕大小（比例）设置LayoutParams(for MapView in Fragment)
+     *
      * @param view
      * @param weightScale
      * @param hightScale
      * @return
      */
     public RelativeLayout.LayoutParams setViewParams(View view, int weightScale, int hightScale) {
-        WindowManager wm = (WindowManager)this.getSystemService(Context.WINDOW_SERVICE);
+        WindowManager wm = (WindowManager) this.getSystemService(Context.WINDOW_SERVICE);
         Display display = wm.getDefaultDisplay();
         int hight = display.getHeight();
         int width = display.getWidth();
         RelativeLayout.LayoutParams params;
-        params= (RelativeLayout.LayoutParams) view.getLayoutParams();
-        params.height=hight/hightScale;
-        params.width=width/weightScale;
+        params = (RelativeLayout.LayoutParams) view.getLayoutParams();
+        params.height = hight / hightScale;
+        params.width = width / weightScale;
         return params;
+    }
+
+    //////////////////////////////////////////////////////
+
+    /**
+     * 更新adcode
+     *
+     * @param driver
+     * @param aMapLocation
+     */
+    public void updateAdCode(Driver driver, AMapLocation aMapLocation) {
+        if ((!driver.getCompany().equals("null")) || (aMapLocation == null)) {
+            return;
+        }
+        MyHttpUtils myHttpUtils = new MyHttpUtils(this);
+        driver.setCompany(aMapLocation.getAdCode());
+        myHttpUtils.setAdcodeByGET(Str.URL_UPDATEADCODE, driver);
+    }
+
+    public void checkAdcode(AMapLocation aMapLocation, Driver driver) {
+        if (aMapLocation != null) {
+            updateAdCode(driver, aMapLocation);
+        } else {
+            try {
+                new Thread().sleep(5000);//睡眠5秒后递归
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            updateAdCode(driver, aMapLocation);
+        }
     }
 
 }

@@ -366,9 +366,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             startLat = new LatLng(endLat.latitude, endLat.longitude);
             //上传位置
             ClientLocationInfo locationInfo = new ClientLocationInfo(mAMapLocation.getLongitude() + "",
-                    mAMapLocation.getLatitude() + "", mAMapLocation.getSpeed() + "", mCurrentX + "");
-            List<String> list = myHttpUtils.upDateLocation(Str.URL_UPDATELOCATION, locationInfo);
-            Log.i(TAG, "upDateLocation: ");
+                    mAMapLocation.getLatitude() + "", mAMapLocation.getSpeed() + "", mCurrentX + "",mAMapLocation.getLocationType());
+            List<String> list = myHttpUtils.upDateLocation(Str.URL_UPDATELOCATION_DRIVER, locationInfo);
         }
     }
 
@@ -635,7 +634,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     public static boolean isForeground = true;
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
         //首次进入开启定位，以后返回界面可以由centerToMyLocation重新开启定位
         if (isFirstIn) {
@@ -653,7 +652,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     @Override
-    protected void onStop() {
+    public void onStop() {
         super.onStop();
         //停止定位
 //        aMap.setMyLocationEnabled(false);
@@ -665,7 +664,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         super.onDestroy();
         mMapView.onDestroy();
         myCameraChangeListener = null;
@@ -677,14 +676,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
         mMapView.onPause();
         isForeground = false;
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         mMapView.onResume();
 //        mLocationClient.startLocation();
