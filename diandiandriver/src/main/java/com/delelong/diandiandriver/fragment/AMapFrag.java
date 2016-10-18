@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,8 +26,11 @@ import com.amap.api.maps.LocationSource;
 import com.amap.api.maps.MapView;
 import com.amap.api.maps.UiSettings;
 import com.amap.api.maps.model.LatLng;
+import com.amap.api.services.core.LatLonPoint;
 import com.amap.api.services.core.PoiItem;
 import com.amap.api.services.geocoder.RegeocodeResult;
+import com.amap.api.services.route.DrivePath;
+import com.amap.api.services.route.RouteSearch;
 import com.delelong.diandiandriver.DriverActivity;
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.CarInfo;
@@ -35,7 +39,9 @@ import com.delelong.diandiandriver.http.ClientLocationInfo;
 import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.listener.MyFragCameraChangeListener;
 import com.delelong.diandiandriver.listener.MyOrientationListener;
+import com.delelong.diandiandriver.listener.MyRouteSearchListener;
 import com.delelong.diandiandriver.numberPicker.ToastUtil;
+import com.delelong.diandiandriver.utils.AMapUtil;
 
 import java.util.List;
 
@@ -66,6 +72,8 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
 
     public interface MyLocationInterface {
         void getMyLocation(AMapLocation aMapLocation);
+
+        void getAMap(AMap aMap);
     }
 
     @Nullable
@@ -81,6 +89,9 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
     ImageButton loc;
 
     private void initView() {
+        if (activity!= null) {
+            activity.getAMap(aMap);
+        }
         img_map_top02 = (ImageView) view.findViewById(R.id.img_map_top02);
         tv_map_top02 = (TextView) view.findViewById(R.id.tv_map_top02);
         loc = (ImageButton) view.findViewById(R.id.loc);
@@ -127,6 +138,7 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         activity = (DriverActivity) getActivity();
+
         myHttpUtils = new MyHttpUtils(activity);
     }
 
@@ -250,8 +262,33 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
         aMap.setMyLocationEnabled(true);// 设置为true表示显示定位层并可触发定位，false表示隐藏定位层并不可触发定位，默认是false
 
 
+        setRouteSearchListner();
         setMyOrientationListener();
         setMyCameraChangeListener();
+    }
+
+    private RouteSearch mRouteSearch;
+    private MyRouteSearchListener myRouteSearchListener;
+    private DrivePath mDrivePath;
+
+    public void setRouteSearchListner() {
+        mRouteSearch = new RouteSearch(context);
+        myRouteSearchListener = new MyRouteSearchListener(aMap, context);
+        mRouteSearch.setRouteSearchListener(myRouteSearchListener);
+        Log.i(TAG, "setRouteSearchListner: 1111");
+        myRouteSearchListener.getDrivePathListener(new MyRouteSearchListener.MyDrivePathListener() {
+            @Override
+            public void getDrivePath(DrivePath drivePath) {
+                Log.i(TAG, "getDrivePath: 22222");
+                mDrivePath = drivePath;
+                if (mDrivePath != null) {//根据路径获取里程数等
+                    Log.i(TAG, "getDrivePath: 333333");
+                    Log.i(TAG, "getDrivePath: " + "预计行程花费 " + AMapUtil.getFriendlyTime((int) drivePath.getDuration())
+                            + " 总距离：" + AMapUtil.getKiloLength(drivePath.getDistance()) + "千米");
+
+                }
+            }
+        });
     }
 
     private void setMyOrientationListener() {
@@ -339,11 +376,24 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
                 }
             } else {
                 String errText = "定位失败," + aMapLocation.getErrorCode() + ": " + aMapLocation.getErrorInfo();
-                ToastUtil.show("errText");
+                ToastUtil.show(activity, "errText");
             }
         }
     }
 
+    /**
+     * 根据起始点规划路径（显示路径图）
+     * @param showRoute 是否显示路线图
+     * @param start 起点
+     * @param end 终点
+     */
+    public void routeSearch(boolean showRoute,LatLonPoint start,LatLonPoint end) {
+        myRouteSearchListener.setShowRoute(showRoute);
+        final RouteSearch.FromAndTo fromAndTo = new RouteSearch.FromAndTo(start, end);
+        // 第一个参数表示路径规划的起点和终点，第二个参数表示驾车模式，第三个参数表示途经点，第四个参数表示避让区域，第五个参数表示避让道路
+        RouteSearch.DriveRouteQuery routeQuery = new RouteSearch.DriveRouteQuery(fromAndTo, RouteSearch.DrivingDefault, null, null, "");
+        mRouteSearch.calculateDriveRouteAsyn(routeQuery);// 异步路径规划驾车模式查询
+    }
     private LatLng startLat, endLat;
 
     /**

@@ -10,8 +10,8 @@ import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -23,6 +23,7 @@ import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -47,17 +48,30 @@ import com.amap.api.maps.model.LatLng;
 import com.delelong.diandiandriver.bean.ADBean;
 import com.delelong.diandiandriver.bean.Client;
 import com.delelong.diandiandriver.bean.Driver;
+import com.delelong.diandiandriver.bean.OrderInfo;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.dialog.MyNetworkDialog;
+import com.delelong.diandiandriver.dialog.MyDialogUtils;
 import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.listener.MyOrientationListener;
 import com.delelong.diandiandriver.pace.MyAMapLocation;
+import com.delelong.diandiandriver.utils.ExampleUtil;
 import com.delelong.diandiandriver.utils.SystemUtils;
+import com.delelong.diandiandriver.utils.ToastUtil;
+import com.flyco.animation.BaseAnimatorSet;
+import com.flyco.animation.BounceEnter.BounceTopEnter;
+import com.flyco.animation.SlideExit.SlideBottomExit;
+import com.flyco.dialog.listener.OnBtnClickL;
+import com.flyco.dialog.widget.NormalDialog;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.common.primitives.Doubles;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -68,6 +82,7 @@ import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 
 import cn.jpush.android.api.JPushInterface;
 
@@ -101,7 +116,7 @@ public class BaseActivity extends AppCompatActivity {
     private void setSysBar() {
         String version = SystemUtils.getSystemVersion();
         double num = Doubles.tryParse(version.substring(0, 3));
-        if (num>=5) {//android 5.0及以上系统
+        if (num >= 5) {//android 5.0及以上系统
             Window window = getWindow();
             //设置透明状态栏,这样才能让 ContentView 向上
             window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
@@ -117,7 +132,7 @@ public class BaseActivity extends AppCompatActivity {
                 //注意不是设置 ContentView 的 FitsSystemWindows, 而是设置 ContentView 的第一个子 View . 使其不为系统 View 预留空间.
                 ViewCompat.setFitsSystemWindows(mChildView, false);
             }
-        } else if (num>=4.5&&num<5.0){//android 4.0-5.0系统
+        } else if (num >= 4.5 && num < 5.0) {//android 4.0-5.0系统
 
             Window window = getWindow();
             ViewGroup mContentView = (ViewGroup) findViewById(Window.ID_ANDROID_CONTENT);
@@ -274,16 +289,17 @@ public class BaseActivity extends AppCompatActivity {
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm == null) {
         } else {
+            return cm.getActiveNetworkInfo().isAvailable();
             //如果仅仅是用来判断网络连接
             //则可以使用 cm.getActiveNetworkInfo().isAvailable();
-            NetworkInfo[] info = cm.getAllNetworkInfo();
-            if (info != null) {
-                for (int i = 0; i < info.length; i++) {
-                    if (info[i].getState() == NetworkInfo.State.CONNECTED) {
-                        return true;
-                    }
-                }
-            }
+//            NetworkInfo[] info = cm.getAllNetworkInfo();
+//            if (info != null) {
+//                for (int i = 0; i < info.length; i++) {
+//                    if (info[i].getState() == NetworkInfo.State.CONNECTED) {
+//                        return true;
+//                    }
+//                }
+//            }
         }
         return false;
     }
@@ -297,8 +313,8 @@ public class BaseActivity extends AppCompatActivity {
     public boolean setNetworkDialog(Context context) {
         boolean isNetworkAvailable = isNetworkAvailable(context);
         if (!isNetworkAvailable) {
-            MyNetworkDialog dialog = new MyNetworkDialog(this);
-            dialog.show();
+            MyDialogUtils dialog = new MyDialogUtils(this);
+            dialog.showNetWork();
         }
         return isNetworkAvailable;
     }
@@ -596,7 +612,10 @@ public class BaseActivity extends AppCompatActivity {
 
     private void initJPush() {
         JPushInterface.init(this);
+//        MyPushNotificationBuilder builder = new MyPushNotificationBuilder(this);
+//        builder.setOrderNotificationBuilder();
         registerMessageReceiver();
+        Log.i(TAG, "initJPush: " + JPushInterface.getRegistrationID(this));
     }
 
 
@@ -624,9 +643,9 @@ public class BaseActivity extends AppCompatActivity {
                 String extras = intent.getStringExtra(KEY_EXTRAS);
                 StringBuilder showMsg = new StringBuilder();
                 showMsg.append(KEY_MESSAGE + " : " + messge + "\n");
-//                if (!ExampleUtil.isEmpty(extras)) {
-                showMsg.append(KEY_EXTRAS + " : " + extras + "\n");
-//                }
+                if (!ExampleUtil.isEmpty(extras)) {
+                    showMsg.append(KEY_EXTRAS + " : " + extras + "\n");
+                }
                 Log.i(TAG, "onReceive: showMsg:" + showMsg.toString());
             }
         }
@@ -809,6 +828,126 @@ public class BaseActivity extends AppCompatActivity {
             }
             updateAdCode(driver, aMapLocation);
         }
+    }
+
+    /**
+     * 注销登陆dialog
+     */
+    public void NormalDialogCustomAttr() {
+        BaseAnimatorSet bas_in = new BounceTopEnter();
+        BaseAnimatorSet bas_out = new SlideBottomExit();
+        Log.i(TAG, "NormalDialogCustomAttr: ");
+        final NormalDialog dialog = new NormalDialog(this);
+        dialog.isTitleShow(false)//
+                .bgColor(Color.parseColor("#383838"))//
+                .cornerRadius(5)//
+                .content("是否确定注销登陆?")//
+                .contentGravity(Gravity.CENTER)//
+                .contentTextColor(Color.parseColor("#ffffff"))//
+                .dividerColor(Color.parseColor("#222222"))//
+                .btnTextSize(15.5f, 15.5f)//
+                .btnTextColor(Color.parseColor("#ffffff"), Color.parseColor("#ffffff"))//
+                .btnPressColor(Color.parseColor("#2B2B2B"))//
+                .widthScale(0.85f)//
+                .showAnim(bas_in)//
+                .dismissAnim(bas_out)//
+                .show();
+
+        dialog.setOnBtnClickL(
+                new OnBtnClickL() {
+                    @Override
+                    public void onBtnClick() {
+                        dialog.dismiss();
+                    }
+                },
+                new OnBtnClickL() {
+                    @Override
+                    public void onBtnClick() {
+                        MyHttpUtils myHttpUtils = new MyHttpUtils(BaseActivity.this);
+                        List<String> loginOutResult = myHttpUtils.getLoginOutResultByGET(Str.URL_LOGINOUT);
+                        if (loginOutResult.get(0).equalsIgnoreCase("OK")) {
+                            ToastUtil.show(BaseActivity.this, "注销登陆");
+                            dialog.dismiss();
+                        } else {
+                            ToastUtil.show(BaseActivity.this, "注销登陆失败，请重试一次");
+                        }
+                    }
+                });
+    }
+
+    public OrderInfo getOrderInfo(String orderMessage){
+        OrderInfo orderInfo = null;
+        try {
+            JSONObject object = new JSONObject(orderMessage);
+            int title = object.has("title")? Ints.tryParse(object.getString("title")):1;
+            String  phone = object.has("phone")? object.getString("phone"):"";
+            String nick_name = object.has("nick_name")? object.getString("nick_name"):"";
+            String no = object.has("no")? object.getString("no"):"";
+            String setouttime = object.has("setouttime")? object.getString("setouttime"):"";
+            int type_ = object.has("type")? Ints.tryParse(object.getString("type")):4;
+            String type = type2String(type_);
+            int serviceType_ = object.has("type")? Ints.tryParse(object.getString("type")):1;
+            String serviceType =serviceType2String(serviceType_);
+            boolean set_out_flag = object.has("setOutFlag")? object.getBoolean("setOutFlag"):false;
+            long id = object.has("id")? Longs.tryParse(object.getString("id")):0;
+            double distance = object.has("distance")? Doubles.tryParse(object.getString("distance")):0;
+            double yg_amount = object.has("ygAmount")? Doubles.tryParse(object.getString("ygAmount")):0;
+            JSONObject trip = object.getJSONObject("trip");
+            double startLatitude = trip.has("startLatitude")? Doubles.tryParse(trip.getString("startLatitude")):0;
+            double startLongitude = trip.has("startLongitude")? Doubles.tryParse(trip.getString("startLongitude")):0;
+            double endLatitude = trip.has("endLatitude")? Doubles.tryParse(trip.getString("endLatitude")):0;
+            double endLongitude = trip.has("endLongitude")? Doubles.tryParse(trip.getString("endLongitude")):0;
+            String reservationAddress = object.has("reservationAddress")? object.getString("reservationAddress"):"";
+            String destination = object.has("destination")? object.getString("destination"):"";
+            orderInfo = new OrderInfo(title,phone,nick_name,no,setouttime,type,serviceType,set_out_flag,id,distance,
+                    yg_amount,startLatitude,startLongitude,endLatitude,endLongitude,reservationAddress,destination);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return orderInfo;
+    }
+    public String type2String(int type){
+        String stringType = "";
+        switch (type){
+            case 1:
+                stringType =  "专车";
+                break;
+            case 2:
+                stringType =  "代驾";
+                break;
+            case 3:
+                stringType =  "出租车";
+                break;
+            case 4:
+                stringType =  "快车";
+                break;
+        }
+        return stringType;
+    }
+
+    public String serviceType2String(int serviceType_){
+        String stringServiceType = "";
+        switch (serviceType_){
+            case 1:
+                stringServiceType =  "拼车";
+                break;
+            case 0:
+                stringServiceType =  "不拼车";
+                break;
+            case 37:
+                stringServiceType =  "豪华型";
+                break;
+            case 43:
+                stringServiceType =  "舒适型";
+                break;
+            case 40:
+                stringServiceType =  "代驾";
+                break;
+            case 42:
+                stringServiceType =  "出租车";
+                break;
+        }
+        return stringServiceType;
     }
 
 }

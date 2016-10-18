@@ -22,10 +22,25 @@ public class MyRouteSearchListener implements RouteSearch.OnRouteSearchListener 
     private static final String TAG = "BAIDUMAPFORTEST";
     AMap aMap;
     Context context;
-    public MyRouteSearchListener(AMap aMap,Context context){
+
+    public MyRouteSearchListener(AMap aMap, Context context) {
         this.aMap = aMap;
 
     }
+
+    private boolean showRoute;
+
+    public boolean isShowRoute() {
+        return showRoute;
+    }
+
+    /**
+     * 是否显示路线
+     */
+    public void setShowRoute(boolean showRoute) {
+        this.showRoute = showRoute;
+    }
+
     @Override
     public void onBusRouteSearched(BusRouteResult busRouteResult, int errorCode) {
 
@@ -37,19 +52,20 @@ public class MyRouteSearchListener implements RouteSearch.OnRouteSearchListener 
         if (errorCode == 1000) {
             if (driveRouteResult != null && driveRouteResult.getPaths() != null) {
                 if (driveRouteResult.getPaths().size() > 0) {
-                    driveRouteResult = driveRouteResult;
-                    final DrivePath drivePath = driveRouteResult.getPaths()
-                            .get(0);
+
+                    final DrivePath drivePath = driveRouteResult.getPaths().get(0);
                     myDrivePathListener.getDrivePath(drivePath);
-                    DriveRouteColorfulOverLay drivingRouteOverlay = new DriveRouteColorfulOverLay(
-                            aMap, drivePath,
-                            driveRouteResult.getStartPos(),
-                            driveRouteResult.getTargetPos(), null);
-                    drivingRouteOverlay.setNodeIconVisibility(false);//设置节点marker是否显示
-                    drivingRouteOverlay.setIsColorfulline(true);//是否用颜色展示交通拥堵情况，默认true
-                    drivingRouteOverlay.removeFromMap();
-                    drivingRouteOverlay.addToMap();
-                    drivingRouteOverlay.zoomToSpan();
+                    if (showRoute) {
+                        DriveRouteColorfulOverLay drivingRouteOverlay = new DriveRouteColorfulOverLay(
+                                aMap, drivePath,
+                                driveRouteResult.getStartPos(),
+                                driveRouteResult.getTargetPos(), null);
+                        drivingRouteOverlay.setNodeIconVisibility(false);//设置节点marker是否显示
+                        drivingRouteOverlay.setIsColorfulline(true);//是否用颜色展示交通拥堵情况，默认true
+                        drivingRouteOverlay.removeFromMap();
+                        drivingRouteOverlay.addToMap();
+//                        drivingRouteOverlay.zoomToSpan();
+                    }
                     int dis = (int) drivePath.getDistance();//行驶里程
                     int dur = (int) drivePath.getDuration();//行驶时间
                     String des = AMapUtil.getFriendlyTime(dur) + "(" + AMapUtil.getFriendlyLength(dis) + ")";
@@ -73,10 +89,12 @@ public class MyRouteSearchListener implements RouteSearch.OnRouteSearchListener 
     }
 
     private MyDrivePathListener myDrivePathListener;
-    public void getDrivePathListener(MyDrivePathListener myDrivePathListener){
+
+    public void getDrivePathListener(MyDrivePathListener myDrivePathListener) {
         this.myDrivePathListener = myDrivePathListener;
     }
-    public interface MyDrivePathListener{
+
+    public interface MyDrivePathListener {
         void getDrivePath(DrivePath drivePath);
     }
 }

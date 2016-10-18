@@ -1,1 +1,1 @@
-include ':diandiandriver', ':app'
+include ':diandiandriver', ':app', ':flyDialog', ':FlycoAnimation_Lib', ':FlycoDialog_Lib'

@@ -40,10 +40,13 @@
             </intent-filter>
         </activity>
         <activity android:name=".menuActivity.AdActivity"></activity>
-        <activity android:name=".function.ChooseCarBrandActivity"></activity>
+        <activity android:name=".function.AddCarInfoActivity"></activity>
+        <activity android:name=".function.ChooseBrandActivity"></activity>
+        <activity android:name=".function.ChooseModelActivity"></activity>
         <activity android:name="com.delelong.diandiandriver.MainActivity"></activity>
         <activity android:name="com.delelong.diandiandriver.ChoosePosition"></activity>
         <activity android:name="com.delelong.diandiandriver.LoginActivity"></activity>
+        <activity android:name=".function.FunSettingActivity"></activity>
         <activity android:name=".fragment.RegisterActivity"></activity>
         <activity android:name=".fragment.ModifyActivity"></activity>
         <activity android:name=".function.WeatherActivity"></activity>
@@ -210,6 +213,5 @@
     <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
-
 
 </manifest>

@@ -1,7 +1,9 @@
 package com.delelong.diandiandriver;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,8 +12,9 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.view.Gravity;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
@@ -22,14 +25,18 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
+import com.amap.api.maps.AMap;
 import com.delelong.diandiandriver.bean.Driver;
+import com.delelong.diandiandriver.bean.DriverCarBean;
+import com.delelong.diandiandriver.bean.OrderInfo;
 import com.delelong.diandiandriver.bean.Str;
+import com.delelong.diandiandriver.dialog.MyOrderDialog;
 import com.delelong.diandiandriver.fragment.AMapFrag;
 import com.delelong.diandiandriver.fragment.DriverMenuFrag;
 import com.delelong.diandiandriver.fragment.MyAppUpdate;
-import com.delelong.diandiandriver.function.ChooseCarBrandActivity;
 import com.delelong.diandiandriver.function.MyFunctionFrag;
 import com.delelong.diandiandriver.http.MyHttpUtils;
+import com.delelong.diandiandriver.utils.ToastUtil;
 import com.google.common.primitives.Ints;
 
 import org.joda.time.DateTime;
@@ -48,9 +55,9 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
             super.handleMessage(msg);
             switch (msg.what) {
                 case 0:
-                    if (online){
+                    if (online) {
                         onlineTime = onlineTime.plusMinutes(1);
-                        setOnlineTime(12,"上线时间\n" + onlineTime.toString("HH:mm"));
+                        setOnlineTime(12, "上线时间\n" + onlineTime.toString("HH:mm"));
                     }
                     break;
             }
@@ -72,7 +79,9 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     SharedPreferences preferences;
     MyHttpUtils myHttpUtils;
     Driver driver;
+    DriverCarBean driverCarBean;
     AMapLocation aMapLocation;
+    AMap mAMap;
 
     private void initMsg() {
         onlineTime = new DateTime();
@@ -80,8 +89,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
         myHttpUtils = new MyHttpUtils(this);
         driver = myHttpUtils.getDriverByGET(Str.URL_MEMBER);
-//        myHttpUtils.getCarBrands(Str.URL_CAR_BRAND, 1, 15);
-//        myHttpUtils.getCarModelsByBrand(Str.URL_CAR_BRAND_MODEL,1, 1, 15);
+        driverCarBean = myHttpUtils.getDriverCars(Str.URL_DRIVER_CARS);
     }
 
     /**
@@ -209,6 +217,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
 
     }
 
+
     boolean online;
 
     @Override
@@ -216,7 +225,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         switch (v.getId()) {
             case R.id.img_menu:
                 //左侧菜单
-                drawerly.openDrawer(Gravity.LEFT);
+                drawerly.openDrawer(GravityCompat.START);
                 break;
             case R.id.img_function:
                 //右侧功能菜单
@@ -228,7 +237,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 break;
             case R.id.ly_sum_today:
                 //今日收入
-                startActivity(new Intent(this, ChooseCarBrandActivity.class));
+
                 break;
             case R.id.img_desk_show:
                 //显示中间收入明细
@@ -239,19 +248,23 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 break;
             case R.id.btn_onLine:
                 //上线
+                if (driverCarBean.getDriverCars().size()==0){
+
+                    return;
+                }
                 online = !online;//上线、下线
-                if (online){//加快显示
-                    setOnlineTime(12,"上线时间\n" + "00:00");
+                if (online) {//加快显示
+                    setOnlineTime(12, "上线时间\n" + "00:00");
                 }
                 List<String> result = myHttpUtils.onlineApp(Str.URL_ONLINE, 51, online);//上线
                 if (online) {//上线重置时间
                     onlineTime = new DateTime(onlineTime.getYear(), onlineTime.getMonthOfYear(),
                             onlineTime.getDayOfMonth(), 0, 0, 0);
                     onlineTime = onlineTime.plusMinutes(Ints.tryParse(result.get(2)));//当天累计上线时间
-                    setOnlineTime(12,"上线时间\n" + onlineTime.toString("HH:mm"));
+                    setOnlineTime(12, "上线时间\n" + onlineTime.toString("HH:mm"));
                     sendEmptyMessage(0);
                 } else {
-                    setOnlineTime(20,"上线");
+                    setOnlineTime(20, "上线");
                 }
                 break;
             case R.id.btn_backToCity:
@@ -269,18 +282,21 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
 
     /**
      * 设置上线按钮 大小、文本
+     *
      * @param textSize
      * @param text
      */
-    private void setOnlineTime(float textSize,String text){
+    private void setOnlineTime(float textSize, String text) {
         btn_onLine.setTextSize(textSize);
         btn_onLine.setText(text);
     }
+
     /**
      * 1分钟更新一次上线时间
+     *
      * @param what
      */
-    private void sendEmptyMessage(final int what){
+    private void sendEmptyMessage(final int what) {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -324,15 +340,24 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 .hide(fragment).commit();
     }
 
+    @Override
+    protected void onDestroy() {
+        if (online) {
+            online = false;
+            myHttpUtils.onlineApp(Str.URL_ONLINE, 51, online);//下线
+        }
+        super.onDestroy();
+    }
+
     private boolean isTwice = false;
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            if (drawerly.isDrawerOpen(Gravity.LEFT) || drawerly.isDrawerOpen(Gravity.RIGHT)) {
-                drawerly.closeDrawers();
-                return false;
-            }
+//            if (drawerly.isDrawerOpen(Gravity.LEFT) ) {
+//                drawerly.closeDrawers();
+//                return false;
+//            }
             if (fragmentManager.findFragmentByTag("functionFrag").isVisible()) {
 //                fragmentManager.beginTransaction().hide(functionFrag).commit();
                 hideFrag(functionFrag);
@@ -362,6 +387,43 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         return super.onKeyDown(keyCode, event);
     }
 
+    OrderInfo mOrderInfo;
+    OrderMessageReceiver orderMessageReceiver;
+
+    public void registerMessageReceiver() {
+        orderMessageReceiver = new OrderMessageReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+        filter.addAction(Str.ORDER_MESSAGE_RECEIVED_ACTION);
+        registerReceiver(orderMessageReceiver, filter);
+    }
+
+    public class OrderMessageReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (Str.ORDER_MESSAGE_RECEIVED_ACTION.equals(intent.getAction())) {
+                String orderMessage = intent.getStringExtra(Str.KEY_ORDER_MESSAGE);
+                String orderExtras = intent.getStringExtra(Str.KEY_ORDER_EXTRA);//可能为空
+                Log.i(TAG, "orderMessage: "+orderMessage);
+                showOrder(orderMessage);
+            }
+        }
+    }
+
+    public void showOrder(String orderMessage) {
+        mOrderInfo = getOrderInfo(orderMessage);
+        MyOrderDialog orderDialog = new MyOrderDialog(this,mAMap,aMapLocation,mOrderInfo);
+        orderDialog.show(new MyOrderDialog.OrderInterface() {
+            @Override
+            public void take(boolean take) {
+                if (take){
+                    Log.i(TAG, "take: 接单了");
+                    ToastUtil.show(DriverActivity.this,"接单了");
+                }
+            }
+        });
+    }
+
 
     /**
      * 回调当前位置
@@ -376,12 +438,17 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         }
     }
 
+    @Override
+    public void getAMap(AMap aMap) {
+        mAMap = aMap;
+    }
+
     /**
      * 传递aMapLocation给其他fragment
      */
     MyActivityLocationInterface myActivityLocInterface;
 
-    public void getMyActivityLocationInterface(MyActivityLocationInterface myActivityLocInterface) {
+    public void setMyActivityLocationInterface(MyActivityLocationInterface myActivityLocInterface) {
         this.myActivityLocInterface = myActivityLocInterface;
     }
 

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:dreams="http://schemas.android.com/apk/res/com.delelong.diandiandriver.view"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="#00000000"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <LinearLayout
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/tv_order_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_marginBottom="10dp"
+                android:gravity="center"
+                android:text="现在"
+                android:textSize="18sp" />
+
+            <ImageView
+                android:id="@+id/img_cancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:src="@mipmap/icon_close" />
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/tv_order_des"
+            android:layout_width="match_parent"
+            android:text="距离客户 5公里，大约需要 3分钟"
+            android:gravity="center"
+            android:textSize="14sp"
+            android:layout_marginBottom="10dp"
+            android:layout_height="wrap_content" />
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="#fbfcb902" />
+        <LinearLayout
+            android:layout_width="300dp"
+            android:orientation="vertical"
+            android:layout_height="wrap_content">
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:padding="5dp"
+                android:layout_height="wrap_content">
+                <ImageView
+                    android:id="@+id/img_start"
+                    android:layout_width="wrap_content"
+                    android:background="@drawable/icon_start"
+                    android:layout_centerVertical="true"
+                    android:layout_height="wrap_content" />
+                <TextView
+                    android:id="@+id/tv_reservationAddress"
+                    android:layout_width="wrap_content"
+                    android:layout_toRightOf="@id/img_start"
+                    android:layout_marginLeft="10dp"
+                    android:text="起点"
+                    android:textSize="16sp"
+                    android:layout_height="wrap_content" />
+            </RelativeLayout>
+            <ImageView
+                android:layout_width="wrap_content"
+                android:background="@drawable/img_dit_vertical"
+                android:layout_height="wrap_content" />
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:padding="5dp"
+                android:layout_height="wrap_content">
+                <ImageView
+                    android:id="@+id/img_end"
+                    android:layout_width="wrap_content"
+                    android:background="@drawable/icon_end"
+                    android:layout_centerVertical="true"
+                    android:layout_height="wrap_content" />
+                <TextView
+                    android:id="@+id/tv_destination"
+                    android:layout_width="wrap_content"
+                    android:layout_toRightOf="@id/img_end"
+                    android:layout_marginLeft="10dp"
+                    android:text="终点"
+                    android:textSize="16sp"
+                    android:layout_height="wrap_content" />
+            </RelativeLayout>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="300dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <com.delelong.diandiandriver.view.WiperSwitch
+                android:id="@+id/wiper_take"
+                android:layout_width="280dp"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:layout_height="50dp" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

@@ -85,6 +85,18 @@ public class AMapUtil {
 		return dis + ChString.Meter;
 	}
 
+	/**
+	 *
+	 * @param lenMeter
+	 * @return 带一位小数的千米数
+	 */
+	public static double getKiloLength(double lenMeter) {
+		double dis = lenMeter / 1000;
+		DecimalFormat fnum = new DecimalFormat("#####0.0");
+		String dstr = fnum.format(dis);
+		return Double.parseDouble(dstr);
+	}
+
 	public static boolean IsEmptyOrNullString(String s) {
 		return (s == null) || (s.trim().length() == 0);
 	}

@@ -22,6 +22,7 @@ public class Str implements Serializable {
     public static final String URL_SMSCODE = URL_API+"/smscode";//1:注册;2:忘记密码;3:更换手机号;
 
     public static final String URL_MEMBER = URL_API+"/member";//获取会员信息
+    public static final String URL_DRIVER_CARS = URL_API+"/driver/cars";//获取会员信息
     public static final String URL_LOGINOUT = URL_API+"/logout";//注销登陆
 
     public static final String URL_MODIFY = URL_API+"/update/password";//修改密码（记得密码）
@@ -31,6 +32,7 @@ public class Str implements Serializable {
     public static final String URL_AD = URL_API+"/ad";//获取广告图片
     public static final String URL_UPDATECLIENT = URL_API+"/member/update";//更新会员信息（GET）
     public static final String URL_UPDATEADCODE = URL_API+"/updateCityCode";//更新会员信息（GET）
+    public static final String URL_PLUS_CAR = URL_API+"/driver/car/plus";//增加车辆信息
     public static final String URL_GETCARINFO = URL_API+"/member/cars";//获取车辆列表
     public static final String URL_GETDRIVERINFO = URL_API+"/member/drivers";//获取代驾司机列表
     public static final String FILEPATH = "/sdcard/DianDian/Image/";//文件本地地址
@@ -65,6 +67,8 @@ public class Str implements Serializable {
     public static final int REQUESTPOSITIONCODE = 5;//设置起点requestCode
     public static final int REQUESTDESTINATIONCODE = 6;//设置终点requestCode
     public static final int REQUESTADCODE = 7;//设置终点requestCode
+    public static final int REQUESTBRANDCODE = 8;//选择车辆brand requestCode
+    public static final int REQUESTMODELCODE = 9;//选择车辆brand requestCode
     /**
      * js打开系统文件请求码
      */
@@ -75,4 +79,7 @@ public class Str implements Serializable {
     public static final String URL_DRIVERENROLL = "http://192.168.4.110:8080/Jfinal/driver/enroll";//司机报名页面
     public static final String VERSION_URL = "http://223.26.63.3/mobilesafe/update.json";
     public static final String SQL_TABLE_NAME = "city.db";
+    public static final String ORDER_MESSAGE_RECEIVED_ACTION = "com.delelong.diandiandriver.ORDER_MESSAGE_RECEIVED_ACTION";
+    public static final String KEY_ORDER_MESSAGE = "order_message";
+    public static final String KEY_ORDER_EXTRA = "order_extra";
 }

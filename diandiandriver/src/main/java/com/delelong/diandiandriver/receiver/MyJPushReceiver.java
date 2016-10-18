@@ -8,7 +8,8 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.delelong.diandiandriver.MainActivity;
-import com.delelong.diandiandriver.dialog.MyNetworkDialog;
+import com.delelong.diandiandriver.bean.Str;
+import com.delelong.diandiandriver.dialog.MyDialogUtils;
 import com.delelong.diandiandriver.menuActivity.SettingActivity;
 import com.delelong.diandiandriver.utils.ExampleUtil;
 
@@ -35,7 +36,7 @@ public class MyJPushReceiver extends BroadcastReceiver {
 
     private static final String TAG = "BAIDUMAPFORTEST";
     boolean firstLogin;
-    MyNetworkDialog dialog;
+    MyDialogUtils dialog;
     @Override
     public void onReceive(Context context, Intent intent) {
 
@@ -43,27 +44,30 @@ public class MyJPushReceiver extends BroadcastReceiver {
         firstLogin = preferences.getBoolean("firstLogin", true);
 
         Bundle bundle = intent.getExtras();
-        Log.d(TAG, "[MyReceiver] onReceive - " + intent.getAction() + ", extras: " + printBundle(bundle));
+        Log.i(TAG, "[MyReceiver] onReceive - " + intent.getAction() + ", extras: " + printBundle(bundle));
 
         if (JPushInterface.ACTION_REGISTRATION_ID.equals(intent.getAction())) {
             String registrationId = bundle.getString(JPushInterface.EXTRA_REGISTRATION_ID);
             if (firstLogin) {
                 preferences.edit().putString("registrationId", registrationId);
+                Log.i(TAG, "[MyReceiver] putString: ");
             }
-            Log.d(TAG, "[MyReceiver] 接收Registration Id : " + registrationId);
+            Log.i(TAG, "[MyReceiver] 接收Registration Id : " + registrationId);
             //send the Registration Id to your server...
         } else if (JPushInterface.ACTION_MESSAGE_RECEIVED.equals(intent.getAction())) {
-            Log.d(TAG, "[MyReceiver] 接收到推送下来的自定义消息: " + bundle.getString(JPushInterface.EXTRA_MESSAGE));
+            Log.i(TAG, "[MyReceiver] 接收到推送下来的自定义消息: " + bundle.getString(JPushInterface.EXTRA_MESSAGE));
+            Log.i(TAG, "onReceive:111 "+JPushInterface.EXTRA_NOTIFICATION_TITLE);
+            Log.i(TAG, "onReceive:222 "+JPushInterface.EXTRA_TITLE);
             processCustomMessage(context, bundle);
-
+            sendOrderMessage(context, bundle);
         } else if (JPushInterface.ACTION_NOTIFICATION_RECEIVED.equals(intent.getAction())) {
-            Log.d(TAG, "[MyReceiver] 接收到推送下来的通知");
+            Log.i(TAG, "[MyReceiver] 接收到推送下来的通知");
             int notifactionId = bundle.getInt(JPushInterface.EXTRA_NOTIFICATION_ID);
             String alert = bundle.getString(JPushInterface.EXTRA_ALERT);
-            Log.d(TAG, "[MyReceiver] 接收到推送下来的通知的消息: " + alert);
+            Log.i(TAG, "[MyReceiver] 接收到推送下来的通知的消息: " + alert);
 
         } else if (JPushInterface.ACTION_NOTIFICATION_OPENED.equals(intent.getAction())) {
-            Log.d(TAG, "[MyReceiver] 用户点击打开了通知");
+            Log.i(TAG, "[MyReceiver] 用户点击打开了通知");
 
             //打开自定义的Activity
             Intent i = new Intent(context, SettingActivity.class);
@@ -73,14 +77,14 @@ public class MyJPushReceiver extends BroadcastReceiver {
             context.startActivity(i);
 
         } else if (JPushInterface.ACTION_RICHPUSH_CALLBACK.equals(intent.getAction())) {
-            Log.d(TAG, "[MyReceiver] 用户收到到RICH PUSH CALLBACK: " + bundle.getString(JPushInterface.EXTRA_EXTRA));
+            Log.i(TAG, "[MyReceiver] 用户收到到RICH PUSH CALLBACK: " + bundle.getString(JPushInterface.EXTRA_EXTRA));
             //在这里根据 JPushInterface.EXTRA_EXTRA 的内容处理代码，比如打开新的Activity， 打开一个网页等..
 
         } else if (JPushInterface.ACTION_CONNECTION_CHANGE.equals(intent.getAction())) {
             boolean connected = intent.getBooleanExtra(JPushInterface.EXTRA_CONNECTION_CHANGE, false);
-            Log.w(TAG, "[MyReceiver]" + intent.getAction() + " connected state change to " + connected);
+            Log.i(TAG, "[MyReceiver]" + intent.getAction() + " connected state change to " + connected);
         } else {
-            Log.d(TAG, "[MyReceiver] Unhandled intent - " + intent.getAction());
+            Log.i(TAG, "[MyReceiver] Unhandled intent - " + intent.getAction());
         }
 
     }
@@ -109,9 +113,8 @@ public class MyJPushReceiver extends BroadcastReceiver {
                                 myKey + " - " + json.optString(myKey) + "]");
                     }
                 } catch (JSONException e) {
-                    Log.e(TAG, "Get message extra JSON error!");
+                    Log.i(TAG, "Get message extra JSON error!");
                 }
-
             } else {
                 sb.append("\nkey:" + key + ", value:" + bundle.getString(key));
             }
@@ -136,6 +139,23 @@ public class MyJPushReceiver extends BroadcastReceiver {
             }
         }
         context.sendBroadcast(msgIntent);
+    }
+    private void sendOrderMessage(Context context, Bundle bundle){
+        String orderMessage = bundle.getString(JPushInterface.EXTRA_MESSAGE);
+        String orderExtras = bundle.getString(JPushInterface.EXTRA_EXTRA);
+        Intent orderIntent = new Intent(Str.ORDER_MESSAGE_RECEIVED_ACTION);
+        orderIntent.putExtra(Str.KEY_ORDER_MESSAGE, orderMessage);
+        if (!ExampleUtil.isEmpty(orderExtras)) {
+            try {
+                JSONObject extraJson = new JSONObject(orderExtras);
+                if (null != extraJson && extraJson.length() > 0) {
+                    orderIntent.putExtra(Str.KEY_ORDER_EXTRA, orderExtras);
+                }
+            } catch (JSONException e) {
+
+            }
+        }
+        context.sendBroadcast(orderIntent);
     }
 
 }

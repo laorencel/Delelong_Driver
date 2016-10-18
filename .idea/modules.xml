@@ -3,8 +3,11 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Delelong_Driver.iml" filepath="$PROJECT_DIR$/Delelong_Driver.iml" />
+      <module fileurl="file://$PROJECT_DIR$/FlycoAnimation_Lib/FlycoAnimation_Lib.iml" filepath="$PROJECT_DIR$/FlycoAnimation_Lib/FlycoAnimation_Lib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/FlycoDialog_Lib/FlycoDialog_Lib.iml" filepath="$PROJECT_DIR$/FlycoDialog_Lib/FlycoDialog_Lib.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/diandiandriver/diandiandriver.iml" filepath="$PROJECT_DIR$/diandiandriver/diandiandriver.iml" />
+      <module fileurl="file://$PROJECT_DIR$/flyDialog/flyDialog.iml" filepath="$PROJECT_DIR$/flyDialog/flyDialog.iml" />
     </modules>
   </component>
 </project>
