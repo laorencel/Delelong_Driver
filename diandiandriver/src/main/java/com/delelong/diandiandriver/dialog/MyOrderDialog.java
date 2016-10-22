@@ -51,7 +51,7 @@ public class MyOrderDialog implements View.OnClickListener, WiperSwitch.OnSlippe
     OrderInterface orderInterface;
     ImageView img_cancel;
     WiperSwitch wiper_take;
-    TextView tv_order_time, tv_order_des;
+    TextView tv_order_type,tv_order_time, tv_order_des;
     TextView tv_reservationAddress, tv_destination;
 
     public void show(OrderInterface orderInterface) {
@@ -71,13 +71,14 @@ public class MyOrderDialog implements View.OnClickListener, WiperSwitch.OnSlippe
         img_cancel = (ImageView) window.findViewById(R.id.img_cancel);
         wiper_take = (WiperSwitch) window.findViewById(R.id.wiper_take);
         wiper_take.setDrawable(R.drawable.img_order_on, R.drawable.img_order_off, R.drawable.img_order_slipper);
+        tv_order_type = (TextView) window.findViewById(R.id.tv_order_type);
         tv_order_time = (TextView) window.findViewById(R.id.tv_order_time);
         tv_order_des = (TextView) window.findViewById(R.id.tv_order_des);
         tv_reservationAddress = (TextView) window.findViewById(R.id.tv_reservationAddress);
         tv_destination = (TextView) window.findViewById(R.id.tv_destination);
 
-        Log.i(TAG, "getSetouttime: " + getDateToString(Longs.tryParse(orderInfo.getSetouttime())));
         Log.i(TAG, "getSetouttime: " + orderInfo);
+        tv_order_type.setText(orderInfo.getType());
         if (orderInfo.isSet_out_flag()) {
             tv_order_time.setText(getDateToString(Longs.tryParse(orderInfo.getSetouttime())));
         } else {

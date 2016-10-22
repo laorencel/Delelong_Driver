@@ -29,6 +29,10 @@
             android:id="@+id/menu_right"
             android:layout_width="match_parent"
             android:layout_height="match_parent"></RelativeLayout>
+        <RelativeLayout
+            android:id="@+id/rl_order"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"></RelativeLayout>
     </FrameLayout>
 
     <!--侧边栏布局一定要放在最下面 否则出现点击时间无响应-->

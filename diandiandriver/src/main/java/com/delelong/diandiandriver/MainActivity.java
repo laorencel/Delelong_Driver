@@ -155,9 +155,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             @Override
             public void getLatlng(LatLng center) {
                 centerOfMap = center;
-                LatLng leftTop = new LatLng(centerOfMap.latitude - 0.000015, centerOfMap.longitude - 0.000015);//半径2公里
-                LatLng rightBottom = new LatLng(centerOfMap.latitude + 0.000015, centerOfMap.longitude + 0.000015);
-                carInfos = myHttpUtils.getCarInfos(Str.URL_GETCARINFO, leftTop, rightBottom);//获取车辆列表
+                LatLng leftBottom = new LatLng(centerOfMap.latitude - 0.000015, centerOfMap.longitude + 0.000015);//半径2公里
+                LatLng rightTop = new LatLng(centerOfMap.latitude + 0.000015, centerOfMap.longitude - 0.000015);
+//                carInfos = myHttpUtils.getCarInfos(Str.URL_GETCARINFO, leftTop, rightBottom);//获取车辆列表
                 //测试
 //                List<CarInfo> list = new ArrayList<CarInfo>();
 //                for (int i = 0; i < 10; i++) {

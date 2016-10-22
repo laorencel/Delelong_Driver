@@ -11,6 +11,7 @@ public class OrderInfo implements Serializable{
     private int title;//自定义消息的类型
     private String phone;//手机号
     private String nick_name;//昵称
+    private String head_portrait;//头像地址
     private String no;//订单号
     private String setouttime;//预约时间
     private String type;//订单类型
@@ -25,6 +26,7 @@ public class OrderInfo implements Serializable{
     private double endLongitude;
     private String reservationAddress;//预约地址(地址信息不是adcode)
     private String destination;//目的地(地址信息不是adcode)
+    private String remark;//备注
 
     public OrderInfo() {
     }
@@ -49,10 +51,11 @@ public class OrderInfo implements Serializable{
      * @param reservationAddress 预约地址(地址信息不是adcode)
      * @param destination 目的地(地址信息不是adcode)
      */
-    public OrderInfo(int title, String phone, String nick_name, String no, String setouttime, String type, String serviceType, boolean set_out_flag, long id, double distance, double yg_amount, double startLatitude, double startLongitude, double endLatitude, double endLongitude, String reservationAddress, String destination) {
+    public OrderInfo(int title, String phone, String nick_name,String head_portrait, String no, String setouttime, String type, String serviceType, boolean set_out_flag, long id, double distance, double yg_amount, double startLatitude, double startLongitude, double endLatitude, double endLongitude, String reservationAddress, String destination,String remark) {
         this.title = title;
         this.phone = phone;
         this.nick_name = nick_name;
+        this.head_portrait = head_portrait;
         this.no = no;
         this.setouttime = setouttime;
         this.type = type;
@@ -67,6 +70,7 @@ public class OrderInfo implements Serializable{
         this.endLongitude = endLongitude;
         this.reservationAddress = reservationAddress;
         this.destination = destination;
+        this.remark = remark;
     }
 
     public int getTitle() {
@@ -205,12 +209,29 @@ public class OrderInfo implements Serializable{
         this.destination = destination;
     }
 
+    public String getHead_portrait() {
+        return head_portrait;
+    }
+
+    public void setHead_portrait(String head_portrait) {
+        this.head_portrait = head_portrait;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
+
     @Override
     public String toString() {
         return "OrderInfo{" +
                 "title=" + title +
                 ", phone='" + phone + '\'' +
                 ", nick_name='" + nick_name + '\'' +
+                ", head_portrait='" + head_portrait + '\'' +
                 ", no='" + no + '\'' +
                 ", setouttime='" + setouttime + '\'' +
                 ", type='" + type + '\'' +
@@ -225,6 +246,7 @@ public class OrderInfo implements Serializable{
                 ", endLongitude=" + endLongitude +
                 ", reservationAddress='" + reservationAddress + '\'' +
                 ", destination='" + destination + '\'' +
+                ", remark='" + remark + '\'' +
                 '}';
     }
 }

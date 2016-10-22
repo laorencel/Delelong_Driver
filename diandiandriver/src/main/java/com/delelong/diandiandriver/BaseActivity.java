@@ -7,10 +7,17 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -18,7 +25,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -69,6 +79,8 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.iflytek.cloud.speech.SpeechConstant;
+import com.iflytek.cloud.speech.SpeechSynthesizer;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -82,6 +94,8 @@ import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import cn.jpush.android.api.JPushInterface;
@@ -349,7 +363,11 @@ public class BaseActivity extends AppCompatActivity {
         intent.putExtra("city", city);
         startActivityForResult(intent, requestCode);
     }
-
+    public <T> void intentActivityWithBundleForResult(Context context, Class<T> tClass, int requestCode, Bundle bundle) {
+        Intent intent = new Intent(context, tClass);
+        intent.putExtra("bundle", bundle);
+        startActivityForResult(intent, requestCode);
+    }
     /**
      * 带bundle的界面跳转
      *
@@ -882,6 +900,7 @@ public class BaseActivity extends AppCompatActivity {
             int title = object.has("title")? Ints.tryParse(object.getString("title")):1;
             String  phone = object.has("phone")? object.getString("phone"):"";
             String nick_name = object.has("nick_name")? object.getString("nick_name"):"";
+            String head_portrait = object.has("head_portrait")? object.getString("head_portrait"):"";
             String no = object.has("no")? object.getString("no"):"";
             String setouttime = object.has("setouttime")? object.getString("setouttime"):"";
             int type_ = object.has("type")? Ints.tryParse(object.getString("type")):4;
@@ -899,8 +918,9 @@ public class BaseActivity extends AppCompatActivity {
             double endLongitude = trip.has("endLongitude")? Doubles.tryParse(trip.getString("endLongitude")):0;
             String reservationAddress = object.has("reservationAddress")? object.getString("reservationAddress"):"";
             String destination = object.has("destination")? object.getString("destination"):"";
-            orderInfo = new OrderInfo(title,phone,nick_name,no,setouttime,type,serviceType,set_out_flag,id,distance,
-                    yg_amount,startLatitude,startLongitude,endLatitude,endLongitude,reservationAddress,destination);
+            String remark = object.has("remark")? object.getString("remark"):"";
+            orderInfo = new OrderInfo(title,phone,nick_name,head_portrait,no,setouttime,type,serviceType,set_out_flag,id,distance,
+                    yg_amount,startLatitude,startLongitude,endLatitude,endLongitude,reservationAddress,destination,remark);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -950,4 +970,109 @@ public class BaseActivity extends AppCompatActivity {
         return stringServiceType;
     }
 
+    /**
+     * 获取SpeechSynthesizer
+     * @return
+     */
+    public SpeechSynthesizer getMySpeechSynthesizer()
+    {
+        SpeechSynthesizer speechSynthesizer = SpeechSynthesizer.createSynthesizer(this);
+        speechSynthesizer.setParameter(SpeechConstant.VOICE_NAME, "vixy");//发音人
+        speechSynthesizer.setParameter(SpeechConstant.SPEED, "50");//语速
+        speechSynthesizer.setParameter(SpeechConstant.VOLUME, "90");//音量
+        speechSynthesizer.setParameter(SpeechConstant.PITCH, "50");//音调
+        return speechSynthesizer;
+    }
+
+    /**
+     * 将时间戳转换为时间格式
+     * @param time
+     * @return
+     */
+    public String getDateToString(long time) {
+        Date d = new Date(time);
+        SimpleDateFormat sf = new SimpleDateFormat("MM月dd日 HH时mm分");
+        return sf.format(d);
+    }
+    /**
+     * 申请网络访问权限
+     */
+    public void permissionInternet(){
+        if (ContextCompat.checkSelfPermission(this, Str.INTERNET)
+                != PackageManager.PERMISSION_GRANTED) {
+            //申请android.permission.INTERNET权限
+            ActivityCompat.requestPermissions(this, new String[]{Str.INTERNET},Str.REQUEST_INTERNET);
+        }
+    }
+    public void permissionCallPhone(){
+        if (ContextCompat.checkSelfPermission(this, Str.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED) {
+            //申请android.permission.CALL_PHONE
+            ActivityCompat.requestPermissions(this, new String[]{Str.CALL_PHONE},Str.REQUEST_CALL_PHONE);
+        }
+    }
+
+    /**
+     * 申请定位权限
+     */
+    public void permissionLocation(){
+        if (ContextCompat.checkSelfPermission(this, Str.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            //申请android.permission.ACCESS_COARSE_LOCATION权限
+            ActivityCompat.requestPermissions(this, new String[]{Str.ACCESS_COARSE_LOCATION},Str.REQUEST_ACCESS_COARSE_LOCATION);
+        }
+        if (ContextCompat.checkSelfPermission(this, Str.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            //申请android.permission.ACCESS_FINE_LOCATION权限
+            ActivityCompat.requestPermissions(this, new String[]{Str.ACCESS_FINE_LOCATION},Str.REQUEST_ACCESS_FINE_LOCATION);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        Log.i(TAG, "onRequestPermissionsResult: "+permissions[0]);
+        Log.i(TAG, "onRequestPermissionsResult: "+grantResults[0]);
+    }
+
+    /**
+     * 定义圆形bitmap
+     * @param bitmap
+     * @param size 尺寸为原图的几分之几（如2：表示1/2）
+     * @return
+     */
+    public static Bitmap makeRoundCornerBitmap(Bitmap bitmap,int size)
+    {
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        int left = 0, top = 0, right = width, bottom = height;
+        float roundPx = height/2;
+        if (width > height) {
+            left = (width - height)/2;
+            top = 0;
+            right = left + height;
+            bottom = height;
+        } else if (height > width) {
+            left = 0;
+            top = (height - width)/2;
+            right = width;
+            bottom = top + width;
+            roundPx = width/2;
+        }
+        Log.i(TAG, "ps:"+ left +", "+ top +", "+ right +", "+ bottom);
+        Bitmap output = Bitmap.createBitmap(width/size, height/size, Bitmap.Config.ARGB_8888);//自定义为原尺寸一半
+        Canvas canvas = new Canvas(output);
+        int color = 0xff424242;
+        Paint paint = new Paint();
+        Rect rect = new Rect(left/size, top/size, right/size, bottom/size);//定义为原尺寸一半
+        RectF rectF = new RectF(rect);
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        canvas.drawRoundRect(rectF, roundPx, roundPx, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+        return output;
+    }
 }

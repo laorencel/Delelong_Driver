@@ -56,10 +56,11 @@ public class MyJPushReceiver extends BroadcastReceiver {
             //send the Registration Id to your server...
         } else if (JPushInterface.ACTION_MESSAGE_RECEIVED.equals(intent.getAction())) {
             Log.i(TAG, "[MyReceiver] 接收到推送下来的自定义消息: " + bundle.getString(JPushInterface.EXTRA_MESSAGE));
-            Log.i(TAG, "onReceive:111 "+JPushInterface.EXTRA_NOTIFICATION_TITLE);
-            Log.i(TAG, "onReceive:222 "+JPushInterface.EXTRA_TITLE);
-            processCustomMessage(context, bundle);
-            sendOrderMessage(context, bundle);
+            String title = bundle.getString(JPushInterface.EXTRA_TITLE);
+//            processCustomMessage(context, bundle);
+            if (title.equals("1")){//收到订单消息
+                sendOrderMessage(context, bundle);
+            }
         } else if (JPushInterface.ACTION_NOTIFICATION_RECEIVED.equals(intent.getAction())) {
             Log.i(TAG, "[MyReceiver] 接收到推送下来的通知");
             int notifactionId = bundle.getInt(JPushInterface.EXTRA_NOTIFICATION_ID);
@@ -141,9 +142,11 @@ public class MyJPushReceiver extends BroadcastReceiver {
         context.sendBroadcast(msgIntent);
     }
     private void sendOrderMessage(Context context, Bundle bundle){
+        String title = bundle.getString(JPushInterface.EXTRA_TITLE);
         String orderMessage = bundle.getString(JPushInterface.EXTRA_MESSAGE);
         String orderExtras = bundle.getString(JPushInterface.EXTRA_EXTRA);
         Intent orderIntent = new Intent(Str.ORDER_MESSAGE_RECEIVED_ACTION);
+        orderIntent.putExtra(Str.KEY_ORDER_TITLE, title);
         orderIntent.putExtra(Str.KEY_ORDER_MESSAGE, orderMessage);
         if (!ExampleUtil.isEmpty(orderExtras)) {
             try {

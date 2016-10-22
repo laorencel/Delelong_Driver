@@ -8,13 +8,13 @@ import java.io.Serializable;
 public class Str implements Serializable {
 
 
-//    private static final String URL_API = "http://121.40.142.141:8090/Jfinal/api";
-    private static final String URL_API = "http://192.168.4.110:8080/Jfinal/api";//（本地）
+    private static final String URL_API = "http://120.26.108.2:8080/Jfinal/api";
+//    private static final String URL_API = "http://192.168.4.110:8080/Jfinal/api";//（本地）
 
-//    public static final String URL_UPDATEFILE = "http://121.40.142.141:8090/Jfinal/file";//上传文件
-    public static final String URL_UPDATEFILE = "http://192.168.4.110:8080/Jfinal/file";//上传文件（本地）
-//    public static final String URL_SERVICE_IMAGEPATH = "http://121.40.142.141:8090/Jfinal/";//图片头地址
-    public static final String URL_SERVICE_IMAGEPATH = "http://192.168.4.110:8080/Jfinal/";//图片头地址（本地）
+    public static final String URL_UPDATEFILE = "http://120.26.108.2:8080/Jfinal/file";//上传文件
+//    public static final String URL_UPDATEFILE = "http://192.168.4.110:8080/Jfinal/file";//上传文件（本地）
+    public static final String URL_SERVICE_IMAGEPATH = "http://120.26.108.2:8080/Jfinal/";//图片头地址
+//    public static final String URL_SERVICE_IMAGEPATH = "http://192.168.4.110:8080/Jfinal/";//图片头地址（本地）
 
     public static final String URL_LOGIN = URL_API+"/login";
     public static final String URL_ONLINE = URL_API+"/driver/online";
@@ -24,6 +24,9 @@ public class Str implements Serializable {
     public static final String URL_MEMBER = URL_API+"/member";//获取会员信息
     public static final String URL_DRIVER_CARS = URL_API+"/driver/cars";//获取会员信息
     public static final String URL_LOGINOUT = URL_API+"/logout";//注销登陆
+
+    public static final String URL_TAKE_ORDER = URL_API+"/driver/grabsingle";//司机接单
+    public static final String URL_ORDER_START = URL_API+"/driver/orderStart";//订单行程开始
 
     public static final String URL_MODIFY = URL_API+"/update/password";//修改密码（记得密码）
     public static final String URL_REGISTER = URL_API+"/register";//注册
@@ -35,6 +38,7 @@ public class Str implements Serializable {
     public static final String URL_PLUS_CAR = URL_API+"/driver/car/plus";//增加车辆信息
     public static final String URL_GETCARINFO = URL_API+"/member/cars";//获取车辆列表
     public static final String URL_GETDRIVERINFO = URL_API+"/member/drivers";//获取代驾司机列表
+    public static final String URL_TOTAL_AMOUNT = URL_API+"/order/totalAmount";//计算总价格
     public static final String FILEPATH = "/sdcard/DianDian/Image/";//文件本地地址
     public static final String ADIMAGEPATH = "/sdcard/DianDian/Image/adimage.jpg";//广告文件本地地址
     public static final String ADIMAGEPATH_START = "/sdcard/DianDian/Image/Start/";//启动页广告文件本地地址（父目录）
@@ -82,4 +86,15 @@ public class Str implements Serializable {
     public static final String ORDER_MESSAGE_RECEIVED_ACTION = "com.delelong.diandiandriver.ORDER_MESSAGE_RECEIVED_ACTION";
     public static final String KEY_ORDER_MESSAGE = "order_message";
     public static final String KEY_ORDER_EXTRA = "order_extra";
+    public static final String KEY_ORDER_TITLE = "order_title";
+
+    public static final String INTERNET="android.permission.INTERNET";
+    public static final int REQUEST_INTERNET = 10;
+    public static final String CALL_PHONE="android.permission.CALL_PHONE";
+    public static final int REQUEST_CALL_PHONE = 11;
+    public static final String ACCESS_COARSE_LOCATION="android.permission.ACCESS_COARSE_LOCATION";
+    public static final int REQUEST_ACCESS_COARSE_LOCATION = 12;
+    public static final String ACCESS_FINE_LOCATION="android.permission.ACCESS_FINE_LOCATION";
+    public static final int REQUEST_ACCESS_FINE_LOCATION = 13;
+    public static final int REQUEST_CONFIRM_AMOUNT = 20;
 }

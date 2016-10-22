@@ -218,7 +218,9 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
                 ((ViewGroup) view.getParent()).removeView(view);
             }
         }
-
+        if (activity != null){
+            activity.permissionLocation();
+        }
         setUpMap();
     }
 
@@ -261,7 +263,6 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
         aMap.setLocationSource(this);// 设置定位监听
         aMap.setMyLocationEnabled(true);// 设置为true表示显示定位层并可触发定位，false表示隐藏定位层并不可触发定位，默认是false
 
-
         setRouteSearchListner();
         setMyOrientationListener();
         setMyCameraChangeListener();
@@ -275,7 +276,6 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
         mRouteSearch = new RouteSearch(context);
         myRouteSearchListener = new MyRouteSearchListener(aMap, context);
         mRouteSearch.setRouteSearchListener(myRouteSearchListener);
-        Log.i(TAG, "setRouteSearchListner: 1111");
         myRouteSearchListener.getDrivePathListener(new MyRouteSearchListener.MyDrivePathListener() {
             @Override
             public void getDrivePath(DrivePath drivePath) {
@@ -358,7 +358,7 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
 
                 //判断是否上传位置
                 if (mAMapLocation != null) {
-                    upDateLocation();
+                    upDateLocation(false);
                 }
                 mAMapLocation = aMapLocation;
                 activity.getMyLocation(aMapLocation);//回调接口，传值给activity
@@ -372,6 +372,7 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
                 if (isFirstIn) {
 //                    activity.centerToMyLocation(aMap, mLocationClient, myOrientationListener, mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
                     startLat = new LatLng(mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
+                    upDateLocation(true);
                     isFirstIn = false;
                 }
             } else {
@@ -398,17 +399,26 @@ public class AMapFrag extends Fragment implements View.OnClickListener, Location
 
     /**
      * 上传会员位置(判断与原位置相差10米)
+     * @param update 是否强制上传
      */
-    private void upDateLocation() {
+    private void upDateLocation(boolean update) {
         endLat = new LatLng(mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
         float distance = AMapUtils.calculateLineDistance(startLat, endLat);
-        if (distance > 10) {
-            startLat = new LatLng(endLat.latitude, endLat.longitude);
-            //上传位置
-            ClientLocationInfo locationInfo = new ClientLocationInfo(mAMapLocation.getLongitude() + "",
-                    mAMapLocation.getLatitude() + "", mAMapLocation.getSpeed() + "", mCurrentX + "", mAMapLocation.getLocationType());
-            List<String> list = myHttpUtils.upDateLocation(Str.URL_UPDATELOCATION_DRIVER, locationInfo);
+        if (update){
+            upDateLocation();
+        }else {
+            if (distance > 10) {
+                Log.i(TAG, "upDateLocation: ");
+                startLat = new LatLng(endLat.latitude, endLat.longitude);
+                //上传位置
+                upDateLocation();
+            }
         }
+    }
+    private void upDateLocation(){
+        ClientLocationInfo locationInfo = new ClientLocationInfo(mAMapLocation.getLongitude() + "",
+                mAMapLocation.getLatitude() + "", mAMapLocation.getSpeed() + "", mCurrentX + "", mAMapLocation.getLocationType());
+        List<String> list = myHttpUtils.upDateLocation(Str.URL_UPDATELOCATION_DRIVER, locationInfo);
     }
 
     @Override
