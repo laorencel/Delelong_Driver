@@ -29,6 +29,7 @@ public class SettingActivity extends BaseActivity implements View.OnClickListene
     }
     FragmentManager fragmentManager;
     ForgotFrag forgotFrag;
+
     private void initFragment() {
         fragmentManager = getFragmentManager();
         forgotFrag = new ForgotFrag();

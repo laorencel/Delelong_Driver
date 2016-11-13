@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.delelong.diandiandriver.DriverActivity;
@@ -21,6 +22,7 @@ import com.delelong.diandiandriver.LoginActivity;
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.Str;
 import com.delelong.diandiandriver.http.MyHttpUtils;
+import com.delelong.diandiandriver.menuActivity.MyLawActivity;
 import com.delelong.diandiandriver.utils.MD5;
 import com.delelong.diandiandriver.utils.ToastUtil;
 
@@ -47,7 +49,9 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
 
     EditText edt_phone, edt_pwd;
     Button btn_login;
-    CheckBox chb_agree_service,chb_remember;//同意服务，记住密码
+    CheckBox chb_agree_service, chb_remember;//同意服务，记住密码
+    TextView tv_law;
+
     /**
      * 初始化view
      */
@@ -60,25 +64,30 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
         chb_agree_service = (CheckBox) view.findViewById(R.id.chb_agree_service);
         chb_remember = (CheckBox) view.findViewById(R.id.chb_remember);
 
+        tv_law = (TextView) view.findViewById(R.id.tv_law);
+        tv_law.setOnClickListener(this);
         //如果以前有登陆过，获取登陆的手机号
         preferences = getActivity().getSharedPreferences("user", Context.MODE_PRIVATE);
         String preferenceName = preferences.getString("phone", null);
         if (preferenceName != null) {
             edt_phone.setText(preferenceName);
-            if (preferences.getBoolean("rememberPwd",false)){
-                edt_pwd.setText(preferences.getString("pwd_edt",null));
+            if (preferences.getBoolean("rememberPwd", false)) {
+                chb_remember.setChecked(true);
+                edt_pwd.setText(preferences.getString("pwd_edt", null));
             }
         }
+        chb_agree_service.setChecked(true);
     }
 
     String phone, pwd_edt, pwd;
     SharedPreferences preferences;
+
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_login:
-                if (!chb_agree_service.isChecked()){
-                    ToastUtil.show(getActivity(),"未同意《服务人员合作协议》");
+                if (!chb_agree_service.isChecked()) {
+                    ToastUtil.show(getActivity(), "未同意《服务人员合作协议》");
                     return;
                 }
                 preferences.edit()
@@ -88,6 +97,9 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
                 pwd_edt = edt_pwd.getText().toString();
                 pwd = MD5.getMD5Str(pwd_edt);
                 login();
+                break;
+            case R.id.tv_law:
+                startActivity(new Intent(activity, MyLawActivity.class));
                 break;
         }
     }
@@ -107,6 +119,9 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
             } else {
                 MyHttpUtils myHttpUtils = new MyHttpUtils(activity);
                 List<String> result = myHttpUtils.login(Str.URL_LOGIN, phone, pwd);
+                if (result == null){
+                    return;
+                }
                 if (result.get(0).equals("OK")) {
                     LoginActivity finish = (LoginActivity) getActivity();
                     startActivity(new Intent(getActivity(), DriverActivity.class));
@@ -114,25 +129,26 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
                     setPreferences(result);
                     finish.finish();
                 } else if (result.get(0).equals("ERROR")) {
-                    Toast.makeText(getActivity(), "登陆出错,请重新登陆", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(), "登陆出错," + result.get(1), Toast.LENGTH_SHORT).show();
                     return;
-                }else if (result.get(0).equals("FAILURE")) {
-                    Toast.makeText(getActivity(), "登陆失败,请重新登陆", Toast.LENGTH_SHORT).show();
+                } else if (result.get(0).equals("FAILURE")) {
+                    Toast.makeText(getActivity(), "登陆失败," + result.get(1), Toast.LENGTH_SHORT).show();
                     return;
                 }
             }
         }
     }
-    public void setPreferences(List<String> result){
+
+    public void setPreferences(List<String> result) {
         boolean firstLogin = false;
-        int loginTimes = preferences.getInt("loginTimes",0);
+        int loginTimes = preferences.getInt("loginTimes", 0);
         preferences.edit()
                 .putString("token", result.get(2))
                 .putString("sercet", result.get(3))
                 .putString("phone", phone)
                 .putString("pwd", pwd)
                 .putString("pwd_edt", pwd_edt)
-                .putInt("loginTimes",++loginTimes)
+                .putInt("loginTimes", ++loginTimes)
                 .putBoolean("firstLogin", firstLogin)
                 .commit();
     }

@@ -13,10 +13,10 @@
 
         <ImageButton
             android:id="@+id/arrow_back"
-            android:layout_width="12dp"
-            android:layout_height="18dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:layout_centerVertical="true"
-            android:background="@drawable/back_arrow_alpha_b" />
+            android:background="@drawable/arr_right_white" />
 
         <TextView
             android:id="@+id/tv_modifyInfo"

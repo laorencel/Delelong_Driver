@@ -9,6 +9,10 @@ import java.io.Serializable;
 public class OrderInfo implements Serializable{
 
     private int title;//自定义消息的类型
+    private int status;//订单状态
+    private int timeOut;//订单超时时间，设置dialog多少秒自动消失
+    private int car_id;//如未完成的订单会有carId
+    private int waitMinutes;//等待时间
     private String phone;//手机号
     private String nick_name;//昵称
     private String head_portrait;//头像地址
@@ -42,7 +46,7 @@ public class OrderInfo implements Serializable{
      * @param serviceType 服务项（小分类）
      * @param set_out_flag 是否是预约
      * @param id 主键
-     * @param distance 订单距离
+     * @param distance 订单距离（千米）
      * @param yg_amount 预算费用
      * @param startLatitude
      * @param startLongitude
@@ -51,8 +55,9 @@ public class OrderInfo implements Serializable{
      * @param reservationAddress 预约地址(地址信息不是adcode)
      * @param destination 目的地(地址信息不是adcode)
      */
-    public OrderInfo(int title, String phone, String nick_name,String head_portrait, String no, String setouttime, String type, String serviceType, boolean set_out_flag, long id, double distance, double yg_amount, double startLatitude, double startLongitude, double endLatitude, double endLongitude, String reservationAddress, String destination,String remark) {
+    public OrderInfo(int title, int status,String phone, String nick_name,String head_portrait, String no, String setouttime, String type, String serviceType, boolean set_out_flag, long id, double distance, double yg_amount, double startLatitude, double startLongitude, double endLatitude, double endLongitude, String reservationAddress, String destination,String remark) {
         this.title = title;
+        this.status = status;
         this.phone = phone;
         this.nick_name = nick_name;
         this.head_portrait = head_portrait;
@@ -79,6 +84,38 @@ public class OrderInfo implements Serializable{
 
     public void setTitle(int title) {
         this.title = title;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public int getTimeOut() {
+        return timeOut;
+    }
+
+    public void setTimeOut(int timeOut) {
+        this.timeOut = timeOut;
+    }
+
+    public int getCar_id() {
+        return car_id;
+    }
+
+    public int getWaitMinutes() {
+        return waitMinutes;
+    }
+
+    public void setWaitMinutes(int waitMinutes) {
+        this.waitMinutes = waitMinutes;
+    }
+
+    public void setCar_id(int car_id) {
+        this.car_id = car_id;
     }
 
     public String getPhone() {
@@ -229,6 +266,7 @@ public class OrderInfo implements Serializable{
     public String toString() {
         return "OrderInfo{" +
                 "title=" + title +
+                ", car_id=" + car_id +
                 ", phone='" + phone + '\'' +
                 ", nick_name='" + nick_name + '\'' +
                 ", head_portrait='" + head_portrait + '\'' +

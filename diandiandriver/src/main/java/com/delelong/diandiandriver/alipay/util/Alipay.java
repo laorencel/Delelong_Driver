@@ -113,6 +113,35 @@ public class Alipay {
      * 支付宝支付业务
      *
      */
+    public void payV2(final String orderInfo) {
+        if (TextUtils.isEmpty(APPID) || TextUtils.isEmpty(RSA_PRIVATE)) {
+            new AlertDialog.Builder(MyApp.getInstance()).setTitle("警告").setMessage("需要配置APPID | RSA_PRIVATE")
+                    .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialoginterface, int i) {
+                            //
+                        }
+                    }).show();
+            return;
+        }
+
+        Runnable payRunnable = new Runnable() {
+
+            @Override
+            public void run() {
+                PayTask alipay = new PayTask(activity);
+                Map<String, String> result = alipay.payV2(orderInfo, true);
+                Log.i("msp", result.toString());
+
+                Message msg = new Message();
+                msg.what = SDK_PAY_FLAG;
+                msg.obj = result;
+                mHandler.sendMessage(msg);
+            }
+        };
+
+        Thread payThread = new Thread(payRunnable);
+        payThread.start();
+    }
     public void payV2() {
         if (TextUtils.isEmpty(APPID) || TextUtils.isEmpty(RSA_PRIVATE)) {
             new AlertDialog.Builder(MyApp.getInstance()).setTitle("警告").setMessage("需要配置APPID | RSA_PRIVATE")

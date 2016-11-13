@@ -101,11 +101,14 @@ public class CertificationActivity extends BaseActivity implements TextWatcher, 
                 client.setReal_name(name);
                 client.setCertificate_no(certificateNo);
                 List<String> result = myHttpUtils.upDateClient(Str.URL_UPDATECLIENT, client);
+                if (result == null){
+                    return;
+                }
                 if (result.get(0).equalsIgnoreCase("OK")) {
                     ToastUtil.show(this,"提交成功");
                     finish();
                 } else {
-                    ToastUtil.show(this,"提交失败，请重新再试");
+                    ToastUtil.show(this,"提交失败，"+result.get(1));
                     return;
                 }
                 break;

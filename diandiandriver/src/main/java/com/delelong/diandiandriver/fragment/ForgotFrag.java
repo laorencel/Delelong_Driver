@@ -4,6 +4,8 @@ import android.app.Fragment;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.text.InputType;
 import android.util.Log;
@@ -21,6 +23,7 @@ import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.Str;
 import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.utils.MD5;
+import com.delelong.diandiandriver.utils.ToastUtil;
 
 import java.util.List;
 
@@ -30,6 +33,41 @@ import java.util.List;
 public class ForgotFrag extends Fragment implements View.OnClickListener{
 
     private static final String TAG = "BAIDUMAPFORTEST";
+
+    MyHttpUtils myHttpUtils;
+    private static final int SEND_VERIFICATION = 0;//开始发送验证码
+    private static final int END_VERIFICATION = 1;//验证码结束
+    int verificationTime = 60;
+    Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what){
+                case SEND_VERIFICATION:
+                    if (verificationTime>0){
+                        verificationTime--;
+                    }
+                    if (verificationTime> 0 ){
+                        btn_verificationCode.setTextSize(12);
+                        btn_verificationCode.setText(verificationTime+"s后重发");
+                    }else {
+                        handler.sendEmptyMessage(END_VERIFICATION);
+                    }
+                    break;
+                case END_VERIFICATION:
+                    verificationTime = 60;
+                    if (handler.hasMessages(SEND_VERIFICATION)){
+                        Log.i(TAG, "handleMessage: ");
+                        handler.removeMessages(SEND_VERIFICATION);
+                    }
+                    btn_verificationCode.setTextSize(15);
+                    btn_verificationCode.setText("获 取");
+                    btn_verificationCode.setBackgroundResource(R.drawable.bg_edt_register);
+                    btn_verificationCode.setClickable(true);
+                    break;
+            }
+        }
+    };
     View view;
     @Nullable
     @Override
@@ -86,14 +124,21 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
                     Toast.makeText(activity, "请填写完整手机号", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                postForVerification();
-                Log.i(TAG, "onClick: ");
+                List<String> resultForVerific = myHttpUtils.getVerification(Str.URL_SMSCODE, phone, Str.VERIFICATION_TYPE_REGISTER);
+                if (resultForVerific == null||resultForVerific.size()== 0){
+                    return;
+                }
+                if (resultForVerific.get(0).equalsIgnoreCase("OK")){
+                    btn_verificationCode.setTextSize(12);
+                    btn_verificationCode.setText("60s后重发");
+                    btn_verificationCode.setBackgroundResource(R.drawable.bg_edt_register_1);
+                    btn_verificationCode.setClickable(false);
+                    sendMsgDelayed();
+                }
                 if (resultForVerific.get(0).equals("FAILURE")) {
                     //失败 重新获取
-                    postForVerification();
-                    if (resultForVerific.get(0).equals("FAILURE")) {
-                        Toast.makeText(activity, "获取失败，请稍后重试", Toast.LENGTH_SHORT).show();
-                    }
+                    Toast.makeText(activity, resultForVerific.get(1), Toast.LENGTH_SHORT).show();
+                    return;
                 }
                 break;
             case R.id.btn_confirm:
@@ -117,6 +162,10 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
                 MyHttpUtils myHttpUtils = new MyHttpUtils(activity);
 //                resultForReset = activity.resetPwd(URL_FORGOT, phone, verificationCode, pwd, rePwd);
                 resultForReset = myHttpUtils.resetPwd(Str.URL_FORGOT, phone, verificationCode, pwd, rePwd);
+                if (resultForReset == null||resultForReset.size() == 0){
+                    ToastUtil.show(activity,"抱歉，未获取到数据");
+                    return;
+                }
                 if (resultForReset.get(0).equals("FAILURE")) {
                     resultForReset = myHttpUtils.resetPwd(Str.URL_FORGOT, phone, verificationCode, pwd, rePwd);
                     if (resultForReset.get(0).equals("FAILURE")) {
@@ -144,7 +193,15 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
                 break;
         }
     }
-
+    private void sendMsgDelayed(){
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                handler.sendEmptyMessage(SEND_VERIFICATION);
+                handler.postDelayed(this,1000);
+            }
+        });
+    }
     private boolean showPwd;
     /**
      * 切换显示密码
@@ -163,28 +220,6 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
         }
         showPwd = !showPwd;
     }
-    private void postForVerification() {
-        MyHttpRun code = new MyHttpRun();
-        Thread thread = new Thread(code);
-        thread.start();
-        try {
-            thread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    List<String> resultForVerific;
-
-    public class MyHttpRun implements Runnable {
-        @Override
-        public void run() {
-            MyHttpUtils myHttpUtils = new MyHttpUtils(activity);
-            //type:(1:注册;2:忘记密码;3:更换手机号;)
-//            resultForVerific =activity.getHttpResultForVerification(URL_SMSCODE, phone, TYPE_RESET);
-            resultForVerific = myHttpUtils.getVerification(Str.URL_SMSCODE, phone, Str.VERIFICATION_TYPE_RESET);
-        }
-    }
     LoginActivity activity;
     SharedPreferences preferences;
 
@@ -192,6 +227,7 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         activity = (LoginActivity) getActivity();
+        myHttpUtils = new MyHttpUtils(activity);
         preferences = activity.getSharedPreferences("user", Context.MODE_PRIVATE);
     }
 }

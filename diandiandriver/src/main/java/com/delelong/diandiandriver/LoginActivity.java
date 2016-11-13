@@ -74,14 +74,6 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener{
                         .commit();
                 break;
             case R.id.tv_register:
-//                fragmentManager.beginTransaction()
-////                        .setCustomAnimations(R.anim.frag_in,0,0,R.anim.frag_out)
-//                        .add(R.id.rl3,registerFrag,"registerFrag")
-//                        .hide(loginFrag)
-//                        .hide(forgotFrag)
-//                        .show(registerFrag)
-//                        .addToBackStack(null)
-//                        .commit();
                 startActivity(new Intent(this, RegisterActivity.class));
                 break;
         }

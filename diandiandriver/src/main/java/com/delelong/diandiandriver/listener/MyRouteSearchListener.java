@@ -64,10 +64,10 @@ public class MyRouteSearchListener implements RouteSearch.OnRouteSearchListener 
                         drivingRouteOverlay.setIsColorfulline(true);//是否用颜色展示交通拥堵情况，默认true
                         drivingRouteOverlay.removeFromMap();
                         drivingRouteOverlay.addToMap();
-//                        drivingRouteOverlay.zoomToSpan();
+                        drivingRouteOverlay.zoomToSpan();
                     }
-                    int dis = (int) drivePath.getDistance();//行驶里程
-                    int dur = (int) drivePath.getDuration();//行驶时间
+                    int dis = (int) drivePath.getDistance();//行驶里程（单位：米）
+                    int dur = (int) drivePath.getDuration();//行驶时间（单位：秒）
                     String des = AMapUtil.getFriendlyTime(dur) + "(" + AMapUtil.getFriendlyLength(dis) + ")";
                     int taxiCost = (int) driveRouteResult.getTaxiCost();
                     Log.i(TAG, "onDriveRouteSearched: " + des + "//" + taxiCost);

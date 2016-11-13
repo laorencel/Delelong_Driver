@@ -1,6 +1,7 @@
 package com.delelong.diandiandriver;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -18,7 +19,9 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -52,12 +55,12 @@ import android.widget.RelativeLayout;
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.maps.AMap;
-import com.amap.api.maps.CameraUpdate;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.model.LatLng;
 import com.delelong.diandiandriver.bean.ADBean;
 import com.delelong.diandiandriver.bean.Client;
 import com.delelong.diandiandriver.bean.Driver;
+import com.delelong.diandiandriver.bean.MyNotificationInfo;
 import com.delelong.diandiandriver.bean.OrderInfo;
 import com.delelong.diandiandriver.bean.Str;
 import com.delelong.diandiandriver.dialog.MyDialogUtils;
@@ -66,6 +69,7 @@ import com.delelong.diandiandriver.listener.MyOrientationListener;
 import com.delelong.diandiandriver.pace.MyAMapLocation;
 import com.delelong.diandiandriver.utils.ExampleUtil;
 import com.delelong.diandiandriver.utils.SystemUtils;
+import com.delelong.diandiandriver.utils.TipHelper;
 import com.delelong.diandiandriver.utils.ToastUtil;
 import com.flyco.animation.BaseAnimatorSet;
 import com.flyco.animation.BounceEnter.BounceTopEnter;
@@ -79,8 +83,6 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
-import com.iflytek.cloud.speech.SpeechConstant;
-import com.iflytek.cloud.speech.SpeechSynthesizer;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -95,6 +97,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -117,7 +120,7 @@ public class BaseActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);//禁止横屏
         getSupportActionBar().hide();
         initJPush();
-        setWindowBar();
+//        setWindowBar();
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
@@ -303,7 +306,11 @@ public class BaseActivity extends AppCompatActivity {
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm == null) {
         } else {
-            return cm.getActiveNetworkInfo().isAvailable();
+            NetworkInfo networkInfo = cm.getActiveNetworkInfo();
+            if (networkInfo == null) {
+            } else {
+                return networkInfo.isAvailable();
+            }
             //如果仅仅是用来判断网络连接
             //则可以使用 cm.getActiveNetworkInfo().isAvailable();
 //            NetworkInfo[] info = cm.getAllNetworkInfo();
@@ -351,9 +358,12 @@ public class BaseActivity extends AppCompatActivity {
                 mLocationClient.startLocation();
             }
         }
+        if (aMap == null || mLocationClient == null || myOrientationListener == null) {
+            return;
+        }
         LatLng latLng = new LatLng(myLatitude, myLongitude);
-        CameraUpdate update = CameraUpdateFactory.zoomTo(15);
-        aMap.animateCamera(update);
+//        CameraUpdate update = CameraUpdateFactory.zoomTo(18);
+//        aMap.animateCamera(update);
         aMap.animateCamera(CameraUpdateFactory.changeLatLng(latLng));
     }
 
@@ -363,11 +373,13 @@ public class BaseActivity extends AppCompatActivity {
         intent.putExtra("city", city);
         startActivityForResult(intent, requestCode);
     }
+
     public <T> void intentActivityWithBundleForResult(Context context, Class<T> tClass, int requestCode, Bundle bundle) {
         Intent intent = new Intent(context, tClass);
         intent.putExtra("bundle", bundle);
         startActivityForResult(intent, requestCode);
     }
+
     /**
      * 带bundle的界面跳转
      *
@@ -406,9 +418,16 @@ public class BaseActivity extends AppCompatActivity {
     public void downloadStartAD(AMapLocation aMapLocation) {
         SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
         String last_update_start = preferences.getString("last_update_start", "null");
-
+        ADBean adBean_start = null;
         MyHttpUtils myHttpUtils = new MyHttpUtils(this);
-        ADBean adBean_start = myHttpUtils.getADBeanByGET(Str.URL_AD, aMapLocation.getAdCode(), 1);
+        if (aMapLocation.getAdCode() != null) {
+            adBean_start = myHttpUtils.getADBeanByGET(Str.URL_AD, aMapLocation.getAdCode(), 1);
+            if (adBean_start == null) {
+                return;
+            }
+        } else {
+            return;
+        }
 
         ADBean.ADInfo adInfo = adBean_start.getAdInfos().get(0);
 
@@ -429,12 +448,12 @@ public class BaseActivity extends AppCompatActivity {
             if (!file.exists()) {
                 try {
                     file.createNewFile();
+                    myHttpUtils.createImage(Str.ADIMAGEPATH_START + i + ".JPEG",
+                            myHttpUtils.downloadImage(Str.URL_SERVICE_IMAGEPATH + pic));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-            myHttpUtils.createImage(Str.ADIMAGEPATH_START + i + ".JPEG",
-                    myHttpUtils.downloadImage(Str.URL_SERVICE_IMAGEPATH + pic));
         }
     }
 
@@ -443,7 +462,9 @@ public class BaseActivity extends AppCompatActivity {
         String last_update_main = preferences.getString("last_update_main", "null");
         MyHttpUtils myHttpUtils = new MyHttpUtils(this);
         ADBean adBean_main = myHttpUtils.getADBeanByGET(Str.URL_AD, aMapLocation.getAdCode(), 2);
-
+        if (adBean_main == null) {
+            return;
+        }
         ADBean.ADInfo adInfo = adBean_main.getAdInfos().get(0);
 
         if (adInfo.getLast_update().equals(last_update_main)) {
@@ -462,13 +483,13 @@ public class BaseActivity extends AppCompatActivity {
             if (!file.exists()) {
                 try {
                     file.createNewFile();
+                    String pic = adInfo.getPics().get(i);
+                    myHttpUtils.createImage(Str.ADIMAGEPATH_MAIN + i + ".JPEG",
+                            myHttpUtils.downloadImage(Str.URL_SERVICE_IMAGEPATH + pic));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-            String pic = adInfo.getPics().get(i);
-            myHttpUtils.createImage(Str.ADIMAGEPATH_MAIN + i + ".JPEG",
-                    myHttpUtils.downloadImage(Str.URL_SERVICE_IMAGEPATH + pic));
         }
     }
 
@@ -489,12 +510,16 @@ public class BaseActivity extends AppCompatActivity {
             Log.i(TAG, "createImage: " + "保存图片" + fileName);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+            return null;
         } finally {
             try {
-                fileOutputStream.flush();
-                fileOutputStream.close();
+                if (fileOutputStream != null) {
+                    fileOutputStream.flush();
+                    fileOutputStream.close();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
+                return null;
             }
         }
         return path;
@@ -625,7 +650,9 @@ public class BaseActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(mMessageReceiver);
+        if (mMessageReceiver != null) {
+            unregisterReceiver(mMessageReceiver);
+        }
     }
 
     private void initJPush() {
@@ -832,6 +859,7 @@ public class BaseActivity extends AppCompatActivity {
         }
         MyHttpUtils myHttpUtils = new MyHttpUtils(this);
         driver.setCompany(aMapLocation.getAdCode());
+        Log.i(TAG, "updateAdCode: "+aMapLocation.getAdCode()+"//"+driver.getCompany());
         myHttpUtils.setAdcodeByGET(Str.URL_UPDATEADCODE, driver);
     }
 
@@ -851,7 +879,7 @@ public class BaseActivity extends AppCompatActivity {
     /**
      * 注销登陆dialog
      */
-    public void NormalDialogCustomAttr() {
+    public void NormalDialogCustomAttr(final Activity activity, final boolean isInOrder) {
         BaseAnimatorSet bas_in = new BounceTopEnter();
         BaseAnimatorSet bas_out = new SlideBottomExit();
         Log.i(TAG, "NormalDialogCustomAttr: ");
@@ -881,11 +909,20 @@ public class BaseActivity extends AppCompatActivity {
                 new OnBtnClickL() {
                     @Override
                     public void onBtnClick() {
+                        if (isInOrder) {
+                            ToastUtil.show(BaseActivity.this, "您正处于接单状态，请处理完订单再下线");
+                            return;
+                        }
                         MyHttpUtils myHttpUtils = new MyHttpUtils(BaseActivity.this);
                         List<String> loginOutResult = myHttpUtils.getLoginOutResultByGET(Str.URL_LOGINOUT);
+                        if (loginOutResult == null) {
+                            return;
+                        }
                         if (loginOutResult.get(0).equalsIgnoreCase("OK")) {
                             ToastUtil.show(BaseActivity.this, "注销登陆");
                             dialog.dismiss();
+                            activity.startActivity(new Intent(activity, LoginActivity.class));
+                            activity.finish();
                         } else {
                             ToastUtil.show(BaseActivity.this, "注销登陆失败，请重试一次");
                         }
@@ -893,99 +930,139 @@ public class BaseActivity extends AppCompatActivity {
                 });
     }
 
-    public OrderInfo getOrderInfo(String orderMessage){
+    public List<OrderInfo> checkOrders(int count) {
+        List<OrderInfo> orderInfos = null;
+        if (count == 1) {
+            OrderInfo orderInfo1 = getOrderInfoFromReceiver("{\"createTime\":1477189489000,\"reservationAddress\":\"爆爆椒香辣虾(红星路店)\",\"phone\":\"18110932720\",\"ygAmount\":23.00,\"otherCharges\":0.00,\"remark\":\"通过APP下单\",\"no\":\"DELL20161023102449VXBXFT\",\"yhAmount\":0.00,\"setouttime\":1477189489000,\"type\":4,\"nick_name\":\"鱼鱼\",\"id\":515,\"amount\":0.00,\"baseAmount\":0.00,\"distance\":6.20,\"head_portrait\":\"attachment/2016/10/10/dd3e615c-aa68-4811-ac7d-e84930abe24b.jpg\",\"realPay\":0.00,\"remoteFee\":0.00,\"trip\":{\"member\":27,\"startLongitude\":117.291583,\"endLatitude\":31.828436,\"startLatitude\":31.859931,\"endLongitude\":117.264221,\"orderId\":515},\"roadToll\":0.00,\"fromType\":1,\"member\":27,\"status\":1,\"distanceAmount\":0.00,\"pdFlag\":true,\"timeOutAmount\":0.00,\"waitAmount\":0.00,\"serviceType\":1,\"destination\":\"庐州太太(南七店)\",\"payStatus\":6,\"company\":2,\"setOutFlag\":false,\"delFlag\":false}");
+            if (orderInfo1 != null) {
+                orderInfos = new ArrayList<>();
+                orderInfos.add(orderInfo1);
+            }
+        } else {
+            OrderInfo orderInfo1 = getOrderInfoFromReceiver("{\"createTime\":1477189489000,\"reservationAddress\":\"爆爆椒香辣虾(红星路店)\",\"phone\":\"18110932720\",\"ygAmount\":23.00,\"otherCharges\":0.00,\"remark\":\"通过APP下单\",\"no\":\"DELL20161023102449VXBXFT\",\"yhAmount\":0.00,\"setouttime\":1477189489000,\"type\":4,\"nick_name\":\"鱼鱼\",\"id\":515,\"amount\":0.00,\"baseAmount\":0.00,\"distance\":6.20,\"head_portrait\":\"attachment/2016/10/10/dd3e615c-aa68-4811-ac7d-e84930abe24b.jpg\",\"realPay\":0.00,\"remoteFee\":0.00,\"trip\":{\"member\":27,\"startLongitude\":117.291583,\"endLatitude\":31.828436,\"startLatitude\":31.859931,\"endLongitude\":117.264221,\"orderId\":515},\"roadToll\":0.00,\"fromType\":1,\"member\":27,\"status\":1,\"distanceAmount\":0.00,\"pdFlag\":true,\"timeOutAmount\":0.00,\"waitAmount\":0.00,\"serviceType\":1,\"destination\":\"庐州太太(南七店)\",\"payStatus\":6,\"company\":2,\"setOutFlag\":false,\"delFlag\":false}");
+            OrderInfo orderInfo2 = getOrderInfoFromReceiver("{\"createTime\":1477192877000,\"reservationAddress\":\"傣妹火锅(站前路店)\",\"phone\":\"18110932720\",\"ygAmount\":23.00,\"otherCharges\":0.00,\"remark\":\"通过APP下单\",\"no\":\"DELL20161023112117DNMIRJ\",\"yhAmount\":0.00,\"setouttime\":1477192877000,\"type\":4,\"nick_name\":\"鱼鱼\",\"id\":516,\"amount\":0.00,\"baseAmount\":0.00,\"distance\":7.60,\"head_portrait\":\"attachment/2016/10/10/dd3e615c-aa68-4811-ac7d-e84930abe24b.jpg\",\"realPay\":0.00,\"remoteFee\":0.00,\"trip\":{\"member\":27,\"startLongitude\":117.311884,\"endLatitude\":31.85519,\"startLatitude\":31.88466,\"endLongitude\":117.256066,\"orderId\":516},\"roadToll\":0.00,\"fromType\":1,\"member\":27,\"status\":1,\"distanceAmount\":0.00,\"pdFlag\":true,\"timeOutAmount\":0.00,\"waitAmount\":0.00,\"serviceType\":1,\"destination\":\"刘一手火锅(三里庵店)\",\"payStatus\":6,\"company\":2,\"setOutFlag\":false,\"delFlag\":false}");
+            if (orderInfo1 != null) {
+                orderInfos = new ArrayList<>();
+                orderInfos.add(orderInfo1);
+            }
+            if (orderInfo2 != null) {
+                if (orderInfos == null) {
+                    orderInfos = new ArrayList<>();
+                }
+                orderInfos.add(orderInfo2);
+            }
+        }
+        return orderInfos;
+    }
+
+
+    public OrderInfo getOrderInfoFromReceiver(String orderMessage) {
         OrderInfo orderInfo = null;
         try {
             JSONObject object = new JSONObject(orderMessage);
-            int title = object.has("title")? Ints.tryParse(object.getString("title")):1;
-            String  phone = object.has("phone")? object.getString("phone"):"";
-            String nick_name = object.has("nick_name")? object.getString("nick_name"):"";
-            String head_portrait = object.has("head_portrait")? object.getString("head_portrait"):"";
-            String no = object.has("no")? object.getString("no"):"";
-            String setouttime = object.has("setouttime")? object.getString("setouttime"):"";
-            int type_ = object.has("type")? Ints.tryParse(object.getString("type")):4;
-            String type = type2String(type_);
-            int serviceType_ = object.has("type")? Ints.tryParse(object.getString("type")):1;
-            String serviceType =serviceType2String(serviceType_);
-            boolean set_out_flag = object.has("setOutFlag")? object.getBoolean("setOutFlag"):false;
-            long id = object.has("id")? Longs.tryParse(object.getString("id")):0;
-            double distance = object.has("distance")? Doubles.tryParse(object.getString("distance")):0;
-            double yg_amount = object.has("ygAmount")? Doubles.tryParse(object.getString("ygAmount")):0;
+            int title = object.has("title") ? Ints.tryParse(object.getString("title")) : 1;
+            int status = object.has("status") ? Ints.tryParse(object.getString("status")) : 1;
+            int timeOut = object.has("timeOut") ? Ints.tryParse(object.getString("timeOut")) : 30;
+            String phone = object.has("phone") ? object.getString("phone") : "";
+            String nick_name = object.has("nick_name") ? object.getString("nick_name") : "";
+            String head_portrait = object.has("head_portrait") ? object.getString("head_portrait") : "";
+            String no = object.has("no") ? object.getString("no") : "";
+            String setouttime = object.has("setouttime") ? object.getString("setouttime") : "";
+            int type_ = object.has("type") ? Ints.tryParse(object.getString("type")) : 4;
+            int serviceType_ = object.has("serviceType") ? Ints.tryParse(object.getString("serviceType")) : 1;
+            String type = type2String(type_);//小分类
+            String serviceType = serviceType2String(serviceType_);//大分类
+            boolean set_out_flag = object.has("setOutFlag") ? object.getBoolean("setOutFlag") : false;
+            long id = object.has("id") ? Longs.tryParse(object.getString("id")) : 0;
+            double distance = object.has("distance") ? Doubles.tryParse(object.getString("distance")) : 0;
+            double yg_amount = object.has("ygAmount") ? Doubles.tryParse(object.getString("ygAmount")) : 0;
             JSONObject trip = object.getJSONObject("trip");
-            double startLatitude = trip.has("startLatitude")? Doubles.tryParse(trip.getString("startLatitude")):0;
-            double startLongitude = trip.has("startLongitude")? Doubles.tryParse(trip.getString("startLongitude")):0;
-            double endLatitude = trip.has("endLatitude")? Doubles.tryParse(trip.getString("endLatitude")):0;
-            double endLongitude = trip.has("endLongitude")? Doubles.tryParse(trip.getString("endLongitude")):0;
-            String reservationAddress = object.has("reservationAddress")? object.getString("reservationAddress"):"";
-            String destination = object.has("destination")? object.getString("destination"):"";
-            String remark = object.has("remark")? object.getString("remark"):"";
-            orderInfo = new OrderInfo(title,phone,nick_name,head_portrait,no,setouttime,type,serviceType,set_out_flag,id,distance,
-                    yg_amount,startLatitude,startLongitude,endLatitude,endLongitude,reservationAddress,destination,remark);
+            double startLatitude = trip.has("startLatitude") ? Doubles.tryParse(trip.getString("startLatitude")) : 0;
+            double startLongitude = trip.has("startLongitude") ? Doubles.tryParse(trip.getString("startLongitude")) : 0;
+            double endLatitude = trip.has("endLatitude") ? Doubles.tryParse(trip.getString("endLatitude")) : 0;
+            double endLongitude = trip.has("endLongitude") ? Doubles.tryParse(trip.getString("endLongitude")) : 0;
+            String reservationAddress = object.has("reservationAddress") ? object.getString("reservationAddress") : "";
+            String destination = object.has("destination") ? object.getString("destination") : "";
+            String remark = object.has("remark") ? object.getString("remark") : "";
+            orderInfo = new OrderInfo(title, status, phone, nick_name, head_portrait, no, setouttime, type, serviceType, set_out_flag, id, distance,
+                    yg_amount, startLatitude, startLongitude, endLatitude, endLongitude, reservationAddress, destination, remark);
+            orderInfo.setTimeOut(timeOut);
         } catch (JSONException e) {
             e.printStackTrace();
         }
         return orderInfo;
     }
-    public String type2String(int type){
+
+    public MyNotificationInfo getNotificationInfo(String msg){
+        if (msg == null){
+            return null;
+        }
+        MyNotificationInfo myNotificationInfo = null;
+        try {
+            JSONObject object = new JSONObject(msg);
+            String title = object.has("title")?object.getString("title"):"";
+            String content = object.has("content")?object.getString("content"):"";
+            myNotificationInfo = new MyNotificationInfo(title,content);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return myNotificationInfo;
+    }
+    /**
+     * 大分类
+     *
+     * @return
+     */
+    public String serviceType2String(int serviceType_) {
         String stringType = "";
-        switch (type){
+        switch (serviceType_) {
             case 1:
-                stringType =  "专车";
+                stringType = "专车";
                 break;
             case 2:
-                stringType =  "代驾";
+                stringType = "代驾";
                 break;
             case 3:
-                stringType =  "出租车";
+                stringType = "出租车";
                 break;
             case 4:
-                stringType =  "快车";
+                stringType = "快车";
                 break;
         }
         return stringType;
     }
 
-    public String serviceType2String(int serviceType_){
+    /**
+     * 小分类
+     *
+     * @return
+     */
+    public String type2String(int type_) {
         String stringServiceType = "";
-        switch (serviceType_){
-            case 1:
-                stringServiceType =  "拼车";
-                break;
-            case 0:
-                stringServiceType =  "不拼车";
+        switch (type_) {
+            case 44:
+                stringServiceType = "快车";
                 break;
             case 37:
-                stringServiceType =  "豪华型";
+                stringServiceType = "豪华型";
                 break;
             case 43:
-                stringServiceType =  "舒适型";
+                stringServiceType = "舒适型";
                 break;
             case 40:
-                stringServiceType =  "代驾";
+                stringServiceType = "代驾";
                 break;
             case 42:
-                stringServiceType =  "出租车";
+                stringServiceType = "出租车";
                 break;
         }
         return stringServiceType;
     }
 
     /**
-     * 获取SpeechSynthesizer
-     * @return
-     */
-    public SpeechSynthesizer getMySpeechSynthesizer()
-    {
-        SpeechSynthesizer speechSynthesizer = SpeechSynthesizer.createSynthesizer(this);
-        speechSynthesizer.setParameter(SpeechConstant.VOICE_NAME, "vixy");//发音人
-        speechSynthesizer.setParameter(SpeechConstant.SPEED, "50");//语速
-        speechSynthesizer.setParameter(SpeechConstant.VOLUME, "90");//音量
-        speechSynthesizer.setParameter(SpeechConstant.PITCH, "50");//音调
-        return speechSynthesizer;
-    }
-
-    /**
-     * 将时间戳转换为时间格式
+     * 将时间戳转换为时间格式( MM月dd日 HH时mm分 )
+     *
      * @param time
      * @return
      */
@@ -994,77 +1071,105 @@ public class BaseActivity extends AppCompatActivity {
         SimpleDateFormat sf = new SimpleDateFormat("MM月dd日 HH时mm分");
         return sf.format(d);
     }
+
+    TipHelper mTipHelper;
+    public void iflySpeak(String content) {
+        if (mTipHelper == null) {
+            mTipHelper = new TipHelper(this);
+        }
+        if (mTipHelper == null) {
+            return;
+        }
+        mTipHelper.Vibrate(500);//震动0.5秒
+        mTipHelper.speak(content);
+    }
+
     /**
      * 申请网络访问权限
      */
-    public void permissionInternet(){
+    public void permissionInternet() {
         if (ContextCompat.checkSelfPermission(this, Str.INTERNET)
                 != PackageManager.PERMISSION_GRANTED) {
             //申请android.permission.INTERNET权限
-            ActivityCompat.requestPermissions(this, new String[]{Str.INTERNET},Str.REQUEST_INTERNET);
+            ActivityCompat.requestPermissions(this, new String[]{Str.INTERNET}, Str.REQUEST_INTERNET);
         }
     }
-    public void permissionCallPhone(){
+
+    public void permissionCallPhone() {
         if (ContextCompat.checkSelfPermission(this, Str.CALL_PHONE)
                 != PackageManager.PERMISSION_GRANTED) {
             //申请android.permission.CALL_PHONE
-            ActivityCompat.requestPermissions(this, new String[]{Str.CALL_PHONE},Str.REQUEST_CALL_PHONE);
+            ActivityCompat.requestPermissions(this, new String[]{Str.CALL_PHONE}, Str.REQUEST_CALL_PHONE);
         }
     }
 
     /**
      * 申请定位权限
      */
-    public void permissionLocation(){
+    public void permissionLocation() {
+        Log.i(TAG, "permissionLocation: ");
         if (ContextCompat.checkSelfPermission(this, Str.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "permissionLocation: ACCESS_COARSE_LOCATION");
             //申请android.permission.ACCESS_COARSE_LOCATION权限
-            ActivityCompat.requestPermissions(this, new String[]{Str.ACCESS_COARSE_LOCATION},Str.REQUEST_ACCESS_COARSE_LOCATION);
+            ActivityCompat.requestPermissions(this, new String[]{Str.ACCESS_COARSE_LOCATION}, Str.REQUEST_ACCESS_COARSE_LOCATION);
         }
         if (ContextCompat.checkSelfPermission(this, Str.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "permissionLocation: ACCESS_FINE_LOCATION");
             //申请android.permission.ACCESS_FINE_LOCATION权限
-            ActivityCompat.requestPermissions(this, new String[]{Str.ACCESS_FINE_LOCATION},Str.REQUEST_ACCESS_FINE_LOCATION);
+            ActivityCompat.requestPermissions(this, new String[]{Str.ACCESS_FINE_LOCATION}, Str.REQUEST_ACCESS_FINE_LOCATION);
+        }
+    }
+
+    public void checkOpenGps() {
+        LocationManager locationManager = (LocationManager) this
+                .getSystemService(Context.LOCATION_SERVICE);
+        // 判断GPS模块是否开启，如果没有则开启
+        if (locationManager != null && !locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)) {
+            MyDialogUtils myDialogUtils = new MyDialogUtils(this, this);
+            myDialogUtils.openGps(Str.REQUEST_OPEN_GPS);
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Log.i(TAG, "onRequestPermissionsResult: "+permissions[0]);
-        Log.i(TAG, "onRequestPermissionsResult: "+grantResults[0]);
+        Log.i(TAG, "onRequestPermissionsResult: ");
+//        Log.i(TAG, "onRequestPermissionsResult: "+permissions[0]);
+//        Log.i(TAG, "onRequestPermissionsResult: "+grantResults[0]);
     }
 
     /**
      * 定义圆形bitmap
+     *
      * @param bitmap
-     * @param size 尺寸为原图的几分之几（如2：表示1/2）
+     * @param size   尺寸为原图的几分之几（如2：表示1/2）
      * @return
      */
-    public static Bitmap makeRoundCornerBitmap(Bitmap bitmap,int size)
-    {
+    public static Bitmap makeRoundCornerBitmap(Bitmap bitmap, int size) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         int left = 0, top = 0, right = width, bottom = height;
-        float roundPx = height/2;
+        float roundPx = height / 2;
         if (width > height) {
-            left = (width - height)/2;
+            left = (width - height) / 2;
             top = 0;
             right = left + height;
             bottom = height;
         } else if (height > width) {
             left = 0;
-            top = (height - width)/2;
+            top = (height - width) / 2;
             right = width;
             bottom = top + width;
-            roundPx = width/2;
+            roundPx = width / 2;
         }
-        Log.i(TAG, "ps:"+ left +", "+ top +", "+ right +", "+ bottom);
-        Bitmap output = Bitmap.createBitmap(width/size, height/size, Bitmap.Config.ARGB_8888);//自定义为原尺寸一半
+        Log.i(TAG, "ps:" + left + ", " + top + ", " + right + ", " + bottom);
+        Bitmap output = Bitmap.createBitmap(width / size, height / size, Bitmap.Config.ARGB_8888);//自定义为原尺寸一半
         Canvas canvas = new Canvas(output);
         int color = 0xff424242;
         Paint paint = new Paint();
-        Rect rect = new Rect(left/size, top/size, right/size, bottom/size);//定义为原尺寸一半
+        Rect rect = new Rect(left / size, top / size, right / size, bottom / size);//定义为原尺寸一半
         RectF rectF = new RectF(rect);
 
         paint.setAntiAlias(true);

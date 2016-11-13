@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">司机点点服务端</string>
+    <string name="app_name">点点服务</string>
     <string name="action_settings">settings</string>
     <string name="normal">普通地图</string>
     <string name="site">卫星地图</string>
@@ -28,4 +28,5 @@
     <string name="tip_jieSuan_1">* 每点击加减按钮一次，加价或减价一元</string>
     <string name="tip_jieSuan_2">* 点击价格文字可以直接输入金额</string>
     <string name="tip_jieSuan_3">* 过路费、远程费及其他费用由司机垫付，公司不参与提成，优惠券不能抵扣</string>
+    <string name="tip_clear_fee">费用确认后 无法修改</string>
 </resources>

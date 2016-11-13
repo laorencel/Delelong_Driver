@@ -10,12 +10,19 @@ android {
         targetSdkVersion 23
         versionCode 1
         versionName "1.0.0"
+        multiDexEnabled true
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
     }
 }
 
@@ -35,4 +42,7 @@ dependencies {
     compile project(path: ':FlycoDialog_Lib')
     compile files('libs/Msc.jar')
     compile files('libs/Sunflower.jar')
+    compile 'com.android.support:multidex:1.0.1'
+    compile files('libs/core.jar')
+    compile files('libs/autobahn-0.5.0.jar')
 }

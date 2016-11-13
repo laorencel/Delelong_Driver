@@ -55,12 +55,13 @@ public class MyJPushReceiver extends BroadcastReceiver {
             Log.i(TAG, "[MyReceiver] 接收Registration Id : " + registrationId);
             //send the Registration Id to your server...
         } else if (JPushInterface.ACTION_MESSAGE_RECEIVED.equals(intent.getAction())) {
-            Log.i(TAG, "[MyReceiver] 接收到推送下来的自定义消息: " + bundle.getString(JPushInterface.EXTRA_MESSAGE));
-            String title = bundle.getString(JPushInterface.EXTRA_TITLE);
-//            processCustomMessage(context, bundle);
-            if (title.equals("1")){//收到订单消息
-                sendOrderMessage(context, bundle);
-            }
+//            Log.i(TAG, "[MyReceiver] 接收到推送下来的自定义消息: " + bundle.getString(JPushInterface.EXTRA_MESSAGE));
+//            String title = bundle.getString(JPushInterface.EXTRA_TITLE);
+//            if (title.equals("1")){//收到订单消息
+//                sendOrderMessage(context, bundle);
+//            }else if (title.equals("4")){//收到后台通知消息
+//                sendOrderMessage(context, bundle);
+//            }
         } else if (JPushInterface.ACTION_NOTIFICATION_RECEIVED.equals(intent.getAction())) {
             Log.i(TAG, "[MyReceiver] 接收到推送下来的通知");
             int notifactionId = bundle.getInt(JPushInterface.EXTRA_NOTIFICATION_ID);

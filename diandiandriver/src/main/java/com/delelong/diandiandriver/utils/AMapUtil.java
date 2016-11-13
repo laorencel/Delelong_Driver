@@ -92,7 +92,7 @@ public class AMapUtil {
 	 */
 	public static double getKiloLength(double lenMeter) {
 		double dis = lenMeter / 1000;
-		DecimalFormat fnum = new DecimalFormat("#####0.0");
+		DecimalFormat fnum = new DecimalFormat("#####0.00");
 		String dstr = fnum.format(dis);
 		return Double.parseDouble(dstr);
 	}

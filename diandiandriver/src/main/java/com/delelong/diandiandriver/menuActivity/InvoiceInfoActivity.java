@@ -157,7 +157,9 @@ public class InvoiceInfoActivity extends BaseActivity implements View.OnClickLis
         cityUtil.createDialog(this, oldCityArray, new ChooseCityInterface() {
             @Override
             public void sure(String[] newCityArray) {
-                tv_city.setText(newCityArray[0] + "省 " + newCityArray[1] + "市 " + newCityArray[2] + "区");
+                if (newCityArray != null){
+                    tv_city.setText(newCityArray[0] + "省 " + newCityArray[1] + "市 " + newCityArray[2] + "区");
+                }
             }
         });
     }

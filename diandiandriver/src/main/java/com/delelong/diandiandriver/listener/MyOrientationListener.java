@@ -40,7 +40,9 @@ public class MyOrientationListener implements SensorEventListener {
         isStarted = true;
     }
     public void stop(){
-        mSensorManager.unregisterListener(this);
+        if (mSensorManager != null){
+            mSensorManager.unregisterListener(this);
+        }
         isStarted = false;
     }
 

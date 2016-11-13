@@ -27,6 +27,7 @@ import com.delelong.diandiandriver.pace.MyAMapLocation;
 import com.delelong.diandiandriver.view.RoundImageView;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -168,7 +169,19 @@ public class MenuModifyInfoActivity extends BaseActivity implements View.OnClick
             img_head.setImageBitmap(bitmap);// 将图片显示在ImageView里
             //保存图片到手机
             File file = new File(Str.FILEPATH);
-            file.mkdirs();// 创建文件夹
+            if (!file.exists()){
+                file.mkdirs();// 创建文件夹
+                File noMediafile = new File(Str.FILEPATH+".nomedia");//媒体文件不扫描
+                if (!noMediafile.exists()){
+                    try {
+                        noMediafile.createNewFile();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+
             headPath = createImage(Str.FILEPATH, fileName, bitmap);
         }
     }

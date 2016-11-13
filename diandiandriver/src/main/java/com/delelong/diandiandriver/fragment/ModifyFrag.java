@@ -96,13 +96,13 @@ public class ModifyFrag extends Fragment implements View.OnClickListener {
                 if (resultForMod.get(0).equals("FAILURE")) {
                     resultForMod = myHttpUtils.modifyPwd(Str.URL_MODIFY, pwd, newPwd, rePwd);
                     if (resultForMod.get(0).equals("FAILURE")) {
-                        Toast.makeText(activity, "修改失败，请稍后重试", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, "修改失败，"+resultForMod.get(1), Toast.LENGTH_SHORT).show();
                         return;
                     }
                 } else if (resultForMod.get(0).equals("ERROR")) {
                     resultForMod = myHttpUtils.modifyPwd(Str.URL_MODIFY, pwd, newPwd, rePwd);
                     if (resultForMod.get(0).equals("ERROR")) {
-                        Toast.makeText(activity, "修改错误，请稍后重试", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, "修改错误，"+resultForMod.get(1), Toast.LENGTH_SHORT).show();
                         return;
                     }
                 }

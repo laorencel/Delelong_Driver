@@ -102,6 +102,9 @@ public class AddCarInfoActivity extends BaseActivity implements View.OnClickList
                     return;
                 }
                 List<String > result = myHttpUtils.plusCar(Str.URL_PLUS_CAR,mAddCarInfo);
+                if (result == null){
+                    return;
+                }
                 if (result.get(0).equalsIgnoreCase("OK")){
                     ToastUtil.show(this,"添加车辆信息成功！");
                     finish();
@@ -117,8 +120,10 @@ public class AddCarInfoActivity extends BaseActivity implements View.OnClickList
                     ToastUtil.show(this,"请先选择车辆品牌");
                     return;
                 }
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("brand",mCarBrand);
                 Intent intent_model = new Intent(this, ChooseModelActivity.class);
-                intent_model.putExtra("brand",mCarBrand);
+                intent_model.putExtra("bundle",bundle);
                 startActivityForResult(intent_model, Str.REQUESTMODELCODE);
                 break;
             case R.id.rl_plateNumber:
@@ -172,13 +177,25 @@ public class AddCarInfoActivity extends BaseActivity implements View.OnClickList
         Bitmap bitmap = null;
         if (requestCode == Str.REQUESTBRANDCODE) {//brand
             Log.i(TAG, "onActivityResult: carBrand");
+            if (data == null){
+                return;
+            }
             mCarBrand = (CarBrandBean.CarBrand) data.getSerializableExtra("carBrand");
+            if (mCarBrand == null){
+                return;
+            }
             mCarModel = null;//重置mCarModel
             tv_brand.setText(mCarBrand.getName());
             mAddCarInfo.setBrand(mCarBrand.getId());
         }else if (requestCode == Str.REQUESTMODELCODE) {//brand_model
             Log.i(TAG, "onActivityResult: carModel");
+            if (data == null){
+                return;
+            }
             mCarModel = (CarModelBean.CarModel) data.getSerializableExtra("carModel");
+            if (mCarModel == null){
+                return;
+            }
             tv_model.setText(mCarModel.getName());
             mAddCarInfo.setModel(mCarModel.getId());
         }else if (requestCode == Str.REQUESTCODECAMERA) {//camera
@@ -199,6 +216,9 @@ public class AddCarInfoActivity extends BaseActivity implements View.OnClickList
             }
             createImage(Str.FILEPATH, "carImage.JPEG", bitmap);
             List<String> imageResult = myHttpUtils.upDateFile(Str.URL_UPDATEFILE, imgPath);
+            if (imageResult == null){
+                return;
+            }
             mAddCarInfo.setPicture(imageResult.get(2));
         }else {
             ToastUtil.show(this,"未获取到图片，请重试");

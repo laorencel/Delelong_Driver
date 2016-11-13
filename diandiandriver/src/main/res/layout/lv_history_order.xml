@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="5dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="2dp">
+
+        <TextView
+            android:id="@+id/tv_orderNo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:text=""
+            android:textColor="#ffff"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_real_pay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="￥ "
+            android:textColor="@color/colorPinChe"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_create_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:padding="2dp"
+        android:text=""
+        android:textColor="#ffff"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/tv_reservation_address"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:padding="2dp"
+        android:text="从"
+        android:textColor="#ffff"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/tv_destination"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:padding="2dp"
+        android:text="到"
+        android:textColor="#ffff"
+        android:textSize="14sp" />
+
+</LinearLayout>

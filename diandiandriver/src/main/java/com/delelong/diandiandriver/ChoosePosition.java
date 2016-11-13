@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * Created by Administrator on 2016/8/23.
  */
-public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearchListener, TextWatcher,AdapterView.OnItemClickListener,View.OnClickListener {
+public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearchListener, TextWatcher, AdapterView.OnItemClickListener, View.OnClickListener {
 
     private static final String TAG = "BAIDUMAPFORTEST";
     TextView tv_city;
@@ -38,6 +38,7 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
     TextView tv_home, tv_company;
     ListView lv_address;
     LinearLayout ly_home_company;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,8 +52,9 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
     String city;
     String intentValue;
     SharedPreferences preferences;
+
     private void initView() {
-        preferences = getSharedPreferences("user",Context.MODE_PRIVATE);
+        preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
 
         tv_city = (TextView) findViewById(R.id.tv_city);
         edt_choose = (EditText) findViewById(R.id.edt_choose);
@@ -71,18 +73,18 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
         //设置不同的提示语
         intentValue = getIntent().getStringExtra("choose");
         city = getIntent().getStringExtra("city");
-        if (city != null){
+        if (city != null) {
             tv_city.setText(city);
         }
-        if (intentValue!=null){
+        if (intentValue != null) {
             if (intentValue.equals("myPosition")) {
                 edt_choose.setHint("从哪里出发");
-            } else if (intentValue.equals("myDestination")){
+            } else if (intentValue.equals("myDestination")) {
                 edt_choose.setHint("到哪里去");
-            }else if (intentValue.equals("home")){
+            } else if (intentValue.equals("home")) {
                 edt_choose.setHint("设置家庭住址");
                 ly_home_company.setVisibility(View.GONE);
-            }else if (intentValue.equals("company")){
+            } else if (intentValue.equals("company")) {
                 edt_choose.setHint("设置公司地址");
                 ly_home_company.setVisibility(View.GONE);
             }
@@ -92,25 +94,25 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
 
     private void initCommonAddress() {
         //初始化家庭公司地址
-        String home = preferences.getString("home",null);
-        String homeAddress = preferences.getString("homeAddress",null);
-        String homePoiId = preferences.getString("homePoiId",null);
-        float homeLatitude = preferences.getFloat("homeLatitude",0.0f);
-        float homeLongitude = preferences.getFloat("homeLongitude",0.0f);
-        LatLonPoint homePoint = new LatLonPoint(homeLatitude,homeLongitude);
-        mHomePoiItem = new PoiItem(homePoiId,homePoint,home,homeAddress);
+        String home = preferences.getString("home", null);
+        String homeAddress = preferences.getString("homeAddress", null);
+        String homePoiId = preferences.getString("homePoiId", null);
+        float homeLatitude = preferences.getFloat("homeLatitude", 0.0f);
+        float homeLongitude = preferences.getFloat("homeLongitude", 0.0f);
+        LatLonPoint homePoint = new LatLonPoint(homeLatitude, homeLongitude);
+        mHomePoiItem = new PoiItem(homePoiId, homePoint, home, homeAddress);
 
-        String company = preferences.getString("company",null);
-        String companyAddress = preferences.getString("companyAddress",null);
-        String companyPoiId = preferences.getString("companyPoiId",null);
-        float companyLatitude = preferences.getFloat("companyLatitude",0.0f);
-        float companyLongitude = preferences.getFloat("companyLongitude",0.0f);
-        LatLonPoint companyPoint = new LatLonPoint(companyLatitude,companyLongitude);
-        mCompanyPoiItem = new PoiItem(companyPoiId,companyPoint,company,companyAddress);
-        if (home != null){
+        String company = preferences.getString("company", null);
+        String companyAddress = preferences.getString("companyAddress", null);
+        String companyPoiId = preferences.getString("companyPoiId", null);
+        float companyLatitude = preferences.getFloat("companyLatitude", 0.0f);
+        float companyLongitude = preferences.getFloat("companyLongitude", 0.0f);
+        LatLonPoint companyPoint = new LatLonPoint(companyLatitude, companyLongitude);
+        mCompanyPoiItem = new PoiItem(companyPoiId, companyPoint, company, companyAddress);
+        if (home != null) {
             tv_home.setText(mHomePoiItem.getTitle());
         }
-        if (company != null){
+        if (company != null) {
             tv_company.setText(mCompanyPoiItem.getTitle());
         }
     }
@@ -156,7 +158,7 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
                 return;
             }
         } else {
-            Toast.makeText(ChoosePosition.this, "错误码："+rCode, Toast.LENGTH_SHORT).show();
+            Toast.makeText(ChoosePosition.this, "错误码：" + rCode, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -188,27 +190,25 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
     /**
      * 点击选择地址，返回地图界面并传值
      *
-     *  @param parent   parent
-     *  @param view     view
-     *  @param position position
-     *  @param id       id
-     *
+     * @param parent   parent
+     * @param view     view
+     * @param position position
+     * @param id       id
      */
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         PoiItem item = poiItems.get(position);
         if (intentValue.equals("myPosition")) {
-            setResult(item,"myPosition",Str.REQUESTPOSITIONCODE);
-        } else if (intentValue.equals("myDestination")){
-            setResult(item,"myDestination",Str.REQUESTDESTINATIONCODE);
-        }
-        else if (intentValue.equals("home")){
-            setResult(item,"home",Str.REQUESTHOMECODE);
-        }
-        else if (intentValue.equals("company")){
-            setResult(item,"company",Str.REQUESTCOMPANYCODE);
+            setResult(item, "myPosition", Str.REQUESTPOSITIONCODE);
+        } else if (intentValue.equals("myDestination")) {
+            setResult(item, "myDestination", Str.REQUESTDESTINATIONCODE);
+        } else if (intentValue.equals("home")) {
+            setResult(item, "home", Str.REQUESTHOMECODE);
+        } else if (intentValue.equals("company")) {
+            setResult(item, "company", Str.REQUESTCOMPANYCODE);
         }
     }
+
     @Override
     public void onBackPressed() {
         Intent intent = new Intent();
@@ -219,26 +219,26 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.tv_home:
-                if (tv_home.getText().toString().equals("")){
+                if (tv_home.getText().toString().equals("")) {
                     intentActivityForResult(this, ChoosePosition.class, "choose", "home", city, Str.REQUESTHOMECODE);
-                }else {
+                } else {
                     if (intentValue.equals("myPosition")) {
-                        setResult(mHomePoiItem,"myPosition",Str.REQUESTPOSITIONCODE);
-                    } else if (intentValue.equals("myDestination")){
-                        setResult(mHomePoiItem,"myDestination",Str.REQUESTDESTINATIONCODE);
+                        setResult(mHomePoiItem, "myPosition", Str.REQUESTPOSITIONCODE);
+                    } else if (intentValue.equals("myDestination")) {
+                        setResult(mHomePoiItem, "myDestination", Str.REQUESTDESTINATIONCODE);
                     }
                 }
                 break;
             case R.id.tv_company:
-                if (tv_company.getText().toString().equals("")){
+                if (tv_company.getText().toString().equals("")) {
                     intentActivityForResult(this, ChoosePosition.class, "choose", "company", city, Str.REQUESTCOMPANYCODE);
-                }else {
+                } else {
                     if (intentValue.equals("myPosition")) {
-                        setResult(mCompanyPoiItem,"myPosition",Str.REQUESTPOSITIONCODE);
-                    } else if (intentValue.equals("myDestination")){
-                        setResult(mCompanyPoiItem,"myDestination",Str.REQUESTDESTINATIONCODE);
+                        setResult(mCompanyPoiItem, "myPosition", Str.REQUESTPOSITIONCODE);
+                    } else if (intentValue.equals("myDestination")) {
+                        setResult(mCompanyPoiItem, "myDestination", Str.REQUESTDESTINATIONCODE);
                     }
                 }
                 break;
@@ -257,6 +257,7 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
 
     PoiItem mHomePoiItem;//家庭poi
     PoiItem mCompanyPoiItem;//公司poi
+
     //获取选取的位置信息
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -272,14 +273,14 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
                     mHomePoiItem = bundle.getParcelable("PoiInfo");
                     tv_home.setText(mHomePoiItem.getTitle());
                     preferences.edit()
-                            .putString("home",mHomePoiItem.getTitle())
-                            .putString("homeAddress",mHomePoiItem.getSnippet())
-                            .putString("homePoiId",mHomePoiItem.getPoiId())
+                            .putString("home", mHomePoiItem.getTitle())
+                            .putString("homeAddress", mHomePoiItem.getSnippet())
+                            .putString("homePoiId", mHomePoiItem.getPoiId())
                             .putFloat("homeLatitude", (float) mHomePoiItem.getLatLonPoint().getLatitude())
                             .putFloat("homeLongitude", (float) mHomePoiItem.getLatLonPoint().getLongitude())
                             .commit();
 
-                    Log.i(TAG, "onActivityResult: "+mHomePoiItem.getLatLonPoint().getLongitude());
+                    Log.i(TAG, "onActivityResult: " + mHomePoiItem.getLatLonPoint().getLongitude());
                 }
                 break;
             case Str.REQUESTCOMPANYCODE:
@@ -287,14 +288,14 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
                     mCompanyPoiItem = bundle.getParcelable("PoiInfo");
                     tv_company.setText(mCompanyPoiItem.getTitle());
                     preferences.edit()
-                            .putString("company",mCompanyPoiItem.getTitle())
-                            .putString("companyAddress",mCompanyPoiItem.getSnippet())
-                            .putString("companyPoiId",mCompanyPoiItem.getPoiId())
+                            .putString("company", mCompanyPoiItem.getTitle())
+                            .putString("companyAddress", mCompanyPoiItem.getSnippet())
+                            .putString("companyPoiId", mCompanyPoiItem.getPoiId())
                             .putFloat("companyLatitude", (float) mCompanyPoiItem.getLatLonPoint().getLatitude())
                             .putFloat("companyLongitude", (float) mCompanyPoiItem.getLatLonPoint().getLongitude())
                             .commit();
 
-                    Log.i(TAG, "onActivityResult: "+mCompanyPoiItem.getPoiId());
+                    Log.i(TAG, "onActivityResult: " + mCompanyPoiItem.getPoiId());
                 }
                 break;
         }
@@ -302,58 +303,58 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
 
 
     /**
- * 适配器
- */
-class MyAddressAdapter extends BaseAdapter {
-    LayoutInflater inflater;
+     * 适配器
+     */
+    class MyAddressAdapter extends BaseAdapter {
+        LayoutInflater inflater;
 
-    public MyAddressAdapter() {
-        inflater = LayoutInflater.from(ChoosePosition.this);
-    }
-
-    @Override
-    public int getCount() {
-        return poiItems.size();
-    }
-
-    @Override
-    public Object getItem(int position) {
-        return null;
-    }
-
-    @Override
-    public long getItemId(int position) {
-        return 0;
-    }
-
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        PoiItem item = poiItems.get(position);
-
-        ViewHolder holder = null;
-        if (convertView == null) {
-            convertView = inflater.inflate(R.layout.item_list_addr, null);
-            holder = new ViewHolder();
-
-            holder.addressName = (TextView) convertView.findViewById(R.id.addressName);
-            holder.addressDetail = (TextView) convertView.findViewById(R.id.addressDetail);
-
-            convertView.setTag(holder);
-        } else {
-            holder = (ViewHolder) convertView.getTag();
+        public MyAddressAdapter() {
+            inflater = LayoutInflater.from(ChoosePosition.this);
         }
 
-        holder.addressName.setText(item.getTitle());
-        holder.addressDetail.setText(item.getSnippet()+"\t距离"+item.getDistance()+"米");
+        @Override
+        public int getCount() {
+            return poiItems.size();
+        }
 
-        return convertView;
+        @Override
+        public Object getItem(int position) {
+            return null;
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return 0;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            PoiItem item = poiItems.get(position);
+
+            ViewHolder holder = null;
+            if (convertView == null) {
+                convertView = inflater.inflate(R.layout.item_list_addr, null);
+                holder = new ViewHolder();
+
+                holder.addressName = (TextView) convertView.findViewById(R.id.addressName);
+                holder.addressDetail = (TextView) convertView.findViewById(R.id.addressDetail);
+
+                convertView.setTag(holder);
+            } else {
+                holder = (ViewHolder) convertView.getTag();
+            }
+
+            holder.addressName.setText(item.getTitle());
+            holder.addressDetail.setText(item.getSnippet() + "\t距离" + item.getDistance() + "米");
+
+            return convertView;
+        }
+
+        class ViewHolder {
+            TextView addressName, addressDetail;
+        }
+
     }
-
-    class ViewHolder {
-        TextView addressName, addressDetail;
-    }
-
-}
 
     @Override
     protected void onDestroy() {

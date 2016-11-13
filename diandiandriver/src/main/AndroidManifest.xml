@@ -20,34 +20,51 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_diandian"
+        android:icon="@drawable/logo"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        android:name="android.support.multidex.MultiDexApplication"
+        android:hardwareAccelerated="false">
         <meta-data
             android:name="com.amap.api.v2.apikey"
             android:value="5b8ab461603fb4700fd9993ed2a52106" />
         <!-- 定位需要的服务 使用2.0的定位需要加上这个 -->
         <service android:name="com.amap.api.location.APSService" ></service>
 
+        <service android:name=".service.MyWebSocketService"></service>
         <!--activity-->
-        <activity android:name="com.delelong.diandiandriver.StartActivity" >
+        <activity android:name="com.delelong.diandiandriver.StartActivity" android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".DriverActivity" ></activity>
-        <activity android:name=".OrderActivity" ></activity>
+        <activity android:name=".DriverActivity" android:screenOrientation="portrait">
+        </activity>
+        <activity android:name=".order.MyOrderActivity"></activity>
+        <activity android:name=".menuActivity.MyTuiJianActivity"></activity>
+        <activity android:name=".menuActivity.MyTuiJianPersonActivity"></activity>
+        <activity android:name=".menuActivity.MyHistoryOrderActivity"></activity>
+        <activity android:name=".order.CreateOrderActivity"></activity>
+        <activity android:name=".order.ChooseAddrActivity"></activity>
+        <activity android:name=".menuActivity.MyBalanceActivity"></activity>
         <activity android:name=".order.ConfirmAmountActivity"></activity>
         <activity android:name=".menuActivity.AdActivity"></activity>
-        <activity android:name=".function.AddCarInfoActivity"></activity>
-        <activity android:name=".function.ChooseBrandActivity"></activity>
-        <activity android:name=".function.ChooseModelActivity"></activity>
-        <activity android:name="com.delelong.diandiandriver.MainActivity"></activity>
+        <activity android:name=".menuActivity.AboutUsActivity"></activity>
+        <activity android:name=".menuActivity.MyWebViewActivity"></activity>
+        <activity android:name=".menuActivity.MyFanLiActivity"></activity>
+        <activity android:name=".menuActivity.MyLawActivity"></activity>
+        <activity android:name=".menuActivity.MyFeeRuleActivity"></activity>
+        <activity android:name=".function.MyNotificationActivity"></activity>
+        <activity android:name=".function.AddCarInfoActivity" android:windowSoftInputMode="adjustPan"></activity>
+        <activity android:name=".function.ChooseBrandActivity" android:windowSoftInputMode="adjustPan"></activity>
+        <activity android:name=".function.ChooseModelActivity" android:windowSoftInputMode="adjustPan"></activity>
+        <activity android:name="com.delelong.diandiandriver.MainActivity" ></activity>
         <activity android:name="com.delelong.diandiandriver.ChoosePosition"></activity>
         <activity android:name="com.delelong.diandiandriver.LoginActivity"></activity>
         <activity android:name=".function.FunSettingActivity"></activity>

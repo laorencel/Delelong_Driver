@@ -90,6 +90,7 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
             ToastUtil.show(this, "暂未获取到信息，请稍后再试");
             return;
         }
+
         brandAdapter = new MyBrandAdapter(mCarBrandBean);
         lv_brand.setAdapter(brandAdapter);
     }
@@ -127,6 +128,9 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
                 break;
             case R.id.btn_next:
                 //如果size不等于（小于10），说明到最后一页了
+                if (mCarBrandBean == null){
+                    return;
+                }
                 if (mCarBrandBean.getCarBrands().size() == pageSize) {
                     ++pageIndex;
                     Log.i(TAG, "onClick: " + pageIndex);
@@ -197,7 +201,7 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
                 return convertView;
             }
             if (imgBitmap != null) {
-                holder.img_brand.setImageBitmap(myHttpUtils.downloadImage(Str.URL_SERVICE_IMAGEPATH + carBrand.getLogo()));
+                holder.img_brand.setImageBitmap(imgBitmap);
             }
             holder.tv_brand.setText(carBrand.getName());
             return convertView;

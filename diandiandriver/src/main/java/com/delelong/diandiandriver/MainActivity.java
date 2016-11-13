@@ -241,7 +241,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         timeOfReach = (TextView) findViewById(R.id.timeOfReach);
         positon = (TextView) findViewById(R.id.positon);
 
-
         //地址选择模块
         route = (LinearLayout) findViewById(R.id.route);
         lyOfTime = (LinearLayout) findViewById(R.id.lyOfTime);
