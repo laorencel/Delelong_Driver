@@ -52,7 +52,9 @@ public class DefaultWebChromeClient extends BaseWebChromeClient {
         Intent i = new Intent(Intent.ACTION_GET_CONTENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType("image/*");
-        mActivity.startActivityForResult(Intent.createChooser(i, "File Chooser"), Str.FILECHOOSER_RESULTCODE);
+        if (!mActivity.isFinishing()){
+            mActivity.startActivityForResult(Intent.createChooser(i, "File Chooser"), Str.FILECHOOSER_RESULTCODE);
+        }
     }
 
     @Override

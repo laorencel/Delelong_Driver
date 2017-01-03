@@ -32,7 +32,6 @@ import com.delelong.diandiandriver.menuActivity.FeedBackActivity;
 import com.delelong.diandiandriver.menuActivity.MallActivity;
 import com.delelong.diandiandriver.menuActivity.MenuInfoActivity;
 import com.delelong.diandiandriver.menuActivity.SettingActivity;
-import com.delelong.diandiandriver.menuActivity.WalletActivity;
 import com.delelong.diandiandriver.view.RoundImageView;
 
 import java.util.ArrayList;
@@ -127,7 +126,7 @@ public class MenuFrag extends Fragment implements View.OnClickListener, AdapterV
 
                         break;
                     case 1://我的钱包
-                        startActivityWithBundle(WalletActivity.class);
+//                        startActivityWithBundle(WalletActivity.class);
                         break;
                     case 2://问题反馈
                         startActivityWithBundle(FeedBackActivity.class);

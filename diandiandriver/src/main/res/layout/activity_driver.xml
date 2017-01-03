@@ -3,7 +3,9 @@
     android:id="@+id/drawerly"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_driver02">
+    android:background="@drawable/bg_driver02"
+    android:keepScreenOn="true">
+
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -62,10 +64,9 @@
                             android:layout_alignParentRight="true"
                             android:layout_centerVertical="true"
                             android:background="@drawable/bg_circle_online"
-                            android:text="返程"
+                            android:text="预约\n订单"
                             android:textColor="#ffff"
-                            android:textSize="14sp"
-                            android:visibility="gone" />
+                            android:textSize="14sp" />
 
                     </RelativeLayout>
 
@@ -93,7 +94,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_centerInParent="true"
                                 android:layout_gravity="center_horizontal"
-                                android:text="工作台"
+                                android:text="司机点点"
                                 android:textColor="#ffff"
                                 android:textSize="20sp" />
 
@@ -131,7 +132,7 @@
                                     android:layout_width="24dp"
                                     android:layout_height="23dp"
                                     android:layout_marginLeft="30dp"
-                                    android:background="@drawable/icon_driver_income_today" />
+                                    android:background="@drawable/icon_driver_income_yesterday" />
 
                                 <TextView
                                     android:layout_width="wrap_content"
@@ -171,7 +172,7 @@
                                     android:layout_width="24dp"
                                     android:layout_height="23dp"
                                     android:layout_marginLeft="30dp"
-                                    android:background="@drawable/icon_driver_income_yesterday" />
+                                    android:background="@drawable/icon_driver_income_today" />
 
                                 <TextView
                                     android:layout_width="wrap_content"
@@ -273,65 +274,72 @@
                         </LinearLayout>
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:id="@+id/ly_desk02"
+                    <android.support.v4.widget.SwipeRefreshLayout
+                        android:id="@+id/ly_refresh"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_above="@id/rl_onLine"
-                        android:layout_below="@id/ly_desk01"
-                        android:orientation="vertical">
+                        android:layout_below="@id/ly_desk01">
 
                         <LinearLayout
-                            android:id="@+id/ly_desk_detail"
+                            android:id="@+id/ly_desk02"
                             android:layout_width="match_parent"
-                            android:layout_height="0dp"
-                            android:layout_weight="5"
-                            android:gravity="center"
+                            android:layout_height="match_parent"
                             android:orientation="vertical">
 
-                            <TextView
-                                android:id="@+id/tv_today_detail"
-                                android:layout_width="wrap_content"
+                            <LinearLayout
+                                android:id="@+id/ly_desk_detail"
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_weight="5"
+                                android:gravity="center"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tv_today_detail"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:padding="10dp"
+                                    android:text="今天暂无收入\n还需努力哦"
+                                    android:textColor="#ffff"
+                                    android:textSize="20sp" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:id="@+id/ly_desk_show"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:padding="10dp"
-                                android:text="今天暂无收入\n还需努力哦"
-                                android:textColor="#ffff"
-                                android:textSize="20sp" />
+                                android:orientation="horizontal"
+                                android:padding="3dp">
+
+                                <View
+                                    android:layout_width="0dp"
+                                    android:layout_height="0.5dp"
+                                    android:layout_gravity="center"
+                                    android:layout_marginLeft="10dp"
+                                    android:layout_marginRight="4dp"
+                                    android:layout_weight="1"
+                                    android:background="#ffff"></View>
+
+                                <ImageView
+                                    android:id="@+id/img_desk_show"
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
+                                    android:layout_centerInParent="true"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/icon_arrow_up_desk_show" />
+
+                                <View
+                                    android:layout_width="0dp"
+                                    android:layout_height="0.5dp"
+                                    android:layout_gravity="center"
+                                    android:layout_marginLeft="4dp"
+                                    android:layout_marginRight="10dp"
+                                    android:layout_weight="1"
+                                    android:background="#ffff"></View>
+                            </LinearLayout>
                         </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/ly_desk_show"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <View
-                                android:layout_width="0dp"
-                                android:layout_height="0.5dp"
-                                android:layout_gravity="center"
-                                android:layout_marginLeft="10dp"
-                                android:layout_marginRight="2dp"
-                                android:layout_weight="1"
-                                android:background="#ffff"></View>
-
-                            <ImageView
-                                android:id="@+id/img_desk_show"
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:layout_centerInParent="true"
-                                android:layout_gravity="center"
-                                android:src="@drawable/icon_arrow_up_desk_show" />
-
-                            <View
-                                android:layout_width="0dp"
-                                android:layout_height="0.5dp"
-                                android:layout_gravity="center"
-                                android:layout_marginLeft="2dp"
-                                android:layout_marginRight="10dp"
-                                android:layout_weight="1"
-                                android:background="#ffff"></View>
-                        </LinearLayout>
-                    </LinearLayout>
+                    </android.support.v4.widget.SwipeRefreshLayout>
                 </RelativeLayout>
             </LinearLayout>
 
@@ -356,13 +364,13 @@
                         android:id="@+id/rl_top"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="#cfcacaca"
+                        android:background="#cad9d9d9"
                         android:padding="10dp">
 
                         <ImageView
                             android:id="@+id/img_map_top01"
-                            android:layout_width="30dp"
-                            android:layout_height="30dp"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
                             android:src="@drawable/icon_gps" />
 
                         <TextView
@@ -373,7 +381,8 @@
                             android:layout_marginLeft="20dp"
                             android:layout_toRightOf="@id/img_map_top01"
                             android:text="当前地址："
-                            android:textSize="16sp" />
+                            android:textColor="#ffff"
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/tv_map_top02"
@@ -384,15 +393,15 @@
                             android:layout_toRightOf="@id/tv_map_top01"
                             android:text="北京天安门"
                             android:textColor="#43b760"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
 
                         <ImageView
                             android:id="@+id/img_map_top02"
-                            android:layout_width="30dp"
-                            android:layout_height="30dp"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
                             android:layout_alignParentRight="true"
                             android:layout_centerVertical="true"
-                            android:src="@drawable/icon_arrow_down_map" />
+                            android:src="@drawable/img_arr_roate" />
                     </RelativeLayout>
 
                     <ImageButton
@@ -407,11 +416,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!--<RelativeLayout-->
-        <!--android:id="@+id/rl_map"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="bottom"></RelativeLayout>-->
+        <!--<RelativeLayout--><!--android:id="@+id/rl_map"--><!--android:layout_width="match_parent"--><!--android:layout_height="wrap_content"--><!--android:layout_gravity="bottom"></RelativeLayout>-->
 
         <RelativeLayout
             android:id="@+id/menu_right"
@@ -424,7 +429,7 @@
             android:layout_height="match_parent"></RelativeLayout>
     </FrameLayout>
 
-    <!--侧边栏布局一定要放在最下面 否则出现点击时间无响应-->
+    <!--侧边栏布局一定要放在最下面 否则出现点击事件无响应-->
     <RelativeLayout
         android:id="@+id/menu_left"
         android:layout_width="250dp"

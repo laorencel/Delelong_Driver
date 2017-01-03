@@ -81,42 +81,42 @@
             android:id="@+id/tv_sum"
             android:layout_width="wrap_content"
             android:layout_alignParentRight="true"
-            android:text="0.00元"
+            android:text=""
             android:layout_marginRight="25dp"
             android:layout_height="wrap_content" />
     </RelativeLayout>
-
     <RelativeLayout
-        android:id="@+id/rl_coupon"
+        android:id="@+id/rl_tixian"
         android:layout_width="match_parent"
         android:background="@drawable/bg_text_custome"
         android:padding="10dp"
-        android:layout_marginBottom="10dp"
+        android:layout_marginBottom="1dp"
         android:gravity="center_vertical"
         android:layout_height="wrap_content">
         <ImageView
-            android:id="@+id/img_coupon"
+            android:id="@+id/img_tixian"
             android:layout_width="20dp"
-            android:src="@drawable/icon_coupon"
+            android:src="@drawable/icon_sum"
             android:layout_marginRight="10dp"
             android:layout_height="20dp" />
         <TextView
-            android:layout_toRightOf="@id/img_coupon"
+            android:layout_toRightOf="@id/img_tixian"
             android:layout_width="wrap_content"
-            android:text="优惠券"
+            android:text="提现"
             android:textSize="16sp"
             android:layout_height="wrap_content" />
         <TextView
-            android:id="@+id/tv_coupon"
+            android:id="@+id/tv_tixian_sum"
             android:layout_width="wrap_content"
             android:layout_alignParentRight="true"
-            android:text="0张"
+            android:text=""
             android:layout_marginRight="25dp"
             android:layout_height="wrap_content" />
     </RelativeLayout>
 
     <RelativeLayout
         android:id="@+id/rl_invoice"
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:background="@drawable/bg_text_custome"
         android:padding="10dp"

@@ -3,19 +3,26 @@ package com.delelong.diandiandriver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.delelong.diandiandriver.bean.Str;
+import com.delelong.diandiandriver.http.MyAsyncHttpUtils;
+import com.delelong.diandiandriver.http.MyHttpHelper;
 import com.delelong.diandiandriver.http.MyHttpUtils;
-import com.delelong.diandiandriver.menuActivity.AdActivity;
-import com.delelong.diandiandriver.utils.ToastUtil;
+import com.delelong.diandiandriver.http.MyTextHttpResponseHandler;
+import com.delelong.diandiandriver.start.MyStartViewPagerActivity;
 
 import java.io.File;
 import java.util.List;
+
+import cz.msebera.android.httpclient.Header;
 
 /**
  * Created by Administrator on 2016/8/26.
@@ -36,6 +43,7 @@ public class StartActivity extends BaseActivity {
     };
 
     MyHttpUtils myHttpUtils;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,13 +53,45 @@ public class StartActivity extends BaseActivity {
         setVoice();
         if (!setNetworkDialog(this)) {
         } else {
-            toAd();
+            if (checkPermissionWriteExternalStorage()) {
+                toAd();
+            } else {
+                permissionWriteExternalStorage();
+            }
         }
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == Str.REQUEST_WRITE_EXTERNALSTORAGE) {
+            if (grantResults != null && grantResults.length > 0) {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    toAd();
+                } else {
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            handler.sendEmptyMessage(0);
+                        }
+                    });
+                }
+            } else {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        handler.sendEmptyMessage(0);
+                    }
+                });
+            }
+        }
+    }
+
     AudioManager mAudioManager;
+
     private void setVoice() {
         mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        if (mAudioManager!= null){
+        if (mAudioManager != null) {
             //// 音乐音量
             mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
                     mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
@@ -78,7 +118,7 @@ public class StartActivity extends BaseActivity {
         }
         File adFile = new File(Str.ADIMAGEPATH_START);
         if (adFile.exists()) {
-            startActivityForResult(new Intent(this, AdActivity.class), Str.REQUESTADCODE);
+            startActivityForResult(new Intent(this, MyStartViewPagerActivity.class), Str.REQUESTADCODE);
             overridePendingTransition(R.anim.in_alpha, R.anim.out_alpha);
         } else {
             handler.postDelayed(new Runnable() {
@@ -103,55 +143,62 @@ public class StartActivity extends BaseActivity {
         }
     }
 
-    String phone, pwd;
     boolean firstLogin;
+    MyHttpHelper myHttpHelper;
 
     private void init() {
         SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
         firstLogin = preferences.getBoolean("firstLogin", true);
         if (firstLogin) {
             startActivity(new Intent(this, LoginActivity.class));
+            overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
+            finish();
         } else {
-//            phone = preferences.getString("phone", null);
-//            pwd = preferences.getString("pwd", null);
-//            MyHttpUtils myHttpUtils = new MyHttpUtils(this);
-//            List<String> loginResult = myHttpUtils.login(Str.URL_LOGIN, phone, pwd);
-//
-//            if (loginResult.get(0).equalsIgnoreCase("OK")) {
-//                //从服务器获取app更新信息，有新版本提示下载安装，无则直接进入app主界面
-//                int loginTimes = preferences.getInt("loginTimes",0);
-//                preferences.edit()
-//                        .putInt("loginTimes",++loginTimes)
-//                        .commit();
-//
-//                startActivity(new Intent(this, DriverActivity.class));
-//            } else if (loginResult.get(0).equals("ERROR")) {
-//                Toast.makeText(this, "登陆出错,请重新登陆", Toast.LENGTH_SHORT).show();
-//                startActivity(new Intent(this, LoginActivity.class));
-//            } else if (loginResult.get(0).equals("FAILURE")) {
-//                startActivity(new Intent(this, LoginActivity.class));
-//            }
-           List<String> resultForStatus = myHttpUtils.updateCarStatus(Str.URL_UPDATE_CARSTATUS);
-            if (resultForStatus == null){
-                ToastUtil.show(this,"登陆失败，请重试");
-                return;
+            if (myHttpHelper == null) {
+                myHttpHelper = new MyHttpHelper(StartActivity.this);
             }
-            if (resultForStatus.get(0).equalsIgnoreCase("OK")){
-                startActivity(new Intent(this, DriverActivity.class));
-//                if (resultForStatus.get(1).equalsIgnoreCase("true")){
-//                }else {
-//                    startActivity(new Intent(this, LoginActivity.class));
-//                }
-            }else if (resultForStatus.get(0).equalsIgnoreCase("NOAUTH")){
-                startActivity(new Intent(this, LoginActivity.class));
-            }else {
-                ToastUtil.show(this,resultForStatus.get(1));
-                startActivity(new Intent(this, DriverActivity.class));
-            }
+            MyAsyncHttpUtils.get(Str.URL_CHECK_LOGIN, new MyTextHttpResponseHandler() {
+                @Override
+                public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+                    super.onFailure(i, headers, s, throwable);
+                    Log.i(TAG, "onFailure: " + s);
+                    startActivity(new Intent(StartActivity.this, LoginActivity.class));
+                    overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
+                    finish();
+                }
+
+                @Override
+                public void onSuccess(int i, Header[] headers, String s) {
+                    super.onSuccess(i, headers, s);
+                    Log.i(TAG, "onSuccess:Str.URL_CHECK_LOGIN: " + Str.URL_CHECK_LOGIN);
+                    Log.i(TAG, "onSuccess: " + s);
+                    List<String> resultForStatus = myHttpHelper.resultByJson(s, null);
+                    if (resultForStatus == null) {
+                        startActivity(new Intent(StartActivity.this, LoginActivity.class));
+                    } else {
+                        if (resultForStatus.size() != 0) {
+                            if (resultForStatus.get(0).equalsIgnoreCase("OK")) {
+                                startActivity(new Intent(StartActivity.this, DriverActivity.class));
+                            } else {
+                                startActivity(new Intent(StartActivity.this, LoginActivity.class));
+                            }
+                        } else {
+                            startActivity(new Intent(StartActivity.this, LoginActivity.class));
+                        }
+                    }
+                    overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
+                    finish();
+                }
+            });
         }
-        overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
-        finish();
     }
 
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
+            handler = null;
+        }
+    }
 }

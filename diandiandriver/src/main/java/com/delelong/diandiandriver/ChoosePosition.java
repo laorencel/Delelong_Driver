@@ -345,7 +345,8 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
             }
 
             holder.addressName.setText(item.getTitle());
-            holder.addressDetail.setText(item.getSnippet() + "\t距离" + item.getDistance() + "米");
+            int distance = item.getDistance()>0?item.getDistance():0;
+            holder.addressDetail.setText(item.getSnippet() + "\t距离" + distance + "米");
 
             return convertView;
         }

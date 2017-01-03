@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
-        android:background="#cfcfcf"
+        android:background="#000000"
         android:padding="10dp">
 
         <ImageButton
@@ -24,7 +24,7 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:text="添加车辆"
-            android:textColor="#3e3e3e"
+            android:textColor="#ffffff"
             android:textSize="18sp" />
 
         <TextView
@@ -33,12 +33,11 @@
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
-            android:background="@drawable/bg_confirm_green"
-            android:paddingTop="5dp"
+            android:layout_marginRight="3dp"
             android:paddingBottom="5dp"
             android:paddingLeft="11dp"
             android:paddingRight="11dp"
-            android:layout_marginRight="3dp"
+            android:paddingTop="5dp"
             android:text="确 定"
             android:textColor="#ffff"
             android:textSize="12sp" />
@@ -50,6 +49,31 @@
         android:gravity="center"
         android:orientation="vertical"
         android:padding="10dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:text="选择车辆类型"
+                android:textSize="18sp" />
+
+            <Spinner
+                android:id="@+id/spinner_carType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:entries="@array/carType"></Spinner>
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.8dp"
+            android:background="#d7d7d7"></View>
 
         <RelativeLayout
             android:id="@+id/rl_brand"
@@ -263,10 +287,12 @@
             android:layout_height="0.8dp"
             android:background="#d7d7d7"></View>
 
-        <ImageView
-            android:id="@+id/img_picture"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp" />
     </LinearLayout>
+
+    <ImageView
+        android:id="@+id/img_picture"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="20dp"
+        android:scaleType="fitCenter" />
 </LinearLayout>

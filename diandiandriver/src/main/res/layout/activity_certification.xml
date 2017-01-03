@@ -8,23 +8,25 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        android:background="#ffff"
-        android:padding="13dp">
+        android:background="#000000"
+        android:padding="10dp">
 
         <ImageButton
             android:id="@+id/arrow_back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@mipmap/back_arrow" />
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_centerVertical="true"
+            android:background="@drawable/arr_right_white" />
 
         <TextView
-            android:id="@+id/tv_modifyInfo"
+            android:id="@+id/tv_actionBarInfo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:textSize="18sp"
-            android:text="实名认证" />
+            android:text="实名认证"
+            android:textColor="#ffffff"
+            android:textSize="16sp" />
+
     </RelativeLayout>
 
     <LinearLayout
@@ -62,19 +64,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:maxLength="18"
-            android:maxLines="1"
             android:background="@drawable/bg_alpha_corner_edt"
             android:hint="身份证号"
+            android:maxLength="18"
+            android:maxLines="1"
             android:padding="10dp" />
 
         <Button
             android:id="@+id/btn_confirm"
-            android:onClick="confirm"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="5dp"
             android:background="@drawable/bg_gray_corner_btn"
+            android:onClick="confirm"
             android:padding="10dp"
             android:text="提交审核"
             android:textColor="#ffff" />
@@ -83,15 +85,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="10dp"
-            android:text="1.目前只支持使用中华人民共和国居民身份证进行实名认证"
+            android:text="目前只支持使用中华人民共和国居民身份证进行实名认证"
             android:textColor="#747474" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="2.您填写的信息将同时默认位驾驶人信息，请谨慎填写"
-            android:textColor="#747474" />
+        <!--<TextView-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:padding="10dp"-->
+            <!--android:text="2.您填写的信息将同时默认位驾驶人信息，请谨慎填写"-->
+            <!--android:textColor="#747474" />-->
     </LinearLayout>
 
 </LinearLayout>

@@ -1,7 +1,6 @@
 package com.delelong.diandiandriver.menuActivity;
 
-import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.View;
@@ -11,10 +10,14 @@ import android.widget.TextView;
 
 import com.delelong.diandiandriver.BaseActivity;
 import com.delelong.diandiandriver.R;
-import com.delelong.diandiandriver.bean.Client;
+import com.delelong.diandiandriver.bean.DriverAmount;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.MyHttpUtils;
-import com.delelong.diandiandriver.pace.MyAMapLocation;
+import com.delelong.diandiandriver.http.MyAsyncHttpUtils;
+import com.delelong.diandiandriver.http.MyHttpHelper;
+import com.loopj.android.http.TextHttpResponseHandler;
+
+import cz.msebera.android.httpclient.Header;
+
 
 /**
  * Created by Administrator on 2016/9/18.
@@ -28,16 +31,16 @@ public class WalletActivity extends BaseActivity implements View.OnClickListener
         setContentView(R.layout.activity_wallet);
         initActionBar();
         initView();
-        initMsg();
+        initYE();
     }
 
-    RelativeLayout rl_pay,rl_sum,rl_coupon,rl_invoice;
-    TextView tv_pay,tv_sum,tv_coupon;
+    RelativeLayout rl_pay, rl_sum, rl_tixian;
+    TextView tv_pay, tv_sum, tv_coupon;
+
     private void initView() {
         rl_pay = (RelativeLayout) findViewById(R.id.rl_pay);//支付方式
         rl_sum = (RelativeLayout) findViewById(R.id.rl_sum);//余额
-        rl_coupon = (RelativeLayout) findViewById(R.id.rl_coupon);//优惠券
-        rl_invoice = (RelativeLayout) findViewById(R.id.rl_invoice);//发票报销
+        rl_tixian = (RelativeLayout) findViewById(R.id.rl_tixian);//提现
 
         tv_pay = (TextView) findViewById(R.id.tv_pay);
         tv_sum = (TextView) findViewById(R.id.tv_sum);
@@ -45,29 +48,42 @@ public class WalletActivity extends BaseActivity implements View.OnClickListener
 
         rl_pay.setOnClickListener(this);
         rl_sum.setOnClickListener(this);
-        rl_coupon.setOnClickListener(this);
-        rl_invoice.setOnClickListener(this);
+        rl_tixian.setOnClickListener(this);
+//        rl_invoice.setOnClickListener(this);//报销暂取消
     }
 
-    MyHttpUtils myHttpUtils;
-    Client client;
-    MyAMapLocation myAMapLocation;
-    SharedPreferences preferences;
-    Bundle bundle;
-    private void initMsg() {
-        myHttpUtils = new MyHttpUtils(this);
-        bundle = getIntent().getBundleExtra("bundle");
-        myAMapLocation = (MyAMapLocation) bundle.getSerializable("myAMapLocation");
-        client = (Client) bundle.getSerializable("client");//从上级activity获取
-        preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
-        if (client == null){
-            client = myHttpUtils.getClientByGET(Str.URL_MEMBER);
+    MyHttpHelper myHttpHelper;
+    DriverAmount mDriverAmount;
+
+    private void initYE() {
+        if (myHttpHelper == null) {
+            myHttpHelper = new MyHttpHelper(this);
         }
+        MyAsyncHttpUtils.post(Str.URL_DRIVER_YE_AMOUNT, new TextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
 
+            }
 
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                if (myHttpHelper == null) {
+                    myHttpHelper = new MyHttpHelper(WalletActivity.this);
+                }
+                if (myHttpHelper == null) {
+                    return;
+                }
+                mDriverAmount = myHttpHelper.getDriverYeAmountByJson(s, null);
+                if (mDriverAmount != null) {
+                    tv_sum.setText("￥" + mDriverAmount.getYe());
+                }
+            }
+        });
+//            mDriverAmount = myHttpUtils.getDriverYeAmount(Str.URL_DRIVER_YE_AMOUNT);
     }
 
     ImageButton arrow_back;
+
     private void initActionBar() {
         arrow_back = (ImageButton) findViewById(R.id.arrow_back);
         arrow_back.setOnClickListener(this);
@@ -80,14 +96,13 @@ public class WalletActivity extends BaseActivity implements View.OnClickListener
                 finish();
                 break;
             case R.id.rl_pay:
-                startActivityWithBundle(PaymentActivity.class,myAMapLocation,client);
+                startActivity(new Intent(this, PaymentActivity.class));
                 break;
             case R.id.rl_sum:
+                startActivity(new Intent(this, MyAccountActivity.class));
                 break;
-            case R.id.rl_coupon:
-                break;
-            case R.id.rl_invoice:
-                intentActivityWithBundle(this,InvoiceActivity.class,bundle);
+            case R.id.rl_tixian:
+                startActivity(new Intent(this, MyTiXianActivity.class));
                 break;
         }
     }

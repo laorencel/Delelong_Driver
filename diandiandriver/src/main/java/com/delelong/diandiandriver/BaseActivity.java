@@ -1,11 +1,12 @@
 package com.delelong.diandiandriver;
 
+import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -47,10 +48,12 @@ import android.view.animation.BounceInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.RotateAnimation;
 import android.view.animation.TranslateAnimation;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
@@ -64,13 +67,20 @@ import com.delelong.diandiandriver.bean.MyNotificationInfo;
 import com.delelong.diandiandriver.bean.OrderInfo;
 import com.delelong.diandiandriver.bean.Str;
 import com.delelong.diandiandriver.dialog.MyDialogUtils;
-import com.delelong.diandiandriver.http.MyHttpUtils;
+import com.delelong.diandiandriver.dialog.MyToastDialog;
+import com.delelong.diandiandriver.http.MyAsyncHttpUtils;
+import com.delelong.diandiandriver.http.MyBinaryHttpResponseHandler;
+import com.delelong.diandiandriver.http.MyHttpHelper;
+import com.delelong.diandiandriver.http.MyTextHttpResponseHandler;
+import com.delelong.diandiandriver.listener.MyHttpDataListener;
 import com.delelong.diandiandriver.listener.MyOrientationListener;
 import com.delelong.diandiandriver.pace.MyAMapLocation;
+import com.delelong.diandiandriver.utils.AMapCityUtils;
 import com.delelong.diandiandriver.utils.ExampleUtil;
 import com.delelong.diandiandriver.utils.SystemUtils;
 import com.delelong.diandiandriver.utils.TipHelper;
 import com.delelong.diandiandriver.utils.ToastUtil;
+import com.delelong.diandiandriver.view.FullScreenDlgFragment;
 import com.flyco.animation.BaseAnimatorSet;
 import com.flyco.animation.BounceEnter.BounceTopEnter;
 import com.flyco.animation.SlideExit.SlideBottomExit;
@@ -83,15 +93,19 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.loopj.android.http.RequestParams;
 
+import org.joda.time.DateTime;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -99,9 +113,13 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import cn.jpush.android.api.JPushInterface;
+import cz.msebera.android.httpclient.Header;
+
+import static com.delelong.diandiandriver.bean.Str.APPTYPE_CLIENT;
 
 
 public class BaseActivity extends AppCompatActivity {
@@ -113,17 +131,76 @@ public class BaseActivity extends AppCompatActivity {
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     private GoogleApiClient client;
+    Context mContext;
+    private final static float TARGET_HEAP_UTILIZATION = 0.75f;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);//禁止横屏
-        getSupportActionBar().hide();
-        initJPush();
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+        mContext = BaseActivity.this;
+        Map<String, String> header = getAsyncHttpHeader();
+        MyAsyncHttpUtils.setHeader(header);
+        setTargetHeapUtilization(TARGET_HEAP_UTILIZATION);
+//        initJPush();
 //        setWindowBar();
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+    }
+
+    public Map<String, String> getAsyncHttpHeader() {
+        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+        String token = preferences.getString("token", null);
+        String secret = preferences.getString("sercet", null);
+        String serialNumber = getSerialNumber();
+        Map<String, String> header = new HashMap<>();
+        //appType：请求的类型，1:表示司机端;2:表示普通会员
+        header.put("appType", APPTYPE_CLIENT);
+        //devicetype：设备序类型，1:android;2:ios
+        header.put("devicetype", Str.DEVICE_TYPE);
+        //deviceno：设备序列号
+        header.put("deviceno", serialNumber);
+        if (notNull(token)) {
+            header.put("token", token);
+            header.put("secret", secret);
+        }
+        return header;
+    }
+
+    public static void setTargetHeapUtilization(float heapUtilization) {
+        try {
+            Class<?> cls = Class.forName("dalvik.system.VMRuntime");
+            Method getRuntime = cls.getMethod("getRuntime");
+            Object obj = getRuntime.invoke(null);// obj就是Runtime
+            if (obj == null) {
+                Log.i(TAG, "setMinHeapSize: obj is null");
+            } else {
+                System.out.println(obj.getClass().getName());
+                Class<?> runtimeClass = obj.getClass();
+                Method setTargetHeapUtilization = runtimeClass.getMethod(
+                        "setTargetHeapUtilization", float.class);
+                setTargetHeapUtilization.invoke(obj, heapUtilization);
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            Log.i(TAG, "setMinHeapSize: ClassNotFoundException" + e);
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+            Log.i(TAG, "setMinHeapSize: NoSuchMethodException" + e);
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+            Log.i(TAG, "setMinHeapSize: IllegalArgumentException" + e);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+            Log.i(TAG, "setMinHeapSize: IllegalAccessException" + e);
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+            Log.i(TAG, "setMinHeapSize: InvocationTargetException" + e);
+        }
     }
 
     /**
@@ -293,6 +370,24 @@ public class BaseActivity extends AppCompatActivity {
         return result;
     }
 
+    public Bitmap getBitMapFormRes(Context context, int resId) {
+        BitmapFactory.Options opt = new BitmapFactory.Options();
+        opt.inPreferredConfig = Bitmap.Config.RGB_565;
+        opt.inPurgeable = true;//bitmap可回收
+        opt.inInputShareable = true;//
+        //获取资源图片
+        InputStream is = context.getResources().openRawResource(resId);
+        return BitmapFactory.decodeStream(is, null, opt);
+    }
+
+    public Bitmap getBitMapFormInputStream(Context context, InputStream is) {
+        BitmapFactory.Options opt = new BitmapFactory.Options();
+        opt.inPreferredConfig = Bitmap.Config.RGB_565;
+        opt.inPurgeable = true;//bitmap可回收
+        opt.inInputShareable = true;//
+        //获取资源图片
+        return BitmapFactory.decodeStream(is, null, opt);
+    }
     ////////////////////////////////////////////////////////////
 
     /**
@@ -347,7 +442,7 @@ public class BaseActivity extends AppCompatActivity {
     /**
      * 定位到我的位置
      */
-    public void centerToMyLocation(AMap aMap, AMapLocationClient mLocationClient, MyOrientationListener myOrientationListener, double myLatitude, double myLongitude) {
+    public void centerToMyLocation(AMap aMap, AMapLocationClient mLocationClient, MyOrientationListener myOrientationListener, AMapLocation aMapLocation) {
         if (myOrientationListener != null) {
             if (!myOrientationListener.isStarted()) {
                 myOrientationListener.start();
@@ -358,13 +453,15 @@ public class BaseActivity extends AppCompatActivity {
                 mLocationClient.startLocation();
             }
         }
-        if (aMap == null || mLocationClient == null || myOrientationListener == null) {
+        if (aMap == null || mLocationClient == null || aMapLocation == null) {
             return;
         }
-        LatLng latLng = new LatLng(myLatitude, myLongitude);
+//        LatLng latLng = new LatLng(myLatitude, myLongitude);
+        LatLng latLng = new LatLng(aMapLocation.getLatitude(), aMapLocation.getLongitude());
 //        CameraUpdate update = CameraUpdateFactory.zoomTo(18);
 //        aMap.animateCamera(update);
         aMap.animateCamera(CameraUpdateFactory.changeLatLng(latLng));
+        mLocationClient.startLocation();
     }
 
     public <T> void intentActivityForResult(Context context, Class<T> tClass, String key, String value, String city, int requestCode) {
@@ -408,6 +505,74 @@ public class BaseActivity extends AppCompatActivity {
         }
         return serial;
     }
+
+    /**
+     * 将城市json数据存储进数据库（只会存一次）
+     */
+    public void insert2DB() {
+        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+        if (preferences.getBoolean("initDB", true)) {
+            AMapCityUtils cityUtils = new AMapCityUtils(BaseActivity.this);
+            cityUtils.insert2DB();//加载city到数据库
+        }
+    }
+
+    public boolean notNull(Object... objects) {
+        for (Object obj : objects) {
+            if (obj == null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isNull(Object... objects) {
+        for (Object obj : objects) {
+            if (obj == null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean notEmpty(String... objects) {
+        for (String obj : objects) {
+            if (obj == null || obj.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isEmpty(String... objects) {
+        for (String obj : objects) {
+            if (obj == null || obj.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 拨打电话
+     *
+     * @param callPhone
+     */
+    public void callPhone(String callPhone) {
+        Intent callIntent = new Intent(Intent.ACTION_CALL);
+        callIntent.setData(Uri.parse("tel:" + callPhone));
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        startActivity(callIntent);
+    }
     ///////////////////////////////////////////图片获取与存储
 
     /**
@@ -416,81 +581,388 @@ public class BaseActivity extends AppCompatActivity {
      * @param aMapLocation
      */
     public void downloadStartAD(AMapLocation aMapLocation) {
-        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
-        String last_update_start = preferences.getString("last_update_start", "null");
-        ADBean adBean_start = null;
-        MyHttpUtils myHttpUtils = new MyHttpUtils(this);
-        if (aMapLocation.getAdCode() != null) {
-            adBean_start = myHttpUtils.getADBeanByGET(Str.URL_AD, aMapLocation.getAdCode(), 1);
-            if (adBean_start == null) {
-                return;
-            }
+        String adcode;
+        if (isNull(aMapLocation)) {
+            adcode = "340100";
         } else {
-            return;
+            adcode = !aMapLocation.getAdCode().isEmpty() ? aMapLocation.getAdCode() : "340100";
         }
+        MyHttpHelper myHttpHelper = new MyHttpHelper(this);
+        RequestParams params = myHttpHelper.getADBeanParams(adcode, 1);
+        final MyHttpHelper myFinalHttpHelper = myHttpHelper;
+        MyAsyncHttpUtils.get(Str.URL_AD, params, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String s, Throwable throwable) {
 
-        ADBean.ADInfo adInfo = adBean_start.getAdInfos().get(0);
+            }
 
-        if (adInfo.getLast_update().equals(last_update_start)) {
-            Log.i(TAG, "downloadStartAD: equals");
-            return;
-        }
-        preferences.edit()
-                .putString("last_update_start", adInfo.getLast_update())
-                .putString("url_start", adInfo.getUrl()).commit();
-        File file = new File(Str.ADIMAGEPATH_START);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-        for (int i = 0; i < adInfo.getPics().size(); i++) {
-            String pic = adInfo.getPics().get(i);
-            file = new File(Str.ADIMAGEPATH_START + i + ".JPEG");
-            if (!file.exists()) {
-                try {
-                    file.createNewFile();
-                    myHttpUtils.createImage(Str.ADIMAGEPATH_START + i + ".JPEG",
-                            myHttpUtils.downloadImage(Str.URL_SERVICE_IMAGEPATH + pic));
-                } catch (IOException e) {
-                    e.printStackTrace();
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, String s) {
+                ADBean adBean_start = myFinalHttpHelper.getADInfoByJson(s, null);
+                if (isNull(adBean_start, adBean_start.getAdInfos())) {
+                    return;
                 }
+                if (adBean_start.getAdInfos().size() < 1) {
+                    return;
+                }
+                SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+                String last_update_start = preferences.getString("last_update_start", "null");
+                ADBean.ADInfo adInfo = adBean_start.getAdInfos().get(0);
+
+                if (adInfo.getLast_update().equals(last_update_start)) {
+                    Log.i(TAG, "downloadStartAD: equals");
+                    return;
+                }
+                preferences.edit()
+                        .putString("last_update_start", adInfo.getLast_update())
+                        .putString("url_start", adInfo.getUrl()).commit();
+                File file = new File(Str.ADIMAGEPATH_START);
+                if (!file.exists()) {
+                    file.mkdirs();
+                }else {
+                    try {
+                        Log.i(TAG, "onSuccess: delete");
+                        File[] files = file.listFiles();
+                        if (files!=null&&files.length>0){
+                            for (File file1 : files) {
+                                if (file1!=null){
+                                    file1.delete();
+                                    Log.i(TAG, "onSuccess: delete111");
+                                }
+                            }
+                        }
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+                if (adInfo.getPics() == null || adInfo.getPics().size() == 0) {
+                    return;
+                }
+                for (int i = 0; i < adInfo.getPics().size(); i++) {
+                    String pic = adInfo.getPics().get(i);
+                    file = new File(Str.ADIMAGEPATH_START + File.separator + i + ".JPEG");
+                    if (!file.exists()) {
+                        try {
+                            file.createNewFile();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    final int finalI = i;
+                    MyAsyncHttpUtils.get(Str.URL_SERVICE_IMAGEPATH + pic, new MyBinaryHttpResponseHandler() {
+                        @Override
+                        public void onSuccess(int status, Header[] headers, byte[] bytes) {
+                            InputStream inputStream = new ByteArrayInputStream(bytes);
+                            if (inputStream == null) {
+                                return;
+                            }
+                            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                            if (inputStream != null) {
+                                myFinalHttpHelper.createImage(Str.ADIMAGEPATH_START + File.separator + finalI + ".JPEG", bitmap);
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(int i, Header[] headers, byte[] bytes, Throwable throwable) {
+
+                        }
+                    });
+                }
+            }
+        });
+
+//        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+//        String last_update_start = preferences.getString("last_update_start", "null");
+//        ADBean adBean_start = null;
+//        MyHttpUtils myHttpUtils = new MyHttpUtils(this);
+//        if (aMapLocation.getAdCode() != null) {
+//            adBean_start = myHttpUtils.getADBeanByGET(Str.URL_AD, aMapLocation.getAdCode(), 1);
+//            if (adBean_start == null) {
+//                return;
+//            }
+//        } else {
+//            return;
+//        }
+//
+//        ADBean.ADInfo adInfo = adBean_start.getAdInfos().get(0);
+//
+//        if (adInfo.getLast_update().equals(last_update_start)) {
+//            Log.i(TAG, "downloadStartAD: equals");
+//            return;
+//        }
+//        preferences.edit()
+//                .putString("last_update_start", adInfo.getLast_update())
+//                .putString("url_start", adInfo.getUrl()).commit();
+//        File file = new File(Str.ADIMAGEPATH_START);
+//        if (!file.exists()) {
+//            file.mkdirs();
+//        }
+//        for (int i = 0; i < adInfo.getPics().size(); i++) {
+//            String pic = adInfo.getPics().get(i);
+//            file = new File(Str.ADIMAGEPATH_START + i + ".JPEG");
+//            if (!file.exists()) {
+//                try {
+//                    file.createNewFile();
+//                    myHttpUtils.createImage(Str.ADIMAGEPATH_START + i + ".JPEG",
+//                            myHttpUtils.downloadImage(Str.URL_SERVICE_IMAGEPATH + pic));
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+    }
+
+    public void downloadMainAD(AMapLocation aMapLocation) {
+        String adcode;
+        if (isNull(aMapLocation)) {
+            adcode = "340100";
+        } else {
+            adcode = !aMapLocation.getAdCode().isEmpty() ? aMapLocation.getAdCode() : "340100";
+        }
+        MyHttpHelper myHttpHelper = new MyHttpHelper(this);
+        RequestParams params = myHttpHelper.getADBeanParams(adcode, 2);
+        final MyHttpHelper myFinalHttpHelper = myHttpHelper;
+        MyAsyncHttpUtils.get(Str.URL_AD, params, new MyTextHttpResponseHandler() {
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String s, Throwable throwable) {
+
+            }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, String s) {
+                ADBean adBean_main = myFinalHttpHelper.getADInfoByJson(s, null);
+                SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+                String last_update_main = preferences.getString("last_update_main", "null");
+                if (isNull(adBean_main) || isNull(adBean_main.getAdInfos())) {
+                    return;
+                }
+                if (adBean_main.getAdInfos().size() < 1) {
+                    return;
+                }
+                ADBean.ADInfo adInfo = adBean_main.getAdInfos().get(0);
+
+                if (adInfo.getLast_update().equals(last_update_main)) {
+                    Log.i(TAG, "downloadMainAD: equals");
+                    return;
+                }
+                preferences.edit()
+                        .putString("last_update_main", adInfo.getLast_update())
+                        .putString("url_main", adInfo.getUrl()).commit();
+
+                File file = new File(Str.ADIMAGEPATH_MAIN);
+                if (!file.exists()) {
+                    file.mkdirs();
+                }
+                if (adInfo.getPics() == null || adInfo.getPics().size() == 0) {
+                    return;
+                }
+                for (int i = 0; i < adInfo.getPics().size(); i++) {
+                    file = new File(Str.ADIMAGEPATH_MAIN + i + ".JPEG");
+                    if (!file.exists()) {
+                        try {
+                            file.createNewFile();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    String pic = adInfo.getPics().get(i);
+
+                    final int finalI = i;
+                    MyAsyncHttpUtils.get(Str.URL_SERVICE_IMAGEPATH + pic, new MyBinaryHttpResponseHandler() {
+                        @Override
+                        public void onSuccess(int status, Header[] headers, byte[] bytes) {
+                            InputStream inputStream = new ByteArrayInputStream(bytes);
+                            if (inputStream == null) {
+                                return;
+                            }
+                            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                            if (inputStream != null) {
+                                myFinalHttpHelper.createImage(Str.ADIMAGEPATH_MAIN + finalI + ".JPEG", bitmap);
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(int i, Header[] headers, byte[] bytes, Throwable throwable) {
+
+                        }
+                    });
+                }
+            }
+        });
+
+    }
+
+    public void showMainAD(AMapLocation aMapLocation) {
+        String adcode;
+        if (isNull(aMapLocation)) {
+            adcode = "340100";
+        } else {
+            adcode = !aMapLocation.getAdCode().isEmpty() ? aMapLocation.getAdCode() : "340100";
+        }
+        MyHttpHelper myHttpHelper = new MyHttpHelper(this);
+        RequestParams params = myHttpHelper.getADBeanParams(adcode, 2);
+        final MyHttpHelper myFinalHttpHelper = myHttpHelper;
+        MyAsyncHttpUtils.get(Str.URL_AD, params, new MyTextHttpResponseHandler() {
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String s, Throwable throwable) {
+
+            }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, String s) {
+                Log.i(TAG, "onSuccess: getADInfoByJson:showMainAD:" + s);
+                ADBean adBean_main = myFinalHttpHelper.getADInfoByJson(s, new MyHttpDataListener() {
+                    @Override
+                    public void toLogin() {
+
+                    }
+
+                    @Override
+                    public void onError(Object object) {
+                        MyToastDialog.show(mContext, object.toString());
+                    }
+                });
+                SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+                String last_update_main = preferences.getString("last_update_main", "null");
+                if (isNull(adBean_main) || isNull(adBean_main.getAdInfos())) {
+                    return;
+                }
+                if (adBean_main.getAdInfos().size() == 0) {
+                    return;
+                }
+                final ADBean.ADInfo adInfo = adBean_main.getAdInfos().get(0);
+
+                if (adInfo.getLast_update().equals(last_update_main)) {
+                    Log.i(TAG, "showMainAD: equals");
+                    return;
+                }
+                preferences.edit()
+                        .putString("last_update_main", adInfo.getLast_update())
+                        .putString("url_main", adInfo.getUrl()).commit();
+                if (adInfo.getPics() == null || adInfo.getPics().size() == 0) {
+                    return;
+                }
+                final List<Bitmap> bitmaps = new ArrayList<Bitmap>();
+                for (int i = 0; i < adInfo.getPics().size(); i++) {
+                    String pic = adInfo.getPics().get(i);
+                    final int finalI = i;
+                    MyAsyncHttpUtils.get(Str.URL_SERVICE_IMAGEPATH + pic, new MyBinaryHttpResponseHandler() {
+                        @Override
+                        public void onSuccess(int status, Header[] headers, byte[] bytes) {
+                            InputStream inputStream = null;
+                            Bitmap bitmap = null;
+                            try {
+                                inputStream = new ByteArrayInputStream(bytes);
+                                bitmap = BitmapFactory.decodeStream(inputStream);
+                                if (bitmap != null) {
+                                    bitmaps.add(bitmap);
+                                }
+                                if (finalI == adInfo.getPics().size() - 1) {
+                                    if (bitmaps != null && bitmaps.size() > 0) {
+                                        FullScreenDlgFragment.newInstance(BaseActivity.this, bitmaps, 0)
+                                                .show(getSupportFragmentManager(), "dialog");
+                                    }
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            } finally {
+                                try {
+                                    if (inputStream != null) {
+                                        inputStream.close();
+                                        inputStream = null;
+                                    }
+                                    if (bitmap != null && bitmap.isRecycled()) {
+                                        bitmap.recycle();
+                                        bitmap = null;
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(int i, Header[] headers, byte[] bytes, Throwable throwable) {
+
+                        }
+                    });
+                }
+
+            }
+        });
+    }
+
+    public void login(final String phone, final String pwd_edt, final String pwd) {
+        if (phone.isEmpty() || pwd.isEmpty()) {
+            Toast.makeText(this, "账号或密码不能为空", Toast.LENGTH_SHORT).show();
+            return;
+        } else {
+            if (phone.length() != 11 || pwd_edt.length() < 6) {
+                Toast.makeText(this, "号码或密码长度不够", Toast.LENGTH_SHORT).show();
+                return;
+            } else {
+                final ProgressDialog progressDialog = ProgressDialog.show(BaseActivity.this, null, "登录中，请稍候...");
+                MyHttpHelper myHttpHelper = new MyHttpHelper(this);
+                RequestParams params = myHttpHelper.geLoginParams(phone, pwd);
+                final MyHttpHelper myFinalHttpHelper = myHttpHelper;
+                MyAsyncHttpUtils.post(Str.URL_LOGIN, params, new MyTextHttpResponseHandler() {
+                    @Override
+                    public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+                        Log.i(TAG, "onFailure: login");
+                        if (progressDialog != null && progressDialog.isShowing()) {
+                            progressDialog.dismiss();
+                        }
+                        ToastUtil.show(BaseActivity.this, "登录失败！");
+                    }
+
+                    @Override
+                    public void onSuccess(int i, Header[] headers, String s) {
+                        Log.i(TAG, "onSuccess: " + s);
+                        if (progressDialog != null && progressDialog.isShowing()) {
+                            progressDialog.dismiss();
+                        }
+                        List<String> result = myFinalHttpHelper.resultByJson(s, null);
+                        if (result == null) {
+                            ToastUtil.show(BaseActivity.this, "点击失败，请重试");
+                            return;
+                        }
+                        if (result.get(0).equals("OK")) {
+                            startActivity(new Intent(mContext, DriverActivity.class));
+                            overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
+                            //存储用户(token)、密码(sercet)
+                            setPreferences(result, phone, pwd, pwd_edt);
+                            finish();
+                        } else if (result.get(0).equals("ERROR")) {
+                            Toast.makeText(mContext, "登陆出错," + result.get(1), Toast.LENGTH_SHORT).show();
+                            return;
+                        } else if (result.get(0).equals("FAILURE")) {
+                            Toast.makeText(mContext, "登陆失败," + result.get(1), Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                    }
+                });
+
+//                MyHttpUtils myHttpUtils = new MyHttpUtils(this);
+//                List<String> result = myHttpUtils.login(Str.URL_LOGIN, phone, pwd);
             }
         }
     }
 
-    public void downloadMainAD(AMapLocation aMapLocation) {
+    public void setPreferences(List<String> result, String phone, String pwd, String pwd_edt) {
         SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
-        String last_update_main = preferences.getString("last_update_main", "null");
-        MyHttpUtils myHttpUtils = new MyHttpUtils(this);
-        ADBean adBean_main = myHttpUtils.getADBeanByGET(Str.URL_AD, aMapLocation.getAdCode(), 2);
-        if (adBean_main == null) {
-            return;
-        }
-        ADBean.ADInfo adInfo = adBean_main.getAdInfos().get(0);
-
-        if (adInfo.getLast_update().equals(last_update_main)) {
-            Log.i(TAG, "downloadMainAD: equals");
-            return;
-        }
+        boolean firstLogin = false;
+        int loginTimes = preferences.getInt("loginTimes", 0);
         preferences.edit()
-                .putString("last_update_main", adInfo.getLast_update())
-                .putString("url_main", adInfo.getUrl()).commit();
-        File file = new File(Str.ADIMAGEPATH_MAIN);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-        for (int i = 0; i < adInfo.getPics().size(); i++) {
-            file = new File(Str.ADIMAGEPATH_MAIN + i + ".JPEG");
-            if (!file.exists()) {
-                try {
-                    file.createNewFile();
-                    String pic = adInfo.getPics().get(i);
-                    myHttpUtils.createImage(Str.ADIMAGEPATH_MAIN + i + ".JPEG",
-                            myHttpUtils.downloadImage(Str.URL_SERVICE_IMAGEPATH + pic));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+                .putString("token", result.get(2))
+                .putString("sercet", result.get(3))
+                .putString("phone", phone)
+                .putString("pwd", pwd)
+                .putString("pwd_edt", pwd_edt)
+                .putInt("loginTimes", ++loginTimes)
+                .putBoolean("firstLogin", firstLogin)
+                .commit();
     }
 
     /**
@@ -505,10 +977,21 @@ public class BaseActivity extends AppCompatActivity {
         String path = filePath + fileName;
         FileOutputStream fileOutputStream = null;
         try {
+            File fileDir = new File(filePath);
+            if (!fileDir.exists()) {
+                fileDir.mkdirs();
+            }
+            File file = new File(path);
+            if (!file.exists()) {
+                file.createNewFile();
+            }
             fileOutputStream = new FileOutputStream(path);
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);// 把数据写入文件
             Log.i(TAG, "createImage: " + "保存图片" + fileName);
         } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        } catch (IOException e) {
             e.printStackTrace();
             return null;
         } finally {
@@ -534,8 +1017,11 @@ public class BaseActivity extends AppCompatActivity {
      */
     public Bitmap getCamera(Intent data, Bitmap bitmap) {
         String sdStatus = Environment.getExternalStorageState();
-        if (!sdStatus.equals(Environment.MEDIA_MOUNTED)) { // 检测sd是否可用
-            Log.i(TAG, "SD card is not avaiable/writeable right now.");
+//        if (!sdStatus.equals(Environment.MEDIA_MOUNTED)) { // 检测sd是否可用
+//            Log.i(TAG, "SD card is not avaiable/writeable right now.");
+//            return null;
+//        }
+        if (isNull(data, data.getExtras())) {
             return null;
         }
         Bundle bundle = data.getExtras();
@@ -551,6 +1037,9 @@ public class BaseActivity extends AppCompatActivity {
      * @return Bitmap
      */
     public Bitmap getAlbum(Intent data, Bitmap bitmap) {
+        if (isNull(data, data.getData())) {
+            return null;
+        }
         Uri selectedImage = data.getData();
         String[] filePathColumns = {MediaStore.Images.Media.DATA};
         Cursor cursor = getContentResolver().query(selectedImage, filePathColumns, null, null, null);
@@ -598,6 +1087,17 @@ public class BaseActivity extends AppCompatActivity {
         client.disconnect();
     }
 
+    public void getSystemTime() {
+        try {
+            DateTime dateTime = new DateTime(Str.TIME_Y, Str.TIME_M, Str.TIME_M, Str.TIME_M, Str.TIME_M, Str.TIME_M, Str.TIME_M);
+            if (dateTime != null && dateTime.isBeforeNow()) {
+                finish();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static class MyHeadTask extends AsyncTask<String, Void, Bitmap> {
         ImageView img_head;
 
@@ -638,31 +1138,43 @@ public class BaseActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        JPushInterface.onPause(this);
+//        JPushInterface.onPause(this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        JPushInterface.onResume(this);
+//        JPushInterface.onResume(this);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+//        if (mTipHelper != null) {
+//            mTipHelper.stopSpeak();
+//        }
         if (mMessageReceiver != null) {
             unregisterReceiver(mMessageReceiver);
         }
     }
 
-    private void initJPush() {
-        JPushInterface.init(this);
-//        MyPushNotificationBuilder builder = new MyPushNotificationBuilder(this);
-//        builder.setOrderNotificationBuilder();
-        registerMessageReceiver();
-        Log.i(TAG, "initJPush: " + JPushInterface.getRegistrationID(this));
+    /**
+     * 收起虚拟键盘
+     */
+    public void hideSoftInputFromWindow() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(getWindow().getDecorView().getWindowToken(), 0);
+        }
     }
 
+    private void initJPush() {
+//        JPushInterface.init(this);
+//        MyPushNotificationBuilder builder = new MyPushNotificationBuilder(this);
+//        builder.setOrderNotificationBuilder();
+//        registerMessageReceiver();
+//        Log.i(TAG, "initJPush: " + JPushInterface.getRegistrationID(this));
+    }
 
     //for receive customer msg from jpush server
     private MessageReceiver mMessageReceiver;
@@ -671,13 +1183,13 @@ public class BaseActivity extends AppCompatActivity {
     public static final String KEY_MESSAGE = "message";
     public static final String KEY_EXTRAS = "extras";
 
-    public void registerMessageReceiver() {
-        mMessageReceiver = new MessageReceiver();
-        IntentFilter filter = new IntentFilter();
-        filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
-        filter.addAction(MESSAGE_RECEIVED_ACTION);
-        registerReceiver(mMessageReceiver, filter);
-    }
+//    public void registerMessageReceiver() {
+//        mMessageReceiver = new MessageReceiver();
+//        IntentFilter filter = new IntentFilter();
+//        filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+//        filter.addAction(MESSAGE_RECEIVED_ACTION);
+//        registerReceiver(mMessageReceiver, filter);
+//    }
 
     public class MessageReceiver extends BroadcastReceiver {
 
@@ -857,10 +1369,31 @@ public class BaseActivity extends AppCompatActivity {
         if ((!driver.getCompany().equals("null")) || (aMapLocation == null)) {
             return;
         }
-        MyHttpUtils myHttpUtils = new MyHttpUtils(this);
         driver.setCompany(aMapLocation.getAdCode());
-        Log.i(TAG, "updateAdCode: "+aMapLocation.getAdCode()+"//"+driver.getCompany());
-        myHttpUtils.setAdcodeByGET(Str.URL_UPDATEADCODE, driver);
+        final MyHttpHelper myHttpHelper = new MyHttpHelper(this);
+        RequestParams params = myHttpHelper.getAdcodeParams(driver.getCompany());
+        MyAsyncHttpUtils.get(Str.URL_UPDATEADCODE, params, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+                Log.i(TAG, "onFailure:updateAdCode: " + s);
+                MyToastDialog.showInfo(BaseActivity.this, "更新所在公司失败，请重新进入软件");
+            }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                Log.i(TAG, "onSuccess:updateAdCode: " + s);
+                if (s.contains("OK")) {
+                    Log.i(TAG, "onSuccess: 更新成功");
+                } else {
+                    List<String> result = myHttpHelper.resultByJson(s, null);
+                    if (result != null && result.size() > 1) {
+                        MyToastDialog.showInfo(BaseActivity.this, result.get(1));
+                    } else {
+                        MyToastDialog.showInfo(BaseActivity.this, "更新所在公司失败，请重新进入软件");
+                    }
+                }
+            }
+        });
     }
 
     public void checkAdcode(AMapLocation aMapLocation, Driver driver) {
@@ -883,6 +1416,9 @@ public class BaseActivity extends AppCompatActivity {
         BaseAnimatorSet bas_in = new BounceTopEnter();
         BaseAnimatorSet bas_out = new SlideBottomExit();
         Log.i(TAG, "NormalDialogCustomAttr: ");
+        if (activity.isFinishing()) {
+            return;
+        }
         final NormalDialog dialog = new NormalDialog(this);
         dialog.isTitleShow(false)//
                 .bgColor(Color.parseColor("#383838"))//
@@ -913,19 +1449,31 @@ public class BaseActivity extends AppCompatActivity {
                             ToastUtil.show(BaseActivity.this, "您正处于接单状态，请处理完订单再下线");
                             return;
                         }
-                        MyHttpUtils myHttpUtils = new MyHttpUtils(BaseActivity.this);
-                        List<String> loginOutResult = myHttpUtils.getLoginOutResultByGET(Str.URL_LOGINOUT);
-                        if (loginOutResult == null) {
-                            return;
-                        }
-                        if (loginOutResult.get(0).equalsIgnoreCase("OK")) {
-                            ToastUtil.show(BaseActivity.this, "注销登陆");
-                            dialog.dismiss();
-                            activity.startActivity(new Intent(activity, LoginActivity.class));
-                            activity.finish();
-                        } else {
-                            ToastUtil.show(BaseActivity.this, "注销登陆失败，请重试一次");
-                        }
+                        MyAsyncHttpUtils.get(Str.URL_LOGINOUT, new MyTextHttpResponseHandler() {
+                            @Override
+                            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+
+                            }
+
+                            @Override
+                            public void onSuccess(int i, Header[] headers, String s) {
+                                MyHttpHelper myHttpHelper = new MyHttpHelper(mContext);
+                                List<String> loginOutResult = myHttpHelper.resultByJson(s, null);
+                                if (loginOutResult == null) {
+                                    return;
+                                }
+                                if (loginOutResult.get(0).equalsIgnoreCase("OK")) {
+                                    ToastUtil.show(BaseActivity.this, "注销登陆");
+                                    dialog.dismiss();
+                                    activity.startActivity(new Intent(activity, LoginActivity.class));
+                                    activity.finish();
+                                } else {
+                                    ToastUtil.show(BaseActivity.this, "注销登陆失败，" + loginOutResult.get(1));
+                                }
+                            }
+                        });
+//                        List<String> loginOutResult = myHttpUtils.getLoginOutResultByGET(Str.URL_LOGINOUT);
+
                     }
                 });
     }
@@ -960,29 +1508,32 @@ public class BaseActivity extends AppCompatActivity {
         OrderInfo orderInfo = null;
         try {
             JSONObject object = new JSONObject(orderMessage);
-            int title = object.has("title") ? Ints.tryParse(object.getString("title")) : 1;
-            int status = object.has("status") ? Ints.tryParse(object.getString("status")) : 1;
-            int timeOut = object.has("timeOut") ? Ints.tryParse(object.getString("timeOut")) : 30;
+            int title = object.has("title") ? !object.getString("title").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("title")) : 1 : 1;
+            int status = object.has("status") ? !object.getString("status").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("status")) : 1 : 1;
+            int timeOut = object.has("timeOut") ? !object.getString("timeOut").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("timeOut")) : 30 : 30;
             String phone = object.has("phone") ? object.getString("phone") : "";
             String nick_name = object.has("nick_name") ? object.getString("nick_name") : "";
             String head_portrait = object.has("head_portrait") ? object.getString("head_portrait") : "";
             String no = object.has("no") ? object.getString("no") : "";
             String setouttime = object.has("setouttime") ? object.getString("setouttime") : "";
-            int type_ = object.has("type") ? Ints.tryParse(object.getString("type")) : 4;
-            int serviceType_ = object.has("serviceType") ? Ints.tryParse(object.getString("serviceType")) : 1;
+            int type_ = object.has("type") ? !object.getString("type").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("type")) : 4 : 4;
+            int serviceType_ = object.has("serviceType") ? !object.getString("serviceType").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("serviceType")) : 1 : 1;
             String type = type2String(type_);//小分类
             String serviceType = serviceType2String(serviceType_);//大分类
-            boolean set_out_flag = object.has("setOutFlag") ? object.getBoolean("setOutFlag") : false;
-            long id = object.has("id") ? Longs.tryParse(object.getString("id")) : 0;
-            double distance = object.has("distance") ? Doubles.tryParse(object.getString("distance")) : 0;
-            double yg_amount = object.has("ygAmount") ? Doubles.tryParse(object.getString("ygAmount")) : 0;
-            JSONObject trip = object.getJSONObject("trip");
-            double startLatitude = trip.has("startLatitude") ? Doubles.tryParse(trip.getString("startLatitude")) : 0;
-            double startLongitude = trip.has("startLongitude") ? Doubles.tryParse(trip.getString("startLongitude")) : 0;
-            double endLatitude = trip.has("endLatitude") ? Doubles.tryParse(trip.getString("endLatitude")) : 0;
-            double endLongitude = trip.has("endLongitude") ? Doubles.tryParse(trip.getString("endLongitude")) : 0;
-            String reservationAddress = object.has("reservationAddress") ? object.getString("reservationAddress") : "";
-            String destination = object.has("destination") ? object.getString("destination") : "";
+            boolean set_out_flag = object.has("setOutFlag") ? !object.getString("setOutFlag").equalsIgnoreCase("null") ? object.getBoolean("setOutFlag") : false : false;
+            long id = object.has("id") ? !object.getString("id").equalsIgnoreCase("null") ? Longs.tryParse(object.getString("id")) : 0 : 0;
+            double distance = object.has("distance") ? !object.getString("distance").equalsIgnoreCase("null") ? Doubles.tryParse(object.getString("distance")) : 0 : 0;
+            double yg_amount = object.has("ygAmount") ? !object.getString("ygAmount").equalsIgnoreCase("null") ? Doubles.tryParse(object.getString("ygAmount")) : 0 : 0;
+            JSONObject trip = object.has("trip") ? object.getJSONObject("trip") : null;
+            double startLatitude = 0, startLongitude = 0, endLatitude = 0, endLongitude = 0;
+            if (trip != null) {
+                startLatitude = trip.has("startLatitude") ? !trip.getString("startLatitude").equalsIgnoreCase("null") ? Doubles.tryParse(trip.getString("startLatitude")) : 0 : 0;
+                startLongitude = trip.has("startLongitude") ? !trip.getString("startLongitude").equalsIgnoreCase("null") ? Doubles.tryParse(trip.getString("startLongitude")) : 0 : 0;
+                endLatitude = trip.has("endLatitude") ? !trip.getString("endLatitude").equalsIgnoreCase("null") ? Doubles.tryParse(trip.getString("endLatitude")) : 0 : 0;
+                endLongitude = trip.has("endLongitude") ? !trip.getString("endLongitude").equalsIgnoreCase("null") ? Doubles.tryParse(trip.getString("endLongitude")) : 0 : 0;
+            }
+            String reservationAddress = object.has("reservationAddress") ? !object.getString("reservationAddress").equalsIgnoreCase("null") ? object.getString("reservationAddress") : "" : "";
+            String destination = object.has("destination") ? !object.getString("destination").equalsIgnoreCase("null") ? object.getString("destination") : "" : "";
             String remark = object.has("remark") ? object.getString("remark") : "";
             orderInfo = new OrderInfo(title, status, phone, nick_name, head_portrait, no, setouttime, type, serviceType, set_out_flag, id, distance,
                     yg_amount, startLatitude, startLongitude, endLatitude, endLongitude, reservationAddress, destination, remark);
@@ -993,22 +1544,23 @@ public class BaseActivity extends AppCompatActivity {
         return orderInfo;
     }
 
-    public MyNotificationInfo getNotificationInfo(String msg){
-        if (msg == null){
+    public MyNotificationInfo getNotificationInfo(String msg) {
+        if (msg == null) {
             return null;
         }
         MyNotificationInfo myNotificationInfo = null;
         try {
             JSONObject object = new JSONObject(msg);
-            String title = object.has("title")?object.getString("title"):"";
-            String content = object.has("content")?object.getString("content"):"";
-            myNotificationInfo = new MyNotificationInfo(title,content);
+            String title = object.has("title") ? object.getString("title") : "";
+            String content = object.has("content") ? object.getString("content") : "";
+            myNotificationInfo = new MyNotificationInfo(title, content);
         } catch (JSONException e) {
             e.printStackTrace();
             return null;
         }
         return myNotificationInfo;
     }
+
     /**
      * 大分类
      *
@@ -1073,6 +1625,7 @@ public class BaseActivity extends AppCompatActivity {
     }
 
     TipHelper mTipHelper;
+
     public void iflySpeak(String content) {
         if (mTipHelper == null) {
             mTipHelper = new TipHelper(this);
@@ -1122,6 +1675,47 @@ public class BaseActivity extends AppCompatActivity {
         }
     }
 
+    public void permissionExternalStorage() {
+        Log.i(TAG, "permissionExternalStorage: ");
+        if (ContextCompat.checkSelfPermission(this, Str.WRITE_EXTERNALSTORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "permissionExternalStorage: WRITE_EXTERNALSTORAGE");
+            //申请android.permission.ACCESS_COARSE_LOCATION权限
+            ActivityCompat.requestPermissions(this, new String[]{Str.WRITE_EXTERNALSTORAGE}, Str.REQUEST_WRITE_EXTERNALSTORAGE);
+        }
+        if (ContextCompat.checkSelfPermission(this, Str.DELE_CREATE_EXTERNALSTORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "permissionExternalStorage: DELE_CREATE_EXTERNALSTORAGE");
+            //申请android.permission.ACCESS_FINE_LOCATION权限
+            ActivityCompat.requestPermissions(this, new String[]{Str.DELE_CREATE_EXTERNALSTORAGE}, Str.REQUEST_DELE_CREATE_EXTERNALSTORAGE);
+        }
+    }
+
+    public void permissionWriteExternalStorage() {
+        Log.i(TAG, "permissionExternalStorage: ");
+        if (ContextCompat.checkSelfPermission(this, Str.WRITE_EXTERNALSTORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "permissionExternalStorage: WRITE_EXTERNALSTORAGE");
+            //申请android.permission.ACCESS_COARSE_LOCATION权限
+            ActivityCompat.requestPermissions(this, new String[]{Str.WRITE_EXTERNALSTORAGE}, Str.REQUEST_WRITE_EXTERNALSTORAGE);
+        }
+    }
+
+    public boolean checkPermissionWriteExternalStorage() {
+        Log.i(TAG, "permissionExternalStorage: ");
+        if (ContextCompat.checkSelfPermission(this, Str.WRITE_EXTERNALSTORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "permissionExternalStorage: WRITE_EXTERNALSTORAGE");
+            return false;
+        }
+//        if (ContextCompat.checkSelfPermission(this, Str.DELE_CREATE_EXTERNALSTORAGE)
+//                != PackageManager.PERMISSION_GRANTED) {
+//            Log.i(TAG, "permissionExternalStorage: WRITE_EXTERNALSTORAGE");
+//            return false;
+//        }
+        return true;
+    }
+
     public void checkOpenGps() {
         LocationManager locationManager = (LocationManager) this
                 .getSystemService(Context.LOCATION_SERVICE);
@@ -1135,9 +1729,12 @@ public class BaseActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Log.i(TAG, "onRequestPermissionsResult: ");
-//        Log.i(TAG, "onRequestPermissionsResult: "+permissions[0]);
-//        Log.i(TAG, "onRequestPermissionsResult: "+grantResults[0]);
+        for (int i = 0; i < permissions.length; i++) {
+            Log.i(TAG, "onRequestPermissionsResult:permissions: " + permissions[i]);
+        }
+        for (int i = 0; i < grantResults.length; i++) {
+            Log.i(TAG, "onRequestPermissionsResult:grantResults: " + grantResults[i]);
+        }
     }
 
     /**

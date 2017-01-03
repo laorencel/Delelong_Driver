@@ -118,7 +118,7 @@ public class MenuInfoActivity extends BaseActivity implements View.OnClickListen
                 intentActivityWithBundle(this,MenuModifyInfoActivity.class,bundle);
                 break;
             case R.id.rl_certification://身份认证
-                intentActivityWithBundle(this,CertificationActivity.class,bundle);
+//                intentActivityWithBundle(this,CertificationActivity.class,bundle);
                 break;
             case R.id.rl_owner://车主认证
                 intentActivityWithBundle(this,MenuModifyInfoActivity.class,bundle);

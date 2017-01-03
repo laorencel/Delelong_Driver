@@ -1,5 +1,6 @@
 package com.delelong.diandiandriver.function;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -24,8 +25,19 @@ import com.delelong.diandiandriver.BaseActivity;
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.CarBrandBean;
 import com.delelong.diandiandriver.bean.Str;
+import com.delelong.diandiandriver.dialog.MyToastDialog;
+import com.delelong.diandiandriver.http.MyAsyncHttpUtils;
 import com.delelong.diandiandriver.http.MyHttpUtils;
 import com.delelong.diandiandriver.utils.ToastUtil;
+import com.loopj.android.http.BinaryHttpResponseHandler;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.List;
+
+import cz.msebera.android.httpclient.Header;
+
+import static com.delelong.diandiandriver.R.id.img_brand;
 
 /**
  * Created by Administrator on 2016/10/14.
@@ -36,7 +48,7 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
     private static final String TAG = "BAIDUMAPFORTEST";
     Context context;
     private int pageIndex = 1;
-    private final int pageSize = 4;
+    private final int pageSize = 5;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -60,7 +72,7 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
     TextView btn_preV, btn_next;
     MyBrandAdapter brandAdapter;
     MyHttpUtils myHttpUtils;
-    CarBrandBean mCarBrandBean;
+    List<CarBrandBean.CarBrand> carBrands;
 
     private void initView() {
         context = this;
@@ -81,37 +93,51 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
     private void initMsg() {
         myHttpUtils = new MyHttpUtils(this);
         setAdapter(Str.URL_CAR_BRAND, pageIndex, pageSize, "");
-
     }
 
     private void setAdapter(String url_upDate, int pageIndex, int pageSize, String brandName) {
-        mCarBrandBean = myHttpUtils.getCarBrands(url_upDate, pageIndex, pageSize, brandName);
-        if (mCarBrandBean == null) {
+        ProgressDialog progressDialog = ProgressDialog.show(ChooseBrandActivity.this, null, "加载中...");
+        CarBrandBean mCarBrandBean = myHttpUtils.getCarBrands(url_upDate, pageIndex, pageSize, brandName);
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+        }
+        if (mCarBrandBean == null || mCarBrandBean.getCarBrands().size() == 0) {
             ToastUtil.show(this, "暂未获取到信息，请稍后再试");
             return;
         }
-
-        brandAdapter = new MyBrandAdapter(mCarBrandBean);
-        lv_brand.setAdapter(brandAdapter);
+        if (carBrands == null) {
+            carBrands = mCarBrandBean.getCarBrands();
+        } else {
+            carBrands.removeAll(carBrands);
+            carBrands.addAll(mCarBrandBean.getCarBrands());
+        }
+        if (carBrands != null) {
+            if (brandAdapter == null) {
+                brandAdapter = new MyBrandAdapter(carBrands);
+                lv_brand.setAdapter(brandAdapter);
+            } else {
+                brandAdapter.notifyDataSetChanged();
+            }
+        }
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Log.i(TAG, "onItemClick: ");
         Intent intent = new Intent();
-        intent.putExtra("carBrand", mCarBrandBean.getCarBrands().get(position));
+        intent.putExtra("carBrand", carBrands.get(position));
         setResult(Str.REQUESTBRANDCODE, intent);
         finish();
     }
 
     @Override
     public void onClick(View v) {
+        String brandName = edt_brand.getText().toString();
         switch (v.getId()) {
             case R.id.arrow_back:
                 finish();
                 break;
             case R.id.tv_searchBrand:
-                String brandName = edt_brand.getText().toString();
                 if (brandName.equals("")) {
                     return;
                 }
@@ -123,18 +149,22 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
                 if (pageIndex > 1) {
                     --pageIndex;
                     Log.i(TAG, "onClick: " + pageIndex);
-                    setAdapter(Str.URL_CAR_BRAND, pageIndex, pageSize, "");
+                    setAdapter(Str.URL_CAR_BRAND, pageIndex, pageSize, brandName);
+                } else {
+                    MyToastDialog.show(ChooseBrandActivity.this, "已是第一页");
                 }
                 break;
             case R.id.btn_next:
                 //如果size不等于（小于10），说明到最后一页了
-                if (mCarBrandBean == null){
+                if (carBrands == null) {
                     return;
                 }
-                if (mCarBrandBean.getCarBrands().size() == pageSize) {
+                if (carBrands.size() == pageSize) {
                     ++pageIndex;
                     Log.i(TAG, "onClick: " + pageIndex);
-                    setAdapter(Str.URL_CAR_BRAND, pageIndex, pageSize, "");
+                    setAdapter(Str.URL_CAR_BRAND, pageIndex, pageSize, brandName);
+                } else {
+                    MyToastDialog.show(ChooseBrandActivity.this, "已到最后一页");
                 }
                 break;
         }
@@ -162,15 +192,17 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
     }
 
     class MyBrandAdapter extends BaseAdapter {
-        CarBrandBean carBrandBean;
+        List<CarBrandBean.CarBrand> carBrands;
+        Bitmap head;
+        int countNum;
 
-        public MyBrandAdapter(CarBrandBean carBrandBean) {
-            this.carBrandBean = carBrandBean;
+        public MyBrandAdapter(List<CarBrandBean.CarBrand> carBrands) {
+            this.carBrands = carBrands;
         }
 
         @Override
         public int getCount() {
-            return carBrandBean.getCarBrands().size();
+            return carBrands.size();
         }
 
         @Override
@@ -184,15 +216,16 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
         }
 
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            CarBrandBean.CarBrand carBrand = carBrandBean.getCarBrands().get(position);
-            Bitmap imgBitmap = myHttpUtils.downloadImage(Str.URL_SERVICE_IMAGEPATH + carBrand.getLogo());
+        public View getView(final int position, View convertView, ViewGroup parent) {
+            CarBrandBean.CarBrand carBrand = carBrands.get(position);
             ViewHolder holder = null;
             if (convertView == null) {
                 convertView = LayoutInflater.from(context).inflate(R.layout.item_list_brand, null);
                 holder = new ViewHolder();
                 holder.tv_brand = (TextView) convertView.findViewById(R.id.tv_brand);
-                holder.img_brand = (ImageView) convertView.findViewById(R.id.img_brand);
+                holder.img_brand = (ImageView) convertView.findViewById(img_brand);
+                holder.tv_brand.setTag(position);
+                holder.img_brand.setTag(carBrand);
                 convertView.setTag(holder);
             } else {
                 holder = (ViewHolder) convertView.getTag();
@@ -200,9 +233,41 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
             if (carBrand == null) {
                 return convertView;
             }
-            if (imgBitmap != null) {
-                holder.img_brand.setImageBitmap(imgBitmap);
+            if (carBrand.getLogo() != null && !carBrand.getLogo().equals("")) {
+//                sendMsgToHandlerByExecutor(DOWNLOAD_PIC, position, holder);
+                int postion_tag = (int) holder.tv_brand.getTag();
+                if (postion_tag == position) {
+                    final ViewHolder finalHolder = holder;
+                    MyAsyncHttpUtils.get(Str.URL_SERVICE_IMAGEPATH + carBrand.getLogo(), new BinaryHttpResponseHandler() {
+
+                        @Override
+                        public void onSuccess(int i, Header[] headers, byte[] bytes) {
+                            countNum++;
+                            Log.i(TAG, "onSuccess:countNum: " + countNum);
+                            InputStream inputStream = new ByteArrayInputStream(bytes);
+                            if (inputStream == null) {
+                                return;
+                            }
+                            head = getBitMapFormInputStream(ChooseBrandActivity.this, inputStream);
+                            if (head != null) {
+                                int postion_tag = (int) finalHolder.tv_brand.getTag();
+                                if (postion_tag == position) {
+                                    finalHolder.img_brand.setImageBitmap(head);
+                                }
+                                if (head != null && head.isRecycled()) {
+                                    head.recycle();
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(int i, Header[] headers, byte[] bytes, Throwable throwable) {
+
+                        }
+                    });
+                }
             }
+
             holder.tv_brand.setText(carBrand.getName());
             return convertView;
         }

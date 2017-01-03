@@ -1,8 +1,6 @@
 package com.delelong.diandiandriver.menuActivity;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -29,17 +27,19 @@ public class MyFeeRuleActivity extends BaseActivity implements View.OnClickListe
         setContentView(R.layout.activity_fee_rule);
         initActionBar();
         initView();
+        initMsg();
     }
 
     String url;
+    String cityCode = "340100";
     private void setMsg() {
-        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
-        if (preferences != null){
-            String phone = preferences.getString("phone", null);
-            if (phone!= null){
-                url =  Str.URL_DETAIL_AMOUNT_RULE+"?phone="+phone+"&type=2"+"&serviceType="+serviceType;
-            }
-        }
+//        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+//        if (preferences != null){
+//            String phone = preferences.getString("phone", null);
+//            if (phone!= null){
+//            }
+//        }
+        url =  Str.URL_DETAIL_AMOUNT_RULE+"?cityCode="+cityCode+"&type=1"+"&serviceType="+serviceType;
         if (url!=null&&!url.equals("")){
             Intent intent = new Intent(this,MyWebViewActivity.class);
             intent.putExtra("url",url);
@@ -47,6 +47,12 @@ public class MyFeeRuleActivity extends BaseActivity implements View.OnClickListe
         }
     }
 
+    private void initMsg(){
+        String cityCode_ = getIntent().getStringExtra("cityCode");
+        if (cityCode_!=null&&!cityCode_.isEmpty()){
+            cityCode =cityCode_;
+        }
+    }
     ImageView arrow_back;
 
     private void initActionBar() {

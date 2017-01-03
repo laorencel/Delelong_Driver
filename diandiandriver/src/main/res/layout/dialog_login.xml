@@ -2,89 +2,78 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#808080"
+    android:background="#00000000"
     android:gravity="center"
     android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="260dp"
         android:layout_height="wrap_content"
-        android:padding="10dp"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="10dp">
 
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="请先登陆"
                 android:layout_centerInParent="true"
-                android:padding="10dp"
-                android:textColor="#ffff"
-                android:textSize="20sp" />
+                android:padding="5dp"
+                android:text="检测到您未登陆，请先登陆"
+                android:textSize="14sp" />
 
             <ImageView
                 android:id="@+id/img_cancel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
-                android:background="@mipmap/icon_close"/>
+                android:background="@mipmap/icon_close" />
         </RelativeLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:orientation="vertical"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+
+            android:orientation="vertical">
+
             <EditText
                 android:id="@+id/edt_phone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/shape_edt_1"
+                android:background="@drawable/bg_alpha_corner_edt"
+                android:gravity="center"
                 android:hint="@string/phone"
-                android:textColorHint="#adbac2"
                 android:inputType="phone"
-                android:maxLength="11"
-                android:padding="10dp"
-                android:layout_margin="2dp"
-                android:textColor="#ffff"
-                android:textSize="15sp" />
+                android:maxLines="1"
+                android:padding="8dp"
+                android:textSize="13sp" />
 
             <EditText
                 android:id="@+id/edt_pwd"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/shape_edt_1"
+                android:layout_marginTop="5dp"
+                android:background="@drawable/bg_alpha_corner_edt"
+                android:gravity="center"
                 android:hint="@string/pwd"
-                android:textColorHint="#adbac2"
                 android:inputType="textPassword"
-                android:digits="0123456789abcdefghigklmnopqrstuvwxyz"
-                android:maxLength="18"
-                android:layout_margin="2dp"
-                android:padding="10dp"
-                android:textColor="#ffff"
-                android:textSize="15sp" />
-
+                android:maxLines="1"
+                android:padding="8dp"
+                android:textSize="13sp" />
         </LinearLayout>
 
-        <RelativeLayout
+        <Button
+            android:id="@+id/btn_confirm"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btn_confirm"
-                android:layout_width="match_parent"
-                android:layout_alignParentRight="true"
-                android:layout_height="match_parent"
-                android:layout_marginLeft="2dp"
-                android:background="@drawable/bg_login"
-                android:gravity="center"
-                android:text="确定"
-                android:textColor="#ffff"
-                android:textSize="18sp" />
-        </RelativeLayout>
+            android:layout_height="match_parent"
+            android:layout_marginTop="5dp"
+            android:background="@drawable/bg_login"
+            android:gravity="center"
+            android:text="确定"
+            android:textColor="#ffff"
+            android:textSize="16sp" />
     </LinearLayout>
 </LinearLayout>

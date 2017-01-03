@@ -124,7 +124,7 @@ public class ForgotFrag extends Fragment implements View.OnClickListener{
                     Toast.makeText(activity, "请填写完整手机号", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                List<String> resultForVerific = myHttpUtils.getVerification(Str.URL_SMSCODE, phone, Str.VERIFICATION_TYPE_REGISTER);
+                List<String> resultForVerific = myHttpUtils.getVerification(Str.URL_SMSCODE, phone, Str.VERIFICATION_TYPE_RESET);
                 if (resultForVerific == null||resultForVerific.size()== 0){
                     return;
                 }

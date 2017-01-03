@@ -127,15 +127,18 @@ public class MenuModifyInfoActivity extends BaseActivity implements View.OnClick
                 }
                 myCameraDialog.show();
                 myCameraDialog.setCancelable(true);
+                permissionExternalStorage();
                 initCameraDialog();
                 break;
             case R.id.dialog_camera:
+                permissionExternalStorage();
                 Intent intentCamera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                 startActivityForResult(intentCamera, Str.REQUESTCODECAMERA);
                 myCameraDialog.hide();
                 break;
             case R.id.dialog_album:
                 //调用相册
+                permissionExternalStorage();
                 Intent intentAlbum = new Intent(Intent.ACTION_PICK,
                         android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                 startActivityForResult(intentAlbum, Str.REQUESTCODEALBUM);
@@ -168,10 +171,14 @@ public class MenuModifyInfoActivity extends BaseActivity implements View.OnClick
             }
             img_head.setImageBitmap(bitmap);// 将图片显示在ImageView里
             //保存图片到手机
-            File file = new File(Str.FILEPATH);
+            File file = new File(Str.FILEIMAGEPATH);
             if (!file.exists()){
                 file.mkdirs();// 创建文件夹
-                File noMediafile = new File(Str.FILEPATH+".nomedia");//媒体文件不扫描
+                File noMediafileDir = new File(Str.FILEIMAGEPATH);//媒体文件不扫描
+                if (noMediafileDir.exists()){
+                    noMediafileDir.mkdirs();
+                }
+                File noMediafile = new File(Str.FILEIMAGEPATH +".nomedia");//媒体文件不扫描
                 if (!noMediafile.exists()){
                     try {
                         noMediafile.createNewFile();
@@ -182,7 +189,7 @@ public class MenuModifyInfoActivity extends BaseActivity implements View.OnClick
 
             }
 
-            headPath = createImage(Str.FILEPATH, fileName, bitmap);
+            headPath = createImage(Str.FILEIMAGEPATH, fileName, bitmap);
         }
     }
 

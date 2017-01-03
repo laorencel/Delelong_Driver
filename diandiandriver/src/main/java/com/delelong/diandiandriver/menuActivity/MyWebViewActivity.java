@@ -29,12 +29,10 @@ public class MyWebViewActivity  extends BaseActivity {
     private static final String TAG = "BAIDUMAPFORTEST";
     WebView webView;
     ProgressBar progressBar;
-    MyWebViewActivity mWebViewActivity;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_menu_mall);
-        mWebViewActivity = this;
         initView();
         setUpWeb();
     }

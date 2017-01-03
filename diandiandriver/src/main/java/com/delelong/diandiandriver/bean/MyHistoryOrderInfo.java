@@ -12,7 +12,10 @@ public class MyHistoryOrderInfo implements Serializable {
     private int orderId; //订单主键
     private String orderNo; //订单号
     private String create_time; //订单时间
+    private String setouttime; //预约订单出发时间
     private String status; //订单的状态
+    private String phone; //订单的状态
+    private String real_name; //订单的状态
     private String pay_status;//订单支付状态
     private String real_pay;//订单金额
     private String reservation_address;//起点
@@ -62,12 +65,36 @@ public class MyHistoryOrderInfo implements Serializable {
         this.create_time = create_time;
     }
 
+    public String getSetouttime() {
+        return setouttime;
+    }
+
+    public void setSetouttime(String setouttime) {
+        this.setouttime = setouttime;
+    }
+
     public String getStatus() {
         return status;
     }
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getReal_name() {
+        return real_name;
+    }
+
+    public void setReal_name(String real_name) {
+        this.real_name = real_name;
     }
 
     public String getPay_status() {

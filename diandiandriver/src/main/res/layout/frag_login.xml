@@ -46,7 +46,6 @@
             android:hint="@string/pwd"
             android:textColorHint="#adbac2"
             android:inputType="textPassword"
-            android:digits="0123456789abcdefghijklmnopqrstuvwxyz"
             android:maxLength="18"
             android:padding="10dp"
             android:maxLines="1"
@@ -93,7 +92,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:text="忘记密码"
+                android:text="密码重置"
                 android:textColor="#ffff" />
 
         </LinearLayout>

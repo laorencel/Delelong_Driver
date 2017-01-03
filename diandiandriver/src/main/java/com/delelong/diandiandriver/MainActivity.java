@@ -342,7 +342,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
                 //首次进入定位到我的位置
                 if (isFirstIn) {
-                    centerToMyLocation(aMap, mLocationClient, myOrientationListener, mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
+                    centerToMyLocation(aMap, mLocationClient, myOrientationListener, mAMapLocation);
                     myPosition.setText(aMapLocation.getPoiName());
                     startLat = new LatLng(mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
                     isFirstIn = false;
@@ -365,7 +365,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             startLat = new LatLng(endLat.latitude, endLat.longitude);
             //上传位置
             ClientLocationInfo locationInfo = new ClientLocationInfo(mAMapLocation.getLongitude() + "",
-                    mAMapLocation.getLatitude() + "", mAMapLocation.getSpeed() + "", mCurrentX + "",mAMapLocation.getLocationType());
+                    mAMapLocation.getLatitude() + "", mAMapLocation.getSpeed() + "", mCurrentX + "",mAMapLocation.getLocationType(),mAMapLocation.getAccuracy());
             List<String> list = myHttpUtils.upDateLocation(Str.URL_UPDATELOCATION_DRIVER, locationInfo);
         }
     }
@@ -426,7 +426,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 break;
             case R.id.myLocation:
                 //定位到我的位置
-                centerToMyLocation(aMap, mLocationClient, myOrientationListener, mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
+                centerToMyLocation(aMap, mLocationClient, myOrientationListener, mAMapLocation);
 //                getVisibility();
                 break;
             case R.id.showTime:

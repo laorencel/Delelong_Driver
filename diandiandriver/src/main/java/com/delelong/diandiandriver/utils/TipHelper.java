@@ -28,52 +28,62 @@ public class TipHelper {
     Activity activity;
     SpeechSynthesizer mTts;
     Context context;
+
     public TipHelper(Activity activity) {
         this.activity = activity;
         context = activity;
         preferences = activity.getSharedPreferences("user", Context.MODE_PRIVATE);
-        vibrateEnable = preferences.getBoolean("vibrate",false);
-        isVoiceEnable = preferences.getBoolean("voice",true);
+        vibrateEnable = preferences.getBoolean("vibrate", false);
+        isVoiceEnable = preferences.getBoolean("voice", true);
         initSpeech();
     }
-    private void initSpeech(){
-        SpeechUtility.createUtility(context, SpeechConstant.APPID +"=5806cdd4," + SpeechConstant.FORCE_LOGIN +"=true");
-        mTts= SpeechSynthesizer.createSynthesizer(activity, null);
+
+    private void initSpeech() {
+        SpeechUtility.createUtility(MyApp.getInstance(), SpeechConstant.APPID + "=5806cdd4," + SpeechConstant.FORCE_LOGIN + "=true");
+        mTts = SpeechSynthesizer.createSynthesizer(MyApp.getInstance(), null);
         mTts.setParameter(SpeechConstant.VOICE_NAME, "xiaoyan");//设置发音人
         mTts.setParameter(SpeechConstant.SPEED, "55");//设置语速
         mTts.setParameter(SpeechConstant.VOLUME, "100");//设置音量，范围0~100
         mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD); //设置云端
     }
+
     boolean isVoiceEnable;
-    public void speak(String content){
-        if (isVoiceEnable){
+
+    public void speak(String content) {
+        if (isVoiceEnable) {
 //        mTts.startSpeaking("科大讯飞，让世界聆听我们的声音", mSynListener);
-            if (mTts == null){
+            if (mTts == null) {
                 Log.i(TAG, "speak: ");
                 return;
             }
             mTts.startSpeaking(content, mSynListener);
         }
     }
+
+    public void stopSpeak() {
+        if (mTts != null && mTts.isSpeaking()) {
+            mTts.stopSpeaking();
+        }
+    }
+
     boolean vibrateEnable;
+
     /**
-     *
      * @param milliseconds 震动的时长，单位是毫秒
      */
     public void Vibrate(long milliseconds) {
-        if (vibrateEnable){
+        if (vibrateEnable) {
             Vibrator vib = (Vibrator) context.getSystemService(Service.VIBRATOR_SERVICE);
             vib.vibrate(milliseconds);
         }
     }
 
     /**
-     *
-     * @param pattern 自定义震动模式 。数组中数字的含义依次是静止的时长，震动时长，静止时长，震动时长。。。时长的单位是毫秒
+     * @param pattern  自定义震动模式 。数组中数字的含义依次是静止的时长，震动时长，静止时长，震动时长。。。时长的单位是毫秒
      * @param isRepeat 是否反复震动，如果是true，反复震动，如果是false，只震动一次
      */
-    public void Vibrate(long[] pattern,boolean isRepeat) {
-        if (vibrateEnable){
+    public void Vibrate(long[] pattern, boolean isRepeat) {
+        if (vibrateEnable) {
             Vibrator vib = (Vibrator) activity.getSystemService(Service.VIBRATOR_SERVICE);
             vib.vibrate(pattern, isRepeat ? 1 : -1);
         }

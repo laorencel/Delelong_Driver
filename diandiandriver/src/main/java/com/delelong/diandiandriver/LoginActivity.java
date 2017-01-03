@@ -17,12 +17,13 @@ import com.delelong.diandiandriver.fragment.RegisterActivity;
 /**
  * Created by Administrator on 2016/8/18.
  */
-public class LoginActivity extends BaseActivity implements View.OnClickListener{
+public class LoginActivity extends BaseActivity implements View.OnClickListener {
 
     private static final String TAG = "BAIDUMAPFORTEST";
     FragmentManager fragmentManager;
     LoginFrag loginFrag;
     ForgotFrag forgotFrag;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,6 +33,11 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener{
         initView();
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+//        super.onSaveInstanceState(outState);//注释掉，让其不再保存Fragment的状态，达到其随着Activity一起被回收的效果！
+    }
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     private void initView() {
         fragmentManager = getFragmentManager();
@@ -39,11 +45,12 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener{
         forgotFrag = new ForgotFrag();
         fragmentManager.beginTransaction()
                 .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-                .add(R.id.rl1,loginFrag,"loginFrag")
+                .add(R.id.rl1, loginFrag, "loginFrag")
                 .show(loginFrag)
                 .commit();
 
     }
+
     TextView tv_forgotPwd;
     TextView tv_register;
 
@@ -60,14 +67,14 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener{
         tv_register.setOnClickListener(this);
     }
 
-//    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
+    //    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.tv_forgotPwd:
                 fragmentManager.beginTransaction()
 //                        .setCustomAnimations(R.anim.frag_in,0,0,R.anim.frag_out)
-                        .add(R.id.rl2,forgotFrag,"modifyFrag")
+                        .add(R.id.rl2, forgotFrag, "modifyFrag")
                         .hide(loginFrag)
                         .show(forgotFrag)
                         .addToBackStack(null)
@@ -78,7 +85,6 @@ public class LoginActivity extends BaseActivity implements View.OnClickListener{
                 break;
         }
     }
-
 
 
 }

@@ -6,20 +6,23 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.text.Html;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
@@ -47,48 +50,60 @@ import com.amap.api.services.route.RouteSearch;
 import com.delelong.diandiandriver.bean.Driver;
 import com.delelong.diandiandriver.bean.DriverAmount;
 import com.delelong.diandiandriver.bean.DriverCarBean;
-import com.delelong.diandiandriver.bean.MyNotificationInfo;
 import com.delelong.diandiandriver.bean.OrderInfo;
 import com.delelong.diandiandriver.bean.Str;
 import com.delelong.diandiandriver.dialog.MyDialogUtils;
 import com.delelong.diandiandriver.dialog.MyOrderDialog;
+import com.delelong.diandiandriver.dialog.MyProgressDialog;
+import com.delelong.diandiandriver.dialog.MyToastDialog;
 import com.delelong.diandiandriver.fragment.DriverMenuFrag;
 import com.delelong.diandiandriver.fragment.MyAppUpdate;
-import com.delelong.diandiandriver.function.MyFunctionFrag;
+import com.delelong.diandiandriver.function.MyFunctionActivity;
 import com.delelong.diandiandriver.http.ClientLocationInfo;
-import com.delelong.diandiandriver.http.MyHttpUtils;
+import com.delelong.diandiandriver.http.MyAsyncHttpUtils;
+import com.delelong.diandiandriver.http.MyHttpHelper;
+import com.delelong.diandiandriver.http.MyProgTextHttpResponseHandler;
+import com.delelong.diandiandriver.http.MyTextHttpResponseHandler;
+import com.delelong.diandiandriver.listener.MyHttpDataListener;
 import com.delelong.diandiandriver.listener.MyOrientationListener;
 import com.delelong.diandiandriver.listener.MyRouteSearchListener;
 import com.delelong.diandiandriver.menuActivity.MyHistoryOrderActivity;
+import com.delelong.diandiandriver.menuActivity.MyReservationOrderActivity;
 import com.delelong.diandiandriver.order.CreateOrderActivity;
 import com.delelong.diandiandriver.order.MyCheckOrderListener;
 import com.delelong.diandiandriver.order.MyOrderActivity;
-import com.delelong.diandiandriver.order.MyOrderInterface;
 import com.delelong.diandiandriver.pace.MyAMapLocation;
 import com.delelong.diandiandriver.receiver.NetReceiver;
 import com.delelong.diandiandriver.service.MyWebSocketService;
+import com.delelong.diandiandriver.utils.MD5;
+import com.delelong.diandiandriver.utils.MyApp;
 import com.delelong.diandiandriver.utils.TipHelper;
-import com.delelong.diandiandriver.utils.ToastUtil;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.loopj.android.http.RequestParams;
 
 import org.joda.time.DateTime;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import cn.jpush.android.api.JPushInterface;
+import cz.msebera.android.httpclient.Header;
 
 /**
  * Created by Administrator on 2016/9/21.
  */
 public class DriverActivity extends BaseActivity implements View.OnClickListener,
-        MyDialogUtils.MyDialogInterface, MyCheckOrderListener, LocationSource,
-        AMapLocationListener {
+        MyDialogUtils.MyDialogInterface, MyCheckOrderListener, MyHttpDataListener,
+        LocationSource, AMapLocationListener, SwipeRefreshLayout.OnRefreshListener {
+
+    ExecutorService threadPool = Executors.newCachedThreadPool();
+
     private static final String TAG = "BAIDUMAPFORTEST";
     private static final int REQEST_CHOOSE_CAR = 0;
     private static final int REQEST_CHOOSE_ONLINE_TYPE = 1;//选择上线类型
@@ -101,6 +116,19 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     public static final int CHECK_APP_UPDATE = 15;//检查软件更新
     public static final int UPDATE_LOCATION = 16;//上传位置
     public static final int UPDATE_CARSTATUS = 17;//持续更新状态，防止下线
+    public static final int REFRESH_AMOUNT = 18;//持续更新状态，防止下线
+    public static final int INIT_DRIVER = 19;//获取司机个人信息
+    public static final int INIT_DRIVER_CAR_BEAN = 20;//获取司机个人信息
+    public static final int INIT_AMOUNT_MSG = 21;//获取司机余额收入信息
+    public static final int CHECK_TO_ONLINE = 22;//检测并上线
+    public static final int ONLINE = 23;//上线
+    public static final int CHECK_DRIVER_CAR = 24;//检测司机车辆
+    public static final int SHOW_ORDER = 25;//显示新订单
+    public static final int CREATE_ORDER_BY_DRIVER = 26;//司机创建新订单
+    public static final int CHECK_RESERVATION_ORDER = 27;//检测是否有预约订单
+    private static final int CLICKABLE_DELAYED = 120;//点击后延迟恢复可点击状态
+
+    private static final long CLICKABLE_DELAYED_TIMEMILIS = 3500;//点击后延迟时间
     public Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -109,8 +137,11 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 case UPDATE_CARSTATUS:
                     if (updateStatus) {
                         updateStatus();
-                        handler.sendEmptyMessageDelayed(UPDATE_CARSTATUS, 60000);//1分钟更新一次
+                        sendEmptyMsgDelayToHandlerByExecutor(UPDATE_CARSTATUS, 55000);
                     }
+                    break;
+                case REFRESH_AMOUNT:
+                    initAmountMsg();
                     break;
                 case ONLINE_TIME:
                     if (online) {
@@ -118,48 +149,133 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                         setOnlineTime(12, "上线时间\n" + onlineTime.toString("HH:mm"));
                         if (online) {
                             if (!handler.hasMessages(ONLINE_TIME)) {
-                                Log.i(TAG, "handleMessage: ONLINE_TIME");
-                                handler.sendEmptyMessageDelayed(ONLINE_TIME, 60000);//1分钟更新一次
+                                sendEmptyMsgDelayToHandlerByExecutor(ONLINE_TIME, 60000);
                             }
                         }
                     }
                     break;
                 case INIT_FRAG://加载fragment和地图view
                     initFrag();
-                    setUpMap();
                     setMyRouteSearchListener();
                     initMapView();
                     break;
                 case CHECK_ORDER:
                     checkInOrder();
                     break;
+                case CHECK_RESERVATION_ORDER:
+                    checkReservationOrder();
+                    break;
                 case CHECK_ADCODE:
                     updateAdcode();
                     break;
                 case CHECK_AD_UPDATE:
-//                    download();
+                    permissionExternalStorage();
+                    download();
                     break;
                 case CHECK_APP_UPDATE:
-                    if (preferences != null && (preferences.getInt("updatetime", 3) % 3 == 0)) {
-                        //每三次进入app检查一次更新
-                        MyAppUpdate myAppUpdate = new MyAppUpdate(DriverActivity.this);
-                        myAppUpdate.checkUpdate();
-                    }
+//                    if (preferences != null && (preferences.getInt("updatetime", 3) % 3 == 0)) {
+                    //每三次进入app检查一次更新
+                    permissionExternalStorage();
+                    MyAppUpdate myAppUpdate = new MyAppUpdate(DriverActivity.this);
+                    myAppUpdate.checkUpdate();
+//                    }
                     break;
                 case UPDATE_LOCATION:
-//                    if (updateLoc) {
-//                        Log.i(TAG, "handleMessage: UPDATE_LOCATION");
-//                        upDateLocation();
-                    updateLoc = true;
-                    upDateLocation(mAMapLocation,updateLocLatlng);
+                    upDateLocation(mAMapLocation, updateLocLatlng);
                     if (updateLoc) {
-                        handler.sendEmptyMessageDelayed(UPDATE_LOCATION, 60000);
+//                        handler.sendEmptyMessageDelayed(UPDATE_LOCATION, 15000);
+                        sendEmptyMsgDelayToHandlerByExecutor(UPDATE_LOCATION, 15000);
                     }
-//                    }
+                    break;
+                case INIT_DRIVER:
+                    initDriver();
+                    break;
+                case INIT_DRIVER_CAR_BEAN:
+                    initDriverCarBean();
+                    break;
+                case INIT_AMOUNT_MSG:
+                    initAmountMsg();
+                    break;
+                case CHECK_TO_ONLINE:
+                    checkToOnLine();
+                    break;
+                case ONLINE:
+                    onLine();
+                    break;
+                case CHECK_DRIVER_CAR:
+                    checkDriverCar();
+                    break;
+                case SHOW_ORDER:
+                    String orderMessage = (String) msg.obj;
+                    showOrder(orderMessage);
+                    break;
+                case CREATE_ORDER_BY_DRIVER:
+                    OrderInfo orderInfo = (OrderInfo) msg.obj;
+                    createOrderByDriver(orderInfo);
+                    break;
+                case CLICKABLE_DELAYED:
+                    View view = (View) msg.obj;
+                    view.setClickable(true);
+                    showProgress(false);
                     break;
             }
         }
     };
+
+    private void sendEmptyMsgToHandlerByExecutor(final int what) {
+        threadPool.submit(new Runnable() {
+            @Override
+            public void run() {
+                handler.sendEmptyMessage(what);
+            }
+        });
+    }
+
+    private void sendEmptyMsgDelayToHandlerByExecutor(final int what, final long delayMillis) {
+        threadPool.submit(new Runnable() {
+            @Override
+            public void run() {
+                handler.sendEmptyMessageDelayed(what, delayMillis);
+            }
+        });
+    }
+
+    private void sendMsgToHandlerByExecutor(final int what, final Object object) {
+        threadPool.submit(new Runnable() {
+            @Override
+            public void run() {
+                Message message = handler.obtainMessage();
+                message.what = what;
+                message.obj = object;
+                handler.sendMessage(message);
+            }
+        });
+    }
+
+    private void sendMsgDelayToHandlerByExecutor(final int what, final Object object, final long delayMillis) {
+        threadPool.submit(new Runnable() {
+            @Override
+            public void run() {
+                Message message = handler.obtainMessage();
+                message.what = what;
+                message.obj = object;
+                handler.sendMessageDelayed(message, delayMillis);
+            }
+        });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == Str.REQUEST_WRITE_EXTERNALSTORAGE || requestCode == Str.REQUEST_DELE_CREATE_EXTERNALSTORAGE) {
+            if (grantResults != null && grantResults.length > 0) {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    download();
+                }
+            }
+        }
+    }
+
     DriverActivity driverActivity;
     boolean updateStatus = true;
     boolean updateLoc = true;
@@ -170,28 +286,48 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     private GoogleApiClient client;
 
     private void updateStatus() {
-        if (myHttpUtils == null) {
-            myHttpUtils = new MyHttpUtils(this);
-        }
-        List<String> resultForStatus = myHttpUtils.updateCarStatus(Str.URL_UPDATE_CARSTATUS);
-        if (resultForStatus == null) {
-            return;
-        }
-        if (resultForStatus.get(0).equalsIgnoreCase("OK")) {
-            if (resultForStatus.get(1).equalsIgnoreCase("true")) {
-            } else {//下线状态，重新上线
-                checkDriverType();
-//                onLine();
+        MyAsyncHttpUtils.post(Str.URL_UPDATE_CARSTATUS, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+                Log.i(TAG, "onFailure:updateStatus: " + s);
+                MyToastDialog.show(mContext, "抱歉，服务器开小差啦~");
             }
-        } else if (resultForStatus.get(0).equalsIgnoreCase("NOAUTH")) {
-            ToastUtil.show(this, resultForStatus.get(1) + " \n请重新登陆");
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
-        } else {
-            ToastUtil.show(this, resultForStatus.get(1) + " \n请重新登陆");
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
-        }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                Log.i(TAG, "onSuccess:updateStatus: " + s);
+                List<String> resultForStatus = myHttpHelper.resultByJson(s, new MyHttpDataListener() {
+                    @Override
+                    public void toLogin() {
+                        MyToastDialog.show(mContext, "未登录");
+                    }
+
+                    @Override
+                    public void onError(Object object) {
+                        MyToastDialog.show(mContext, object.toString());
+                    }
+                });
+                if (resultForStatus == null || resultForStatus.size() == 0) {
+                    return;
+                }
+                if (resultForStatus.get(0).equalsIgnoreCase("OK")) {
+                    if (resultForStatus.get(1).equalsIgnoreCase("true")) {
+                    } else {//下线状态，重新上线
+                        online = false;
+                        checkDriverType();
+//                onLine();
+                    }
+                } else if (resultForStatus.get(0).equalsIgnoreCase("NOAUTH")) {
+                    MyToastDialog.show(mContext, resultForStatus.get(1));
+//                    startActivity(new Intent(context, LoginActivity.class));
+//                    finish();
+                } else {
+                    MyToastDialog.show(mContext, resultForStatus.get(1));
+//                    startActivity(new Intent(context, LoginActivity.class));
+//                    finish();
+                }
+            }
+        });
     }
 
     boolean hasChecked;//已经检查过
@@ -200,92 +336,149 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
      * 进入界面检查是否之前有未处理结束的订单
      */
     private void checkInOrder() {
-        Log.i(TAG, "checkInOrder: ");
-        if (mOrderInfos == null) {
-            List<OrderInfo> orderInfoList = myHttpUtils.getUnfinishedOrderInfos(Str.URL_UNFINISHED_ORDER);
-            if (orderInfoList == null) {
-                return;
+//        if (mOrderInfos == null) {
+        MyAsyncHttpUtils.post(Str.URL_UNFINISHED_ORDER, new MyProgTextHttpResponseHandler(mActivity) {
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String s, Throwable throwable) {
+
             }
-            if (orderInfoList != null && orderInfoList.size() != 0) {//如果在处理订单状态
-                for (int i = 0; i < orderInfoList.size(); i++) {
-                    OrderInfo orderInfo = orderInfoList.get(i);
-                    int orderStatus = orderInfo.getStatus();
-                    //订单状态 ( 1;//订单创建 2;//司机接单3;//订单开始5;//订单已支付
-                    // 6;//订单取消4;//到达终点9;//订单完成 7;//司机开始等待)
-                    if (orderStatus == 2 || orderStatus == 3 || orderStatus == 4 || orderStatus == 7) {
-                        if (mOrderInfos == null) {
-                            mOrderInfos = new ArrayList<>();
-                        }
-                        mOrderInfos.add(orderInfoList.get(0));
-//                orderFrag.setmOrderInfo(mOrderInfos.get(0));
-                        speak("您有未处理完订单，请完成订单");
-                        if (!mOrderInfos.get(0).getServiceType().equals("代驾")) {
-                            if (orderInfoList.size() == 2) {//如果为2个乘客
-                                mOrderInfos.add(orderInfoList.get(1));
-//                        orderFrag.addOrderInfo(mOrderInfos.get(1));
-                            }
-                        }
-                        inOrder = true;//改变接单状态
-                        isInOrder(inOrder);
 
-                        if (!online) {//如未上线，强制上线
-                            List<String> result = null;
-                            if (myHttpUtils == null) {
-                                myHttpUtils = new MyHttpUtils(this);
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, String s) {
+                Log.i(TAG, "onSuccess:getOrderInfosByJson: " + s);
+                List<OrderInfo> orderInfoList = myHttpHelper.getOrderInfosByJson(s, DriverActivity.this);
+                if (orderInfoList == null) {
+                    return;
+                }
+                if (orderInfoList != null && orderInfoList.size() != 0) {//如果在处理订单状态
+                    for (int i = 0; i < orderInfoList.size(); i++) {
+                        OrderInfo orderInfo = orderInfoList.get(i);
+                        int orderStatus = orderInfo.getStatus();
+                        //订单状态 ( 1;//订单创建 2;//司机接单3;//订单开始5;//订单已支付
+                        // 6;//订单取消4;//到达终点9;//订单完成 7;//司机开始等待)
+                        if (orderStatus == 2 || orderStatus == 3 || orderStatus == 4 || orderStatus == 7) {
+                            mOrderInfos = null;
+                            if (mOrderInfos == null) {
+                                mOrderInfos = new ArrayList<>();
                             }
-                            if (driver == null) {
-                                driver = myHttpUtils.getDriverByGET(Str.URL_MEMBER);
-                            }
-                            if (driver == null) {
-                                return;
-                            }
-                            if (online) {
-                                offLineTimeMillis = System.currentTimeMillis();
-                            } else {
-                                onLineTimeMillis = System.currentTimeMillis();
-                            }
-                            if (orderInfoList.get(0).getServiceType().contains("代驾")) {//代驾
-                                driver.setType("2");
-                                result = myHttpUtils.onlineAppDJ(Str.URL_ONLINE_DJ, !online, onLineTimeMillis, offLineTimeMillis);//上线
-                            } else {
-                                driver.setType("1");
-                                result = myHttpUtils.onlineApp(Str.URL_ONLINE, orderInfoList.get(0).getCar_id(), !online, onLineTimeMillis, offLineTimeMillis);//上线
-                            }
-                            if (result == null) {
-                                return;
-                            }
-
-                            if (result.get(0).equalsIgnoreCase("OK")) {
-                                online = !online;//上线、下线
-                                if (online) {//上线重置时间
-                                    resetOnlineTime(result);
-                                    if (!driver.getType().equals("2")) {
-                                        updateStatus = true;
-                                        handler.sendEmptyMessage(UPDATE_CARSTATUS);
-//                                sendEmptyMessageUpdateStatus(UPDATE_CARSTATUS, 60000);
-                                    }
-                                } else {
-                                    setOnlineTime(20, "上线");
-                                    updateStatus = false;
-                                    if (handler.hasMessages(UPDATE_CARSTATUS)) {
-                                        handler.removeMessages(UPDATE_CARSTATUS);
-                                    }
+                            mOrderInfos.add(orderInfoList.get(0));
+                            speak("您有未处理完订单，请完成订单");
+                            if (!mOrderInfos.get(0).getServiceType().equals("代驾")) {
+                                if (orderInfoList.size() == 2) {//如果为2个乘客
+                                    mOrderInfos.add(orderInfoList.get(1));
                                 }
-                            } else if (result.get(0).equalsIgnoreCase("ERROR")) {
-                                ToastUtil.show(this, result.get(1));
-                                return;
                             }
+                            inOrder = true;//改变接单状态
+                            isInOrder(inOrder);
+
+                            if (!online) {//如未上线，强制上线
+                                final List<OrderInfo> finalOrderInfoList = orderInfoList;
+                                MyAsyncHttpUtils.get(Str.URL_MEMBER, new MyTextHttpResponseHandler() {
+                                    @Override
+                                    public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+
+                                    }
+
+                                    @Override
+                                    public void onSuccess(int i, Header[] headers, String s) {
+                                        driver = myHttpHelper.getDriverByJson(s, DriverActivity.this);
+                                        if (driver == null) {
+                                            return;
+                                        }
+                                        if (online) {
+                                            offLineTimeMillis = System.currentTimeMillis();
+                                        } else {
+                                            onLineTimeMillis = System.currentTimeMillis();
+                                        }
+                                        RequestParams params;
+                                        if (finalOrderInfoList.get(0).getServiceType().contains("代驾")) {//代驾
+                                            driver.setType("2");
+                                            DJOnLine(false);
+//                                                result = myHttpUtils.onlineAppDJ(Str.URL_ONLINE_DJ, !online, onLineTimeMillis, offLineTimeMillis);//上线
+                                        } else {
+                                            driver.setType("1");
+                                            otherOnLine(finalOrderInfoList.get(0).getCar_id(), false);
+//                                                List<String> result   = myHttpUtils.onlineApp(Str.URL_ONLINE, finalOrderInfoList.get(0).getCar_id(), !online, onLineTimeMillis, offLineTimeMillis);//上线
+                                        }
+
+                                    }
+                                });
+//                                        driver = myHttpUtils.getDriverByGET(Str.URL_MEMBER);
+                            }
+
                         }
                     }
                 }
-//                speechSynthesizer.startSpeaking("您有未处理完的订单，点击继续处理 ", mySynthesizerListener);
             }
+        });
+//        }
+    }
+
+    private void checkReservationOrder() {
+        MyAsyncHttpUtils.post(Str.URL_CHECK_RESERVATION_ORDER, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+                super.onFailure(i, headers, s, throwable);
+                Log.i(TAG, "onFailure: " + s);
+            }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                super.onSuccess(i, headers, s);
+                Log.i(TAG, "onSuccess:checkReservationOrder: " + s);
+                List<String> resultCheckReservation = myHttpHelper.resultByJson(s, DriverActivity.this);
+                if (resultCheckReservation != null && resultCheckReservation.size() > 0) {
+                    if (resultCheckReservation.get(0).equalsIgnoreCase("OK")) {
+                        if (resultCheckReservation.get(1).equalsIgnoreCase("true")) {
+                            MyToastDialog.show(mContext, "您有预约订单，请按时处理");
+                            startActivity(new Intent(DriverActivity.this, MyReservationOrderActivity.class));
+                        } else {
+                            MyToastDialog.show(mContext, "暂无预约订单");
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private void setOnLineView(List<String> result, boolean speak) {
+        if (result == null) {
+            return;
+        }
+        if (result.get(0).equalsIgnoreCase("OK")) {
+            online = !online;//上线、下线
+//            speechSynthesizer.startSpeaking("开始接单啦 ", mySynthesizerListener);
+            if (online) {//上线重置时间
+                if (speak) {
+                    speak("开始接单啦，快去赚钱吧");
+                }
+                resetOnlineTime(result);
+                if (!driver.getType().equals("2")) {
+                    updateStatus = true;
+                    sendEmptyMsgToHandlerByExecutor(UPDATE_CARSTATUS);
+                }
+            } else {
+                setOnlineTime(20, "上线");
+                updateStatus = false;
+                if (handler.hasMessages(UPDATE_CARSTATUS)) {
+                    handler.removeMessages(UPDATE_CARSTATUS);
+                }
+                if (speak)
+                    speak("停止接单啦，享受生活吧");
+            }
+        } else if (result.get(0).equalsIgnoreCase("ERROR")) {
+            driver.setType("");
+//            ToastUtil.show(this, result.get(1));
+            MyToastDialog.show(mContext, result.get(1));
+            return;
         }
     }
 
     Context context;
     NetReceiver mNetReceiver = new NetReceiver();
     IntentFilter mNetFilter = new IntentFilter();
+    MyHttpHelper myHttpHelper;
+    DriverActivity mActivity;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -293,31 +486,42 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         getSupportActionBar().hide();
         setContentView(R.layout.activity_driver);
         setUpMap(savedInstanceState);
+        setUpMap();
+        mActivity = this;
         context = this;
-
+        myHttpHelper = new MyHttpHelper(context);
         speak(" ");
         permissionLocation();
         checkOpenGps();
         initMsg();
         initView();
 
+        registerMessageReceiver();
         mNetFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(mNetReceiver, mNetFilter);//监听网络连接
         mServiceIntents = new Intent(this, MyWebSocketService.class);
         startService(mServiceIntents);//websocket获取推送消息
 
-        handler.sendEmptyMessage(INIT_FRAG);//加载fragment
-        handler.sendEmptyMessageDelayed(CHECK_APP_UPDATE, 30000);
-        handler.sendEmptyMessageDelayed(CHECK_ORDER, 10000);
+//        handler.sendEmptyMessage(INIT_FRAG);//加载fragment
+//        handler.sendEmptyMessageDelayed(CHECK_APP_UPDATE, 30000);
+//        handler.sendEmptyMessageDelayed(CHECK_ORDER, 10000);
+        sendEmptyMsgToHandlerByExecutor(INIT_FRAG);
+        sendEmptyMsgDelayToHandlerByExecutor(CHECK_APP_UPDATE, 30000);
+        sendEmptyMsgDelayToHandlerByExecutor(CHECK_ORDER, 3000);
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+//        super.onSaveInstanceState(outState);//注释掉，让其不再保存Fragment的状态，达到其随着Activity一起被回收的效果！
+    }
+
     public Intent mServiceIntents;
     DateTime onlineTime;
     SharedPreferences preferences;
-    MyHttpUtils myHttpUtils;
+    //    MyHttpUtils myHttpUtils;
     Driver driver;
     DriverCarBean driverCarBean;
     //    AMapLocation aMapLocation;
@@ -331,39 +535,81 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         onlineTime = new DateTime();
         preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
         myDialog = new MyDialogUtils(this);
-        Log.i(TAG, "initMsg: driverActivity:" + driverActivity);
-        myHttpUtils = new MyHttpUtils(this, driverActivity);
+//        myHttpUtils = new MyHttpUtils(this, driverActivity);
         mTipHelper = new TipHelper(this);
-        initDriver();
+        sendEmptyMsgToHandlerByExecutor(INIT_DRIVER);
+        sendEmptyMsgDelayToHandlerByExecutor(INIT_DRIVER_CAR_BEAN, 1000);
     }
 
     DriverAmount mDriverAmount;
 
     private void initDriver() {
-        driver = myHttpUtils.getDriverByGET(Str.URL_MEMBER);
-        driverCarBean = myHttpUtils.getDriverCars(Str.URL_DRIVER_CARS);
+        MyAsyncHttpUtils.get(Str.URL_MEMBER, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+
+            }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                Log.i(TAG, "onSuccess:getDriverByJson: " + s);
+                if (driver == null) {
+                    driver = myHttpHelper.getDriverByJson(s, DriverActivity.this);
+                }
+            }
+        });
+    }
+
+    private void initDriverCarBean() {
+        //        driverCarBean = myHttpUtils.getDriverCars(Str.URL_DRIVER_CARS);
+        MyAsyncHttpUtils.post(Str.URL_DRIVER_CARS, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+
+            }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                if (driverCarBean == null) {
+//                    Log.i(TAG, "onSuccess:DriverCarsByJson: " + s);
+                    driverCarBean = myHttpHelper.DriverCarsByJson(s, DriverActivity.this);
+                }
+            }
+        });
     }
 
     private void updateAdcode() {
-        if (driver == null) {
-            driver = myHttpUtils.getDriverByGET(Str.URL_MEMBER);
-        }
-        if (driver != null) {
-            if (driver.getCompany().equalsIgnoreCase("null")) {
-                //如果adcode为1（表示未设置过）
-                Log.i(TAG, "updateAdcode: ");
-                updateAdCode(driver, mAMapLocation);
+        MyAsyncHttpUtils.get(Str.URL_MEMBER, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+
             }
-        }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                if (driver == null) {
+                    driver = myHttpHelper.getDriverByJson(s, DriverActivity.this);
+                }
+                if (driver != null) {
+                    if (driver.getCompany().equalsIgnoreCase("null")) {
+                        //如果adcode为1（表示未设置过）
+                        updateAdCode(driver, mAMapLocation);
+                    }
+                }
+            }
+        });
+
     }
 
     private void download() {
         downloadStartAD(mAMapLocation);
-        downloadMainAD(mAMapLocation);
+//        downloadMainAD(mAMapLocation);
+        showMainAD(mAMapLocation);
     }
 
     LayoutTransition transition;
     public DrawerLayout drawerly;
+    SwipeRefreshLayout ly_refresh;
     RelativeLayout menu_left, menu_right;//左右菜单布局
 
     LinearLayout ly_desk;//切换界面大小，显示 隐藏地图
@@ -385,6 +631,10 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         transition = new LayoutTransition();
         drawerly = (DrawerLayout) findViewById(R.id.drawerly);
         drawerly.setLayoutTransition(transition);
+
+        ly_refresh = (SwipeRefreshLayout) findViewById(R.id.ly_refresh);
+        ly_refresh.setLayoutTransition(transition);
+        ly_refresh.setOnRefreshListener(this);
 
         menu_left = (RelativeLayout) findViewById(R.id.menu_left);
         menu_right = (RelativeLayout) findViewById(R.id.menu_right);
@@ -417,24 +667,37 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
 
         rl_order = (RelativeLayout) findViewById(R.id.rl_order);
 
-        initAmountMsg();
+//        initAmountMsg();
+        sendEmptyMsgToHandlerByExecutor(INIT_AMOUNT_MSG);
         initListener();
     }
 
     private void initAmountMsg() {
-        if (myHttpUtils == null) {
-            myHttpUtils = new MyHttpUtils(this);
-        }
-        mDriverAmount = myHttpUtils.getDriverYeAmount(Str.URL_DRIVER_YE_AMOUNT);
-        if (mDriverAmount != null) {
-            tv_sum_yesterday.setText("￥ " + mDriverAmount.getYesterday());
-            tv_sum_today.setText("￥ " + mDriverAmount.getToday());
-            if (mDriverAmount.getToday() != 0) {
-                tv_today_detail.setText("今日收入：" + mDriverAmount.getToday() + "\n继续努力哦");
-            } else {
-                tv_today_detail.setText("今天暂无收入\n还需努力哦");
+//        ly_refresh.setRefreshing(true);//停止刷新
+        MyAsyncHttpUtils.post(Str.URL_DRIVER_YE_AMOUNT, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+                ly_refresh.setRefreshing(false);//停止刷新
             }
-        }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                Log.i(TAG, "onSuccess: getDriverYeAmountByJson:" + s);
+                ly_refresh.setRefreshing(false);//停止刷新
+                mDriverAmount = myHttpHelper.getDriverYeAmountByJson(s, DriverActivity.this);
+                if (mDriverAmount != null) {
+                    tv_sum_yesterday.setText("￥ " + mDriverAmount.getYesterday());
+                    tv_sum_today.setText("￥ " + mDriverAmount.getToday());
+                    if (mDriverAmount.getToday() != 0) {
+                        tv_today_detail.setText("今日收入：" + mDriverAmount.getToday() + "\n继续努力哦");
+                    } else {
+                        tv_today_detail.setText("今天暂无收入\n还需努力哦");
+                    }
+                }
+            }
+        });
+//        mDriverAmount = myHttpUtils.getDriverYeAmount(Str.URL_DRIVER_YE_AMOUNT);
+
     }
 
     LinearLayout ly_order;//显示正在进行中的订单
@@ -453,7 +716,12 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     private void setLy_orderMsg(OrderInfo orderInfo) {
         tv_order_type.setText(orderInfo.getType());
         if (orderInfo.isSet_out_flag()) {
-            tv_order_time.setText(getDateToString(Longs.tryParse(orderInfo.getSetouttime())));
+            try {
+                tv_order_time.setText(getDateToString(Longs.tryParse(orderInfo.getSetouttime())));
+            } catch (Exception e) {
+                e.printStackTrace();
+                tv_order_time.setText(orderInfo.getSetouttime());
+            }
         } else {
             tv_order_time.setText("现在");
         }
@@ -465,21 +733,15 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
 
 
     FragmentManager fragmentManager;
-    MyFunctionFrag functionFrag;
     DriverMenuFrag menuFrag;
-//    OrderFrag orderFrag;
 
     private void initFrag() {
-        functionFrag = new MyFunctionFrag();
         menuFrag = new DriverMenuFrag();
-//        orderFrag = (OrderFrag) OrderFrag.newInstance();
         fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction()
-                .add(R.id.menu_right, functionFrag, "functionFrag")
                 .add(R.id.menu_left, menuFrag, "menuFrag")
                 .addToBackStack("null")
-                .hide(functionFrag)
-                .commit();
+                .commitAllowingStateLoss();
     }
 
     private void initListener() {
@@ -501,12 +763,28 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         switch (v.getId()) {
             case R.id.img_menu:
                 //左侧菜单
-                drawerly.openDrawer(GravityCompat.START);
+                try {
+//                    if (menuFrag == null) {
+//                        menuFrag = new DriverMenuFrag();
+//                        fragmentManager.beginTransaction().add(R.id.menu_left, menuFrag, "menuFrag").addToBackStack(null).show(menuFrag).commit();
+//                    } else {
+//                        //退回栈后fragment重新添加
+//                        fragmentManager.beginTransaction().setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN).replace(R.id.menu_left, menuFrag, "menuFrag").addToBackStack(null).show(menuFrag).commit();
+//                    }
+//                    drawerly.openDrawer(GravityCompat.START);
+                    drawerly.openDrawer(Gravity.LEFT);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 break;
             case R.id.img_function:
                 //右侧功能菜单
-                showFrag(functionFrag);
-//                startActivity(new Intent(this, MainActivity.class));
+                Bundle functionBundle = new Bundle();
+                functionBundle.putString("adcode",mAMapLocation.getAdCode());
+                functionBundle.putString("city",mAMapLocation.getCity());
+                Intent functionIntent = new Intent(this, MyFunctionActivity.class);
+                functionIntent.putExtra("bundle",functionBundle);
+                startActivity(functionIntent);
                 break;
             case R.id.ly_sum_yesterday:
                 //昨日收入
@@ -518,7 +796,6 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 break;
             case R.id.ly_order:
                 //显示正在进行的订单
-//                showFrag(orderFrag);
                 if (mOrderInfos == null) {
                     return;
                 }
@@ -538,16 +815,22 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                     return;
                 }
                 if (!online) {
-                    ToastUtil.show(this, "请先上线");
+//                    ToastUtil.show(this, "请先上线");
+                    MyToastDialog.show(mContext, "请先上线");
+                    return;
+                }
+                if (!driver.getType().equals("2")) {
+//                    ToastUtil.show(this, "只有代驾司机可创建订单");
+                    MyToastDialog.show(mContext, "只有代驾司机可创建订单");
+                    return;
+                }
+                if (mOrderInfos != null && mOrderInfos.size() > 0) {
+                    MyToastDialog.show(mContext, "请先完成已有订单！");
                     return;
                 }
                 Bundle bundle = new Bundle();
-                Log.i(TAG, "toCreateOrder: " + mAMapLocation.getCity());
-                Log.i(TAG, "toCreateOrder: " + mAMapLocation.getPoiName());
-                Log.i(TAG, "toCreateOrder: " + mAMapLocation.getAddress());
-                Log.i(TAG, "toCreateOrder: " + mAMapLocation.getLatitude());
-                Log.i(TAG, "toCreateOrder: " + mAMapLocation.getLongitude());
-                bundle.putString("city", mAMapLocation.getCity());
+                bundle.putString("city", city);
+                bundle.putString("adcode", mAMapLocation.getAdCode());
                 bundle.putString("poiName", mAMapLocation.getPoiName());
                 bundle.putString("poiAddr", mAMapLocation.getAddress());
                 bundle.putDouble("posi_lati", mAMapLocation.getLatitude());
@@ -558,13 +841,17 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 break;
             case R.id.btn_onLine:
                 //上线
-                checkDriverType();
+                clickableDelayed(btn_onLine);
+                sendEmptyMsgToHandlerByExecutor(CHECK_TO_ONLINE);
                 break;
             case R.id.btn_backToCity:
-                //返城
-                ly_desk02.setVisibility(View.GONE);
-                ly_desk.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1.0f));
-                showMap = !showMap;
+                //预约订单
+                if (mOrderInfos != null && mOrderInfos.size() > 0) {
+                    MyToastDialog.show(mContext, "请先完成已有订单！");
+                    return;
+                }
+                clickableDelayed(btn_backToCity);
+                sendEmptyMsgToHandlerByExecutor(CHECK_RESERVATION_ORDER);
                 break;
             case R.id.img_map_top02:
                 //显示地图布局
@@ -572,15 +859,42 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 if (showMap) {
                     ly_desk02.setVisibility(View.GONE);
                     ly_desk.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1.0f));
+                    setRotateAnimation(img_map_top02, 0, 180);//箭头旋转
                 } else {
                     ly_desk02.setVisibility(View.VISIBLE);
                     ly_desk.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 10.0f));
+                    setRotateAnimation(img_map_top02, 180, 0);//箭头旋转
                 }
                 break;
             case R.id.loc:
                 //定位
-                centerToMyLocation(aMap, mLocationClient, myOrientationListener, mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
+                centerToMyLocation(aMap, mLocationClient, myOrientationListener, mAMapLocation);
                 break;
+        }
+    }
+
+    private void checkToOnLine() {
+        if (driver == null) {
+            MyAsyncHttpUtils.get(Str.URL_MEMBER, new MyTextHttpResponseHandler() {
+                @Override
+                public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+//                            ToastUtil.show(mContext, "暂未获取到司机信息");
+                    MyToastDialog.show(mContext, "暂未获取到司机信息");
+                }
+
+                @Override
+                public void onSuccess(int i, Header[] headers, String s) {
+                    if (driver == null) {
+//                        Log.i(TAG, "onSuccess:getDriverByJson: " + s);
+                        driver = myHttpHelper.getDriverByJson(s, DriverActivity.this);
+                        if (driver != null) {
+                            checkDriverType();
+                        }
+                    }
+                }
+            });
+        } else {
+            checkDriverType();
         }
     }
 
@@ -595,7 +909,6 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
      */
     private void checkDriverType() {
         if (driver.getType().equals("")) {
-            Log.i(TAG, "checkDriverType: " + driver.getTypes().size());
             if (driver.getTypes().size() == 1) {
                 if (driver.getTypes().get(0).equals("2")) {
                     driver.setType("2");//代驾
@@ -603,23 +916,25 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 } else {
                     driver.setType("1");
                 }
-                onLine();
+//                onLine();
+                sendEmptyMsgToHandlerByExecutor(ONLINE);
                 return;
             } else {//类型不止一个
                 for (int i = 0; i < driver.getTypes().size(); i++) {
                     if (driver.getTypes().get(i).equals("2")) {
-                        Log.i(TAG, "checkDriverType: ");
                         myDialog.chooseOnLineType(REQEST_CHOOSE_ONLINE_TYPE, this);
                         return;
                     } else {
                         driver.setType("1");
                     }
                 }
-                onLine();//不为代驾
+//                onLine();//不为代驾
+                sendEmptyMsgToHandlerByExecutor(ONLINE);
                 return;
             }
         } else {
-            onLine();
+//            onLine();
+            sendEmptyMsgToHandlerByExecutor(ONLINE);
         }
     }
 
@@ -630,28 +945,40 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     }
 
     private void checkDriverCar() {
-        if (driverCarBean == null) {
-            driverCarBean = myHttpUtils.getDriverCars(Str.URL_DRIVER_CARS);
-        }
-        if (driverCarBean == null) {
-            return;
-        }
-        if (driverCarBean.getDriverCars().size() == 0) {
-            if (driver != null && driver.getType().equals("2")) {
+        MyAsyncHttpUtils.post(Str.URL_DRIVER_CARS, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
 
-            } else if (driver != null && driver.getType().equals("1")) {
-                myDialog.showAddDriverCar();
             }
-            return;
-        }
-        if (mDriverCar == null) {
-            if (driverCarBean.getDriverCars().size() > 1) {
-                myDialog.chooseDriverCars(driverCarBean, REQEST_CHOOSE_CAR, this);
-                return;
-            } else {
-                mDriverCar = driverCarBean.getDriverCars().get(0);
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+//                Log.i(TAG, "onSuccess: DriverCarsByJson:" + s);
+                if (driverCarBean == null) {
+                    driverCarBean = myHttpHelper.DriverCarsByJson(s, DriverActivity.this);
+                }
+                if (driverCarBean == null) {
+                    return;
+                }
+                if (driverCarBean.getDriverCars().size() == 0) {
+                    if (driver != null && driver.getType().equals("2")) {
+
+                    } else if (driver != null && driver.getType().equals("1")) {
+                        myDialog.showAddDriverCar();
+                    }
+                    return;
+                }
+                if (mDriverCar == null) {
+                    if (driverCarBean.getDriverCars().size() > 1) {
+                        myDialog.chooseDriverCars(driverCarBean, REQEST_CHOOSE_CAR, DriverActivity.this);
+                        return;
+                    } else {
+                        mDriverCar = driverCarBean.getDriverCars().get(0);
+                    }
+                }
             }
-        }
+        });
+
     }
 
     public boolean isInOrder() {
@@ -671,54 +998,63 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         if (driver == null) {
             return;
         }
-        Log.i(TAG, "onLine: getType" + driver.getType());
         List<String> result;
         if (online) {
             offLineTimeMillis = System.currentTimeMillis();
         } else {
             onLineTimeMillis = System.currentTimeMillis();
         }
+        RequestParams params = null;
         if (driver.getType().equals("2")) {
-            Log.i(TAG, "onLine: 2");
-            result = myHttpUtils.onlineAppDJ(Str.URL_ONLINE_DJ, !online, onLineTimeMillis, offLineTimeMillis);//上线
+            DJOnLine(true);
+//            result = myHttpUtils.onlineAppDJ(Str.URL_ONLINE_DJ, !online, onLineTimeMillis, offLineTimeMillis);//上线
         } else {
-            Log.i(TAG, "onLine: 1");
             if (mDriverCar == null) {
-                checkDriverCar();
+//                checkDriverCar();
+                sendEmptyMsgToHandlerByExecutor(CHECK_DRIVER_CAR);
                 return;
             }
             if (mDriverCar == null) {
                 return;
             }
-            result = myHttpUtils.onlineApp(Str.URL_ONLINE, mDriverCar.getId(), !online, onLineTimeMillis, offLineTimeMillis);//上线
+            otherOnLine(mDriverCar.getId(), true);
+//            result = myHttpUtils.onlineApp(Str.URL_ONLINE, mDriverCar.getId(), !online, onLineTimeMillis, offLineTimeMillis);//上线
         }
-        if (result == null) {
-            return;
-        }
-        if (result.get(0).equalsIgnoreCase("OK")) {
-            online = !online;//上线、下线
-//            speechSynthesizer.startSpeaking("开始接单啦 ", mySynthesizerListener);
-            if (online) {//上线重置时间
-                speak("开始接单啦，快去赚钱吧");
-                resetOnlineTime(result);
-                if (!driver.getType().equals("2")) {
-                    updateStatus = true;
-                    handler.sendEmptyMessage(UPDATE_CARSTATUS);
-//                    sendEmptyMessageUpdateStatus(UPDATE_CARSTATUS, 60000);
-                }
-            } else {
-                setOnlineTime(20, "上线");
-                updateStatus = false;
-                if (handler.hasMessages(UPDATE_CARSTATUS)) {
-                    handler.removeMessages(UPDATE_CARSTATUS);
-                }
-                speak("停止接单啦，享受生活吧");
+    }
+
+    private void DJOnLine(final boolean speak) {
+        RequestParams params = myHttpHelper.getDJOnLineParams(!online, onLineTimeMillis, offLineTimeMillis);
+        MyAsyncHttpUtils.post(Str.URL_ONLINE_DJ, params, new MyProgTextHttpResponseHandler(mActivity) {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+
             }
-        } else if (result.get(0).equalsIgnoreCase("ERROR")) {
-            driver.setType("");
-            ToastUtil.show(this, result.get(1));
-            return;
-        }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                List<String> result = myHttpHelper.resultByJson(s, DriverActivity.this);
+                setOnLineView(result, speak);
+            }
+        });
+    }
+
+    private void otherOnLine(int driverCarId, final boolean speak) {
+//        mDriverCar.setId(driverCarId);
+        RequestParams params = myHttpHelper.getOnLineParams(driverCarId, !online, onLineTimeMillis, offLineTimeMillis);
+        Log.i(TAG, "otherOnLine: onLineTimeMillis:"+online+"/" + onLineTimeMillis + "/offLineTimeMillis/" + offLineTimeMillis);
+        MyAsyncHttpUtils.post(Str.URL_ONLINE, params, new MyProgTextHttpResponseHandler(mActivity) {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+                Log.i(TAG, "onFailure:otherOnLine: " + s);
+            }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                Log.i(TAG, "onSuccess: otherOnLine" + s);
+                List<String> result = myHttpHelper.resultByJson(s, DriverActivity.this);
+                setOnLineView(result, speak);
+            }
+        });
     }
 
     private void resetOnlineTime(List<String> result) {
@@ -726,8 +1062,10 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 onlineTime.getDayOfMonth(), 0, 0, 0);
         onlineTime = onlineTime.plusMinutes(Ints.tryParse(result.get(2)));//当天累计上线时间
         setOnlineTime(12, "上线时间\n" + onlineTime.toString("HH:mm"));
-//        sendEmptyMessage(ONLINE_TIME, 60000);
-        handler.sendEmptyMessageDelayed(ONLINE_TIME, 60000);
+        if (online) {
+//            handler.sendEmptyMessageDelayed(ONLINE_TIME, 60000);
+            sendEmptyMsgDelayToHandlerByExecutor(ONLINE_TIME, 60000);
+        }
     }
 
     /**
@@ -739,6 +1077,11 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     private void setOnlineTime(float textSize, String text) {
         btn_onLine.setTextSize(textSize);
         btn_onLine.setText(text);
+        if (!online) {
+            if (handler.hasMessages(ONLINE_TIME)) {
+                handler.removeMessages(ONLINE_TIME);
+            }
+        }
     }
 
     float transAnimDis;//位移动画距离
@@ -780,24 +1123,56 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         super.onDestroy();
         mMapView.onDestroy();
 //        mCameraChangeListener = null;
+        if (myOrientationListener.isStarted()) {
+            myOrientationListener.stop();
+        }
         myOrientationListener = null;
         if (null != mLocationClient) {
             mLocationClient.onDestroy();
         }
         deactivate();
-        Log.i(TAG, "onDestroy: ");
+        if (aMap != null) {
+            aMap = null;
+        }
+        if (mTipHelper!=null){
+            mTipHelper.stopSpeak();
+        }
         if (online) {
-            Log.i(TAG, "onDestroy: 111");
             if (online) {
                 offLineTimeMillis = System.currentTimeMillis();
             } else {
                 onLineTimeMillis = System.currentTimeMillis();
             }
-            online = false;
+//            online = false;
             if (driver.getType().equals("2")) {
-                myHttpUtils.onlineAppDJ(Str.URL_ONLINE_DJ, online, onLineTimeMillis, offLineTimeMillis);//下线
+                RequestParams params = myHttpHelper.getDJOnLineParams(!online, onLineTimeMillis, offLineTimeMillis);
+                MyAsyncHttpUtils.post(Str.URL_ONLINE_DJ, params, new MyProgTextHttpResponseHandler(mActivity) {
+                    @Override
+                    public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+
+                    }
+
+                    @Override
+                    public void onSuccess(int i, Header[] headers, String s) {
+//                        Log.i(TAG, "onSuccess: resultByJson:" + s);
+                    }
+                });
+//                DJOnLine(false);
+//                myHttpUtils.onlineAppDJ(Str.URL_ONLINE_DJ, online, onLineTimeMillis, offLineTimeMillis);//下线
             } else {
-                myHttpUtils.onlineApp(Str.URL_ONLINE, mDriverCar.getId(), online, onLineTimeMillis, offLineTimeMillis);//下线
+                RequestParams params = myHttpHelper.getOnLineParams(mDriverCar.getId(), !online, onLineTimeMillis, offLineTimeMillis);
+                MyAsyncHttpUtils.post(Str.URL_ONLINE, params, new MyProgTextHttpResponseHandler(mActivity) {
+                    @Override
+                    public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+
+                    }
+
+                    @Override
+                    public void onSuccess(int i, Header[] headers, String s) {
+                    }
+                });
+//                otherOnLine(mDriverCar.getId(), false);
+//                myHttpUtils.onlineApp(Str.URL_ONLINE, mDriverCar.getId(), online, onLineTimeMillis, offLineTimeMillis);//下线
             }
         }
 
@@ -808,44 +1183,42 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
             unregisterReceiver(mNetReceiver);
             mNetReceiver = null;
         }
-
-        handler.removeCallbacksAndMessages(null);
-        if (handler.hasMessages(ONLINE_TIME)) {
-            Log.i(TAG, "onDestroy: ONLINE_TIME");
-            handler.removeMessages(ONLINE_TIME);
+        if (threadPool != null && !threadPool.isShutdown()) {
+            threadPool.shutdownNow();
         }
-        if (handler.hasMessages(INIT_FRAG)) {
-            Log.i(TAG, "onDestroy: INIT_FRAG");
-            handler.removeMessages(INIT_FRAG);
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
+            if (handler.hasMessages(ONLINE_TIME)) {
+                handler.removeMessages(ONLINE_TIME);
+            }
+            if (handler.hasMessages(INIT_FRAG)) {
+                handler.removeMessages(INIT_FRAG);
+            }
+            if (handler.hasMessages(CHECK_ORDER)) {
+                handler.removeMessages(CHECK_ORDER);
+            }
+            if (handler.hasMessages(CHECK_ADCODE)) {
+                handler.removeMessages(CHECK_ADCODE);
+            }
+            if (handler.hasMessages(CHECK_AD_UPDATE)) {
+                handler.removeMessages(CHECK_AD_UPDATE);
+            }
+            if (handler.hasMessages(CHECK_APP_UPDATE)) {
+                handler.removeMessages(CHECK_APP_UPDATE);
+            }
+            if (handler.hasMessages(REFRESH_AMOUNT)) {
+                handler.removeMessages(REFRESH_AMOUNT);
+            }
+            if (handler.hasMessages(UPDATE_CARSTATUS)) {
+                handler.removeMessages(UPDATE_CARSTATUS);
+                updateStatus = false;
+            }
+            if (handler.hasMessages(UPDATE_LOCATION)) {
+                updateLoc = false;
+                handler.removeMessages(UPDATE_LOCATION);
+            }
+            handler = null;
         }
-        if (handler.hasMessages(CHECK_ORDER)) {
-            Log.i(TAG, "onDestroy: CHECK_ORDER");
-            handler.removeMessages(CHECK_ORDER);
-        }
-        if (handler.hasMessages(CHECK_ADCODE)) {
-            Log.i(TAG, "onDestroy: CHECK_ADCODE");
-            handler.removeMessages(CHECK_ADCODE);
-        }
-        if (handler.hasMessages(CHECK_AD_UPDATE)) {
-            Log.i(TAG, "onDestroy: CHECK_AD_UPDATE");
-            handler.removeMessages(CHECK_AD_UPDATE);
-        }
-        if (handler.hasMessages(CHECK_APP_UPDATE)) {
-            Log.i(TAG, "onDestroy: CHECK_APP_UPDATE");
-            handler.removeMessages(CHECK_APP_UPDATE);
-        }
-        if (handler.hasMessages(UPDATE_CARSTATUS)) {
-            Log.i(TAG, "onDestroy: UPDATE_CARSTATUS");
-            handler.removeMessages(UPDATE_CARSTATUS);
-            updateStatus = false;
-        }
-        if (handler.hasMessages(UPDATE_LOCATION)) {
-            Log.i(TAG, "onDestroy: UPDATE_CARSTATUS");
-            updateLoc = false;
-            handler.removeMessages(UPDATE_LOCATION);
-        }
-
-        handler = null;
         if (orderMessageReceiver != null) {
             unregisterReceiver(orderMessageReceiver);
             orderMessageReceiver = null;
@@ -855,15 +1228,16 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     @Override
     protected void onResume() {
         super.onResume();
-        initAmountMsg();
+//        initAmountMsg();
+        sendEmptyMsgToHandlerByExecutor(INIT_AMOUNT_MSG);
         mMapView.onResume();
         if (mLocationClient != null) {
             mLocationClient.startLocation();
         }
-        if (JPushInterface.isPushStopped(this)) {
-            Log.i(TAG, "onResume: JPushInterface.isPushStopped(this)");
-            JPushInterface.init(this);
-        }
+//        if (JPushInterface.isPushStopped(this)) {
+//            Log.i(TAG, "onResume: JPushInterface.isPushStopped(this)");
+//            JPushInterface.init(this);
+//        }
     }
 
     private boolean isTwice = false;
@@ -871,11 +1245,6 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            if (fragmentManager.findFragmentByTag("functionFrag").isVisible()) {
-//                fragmentManager.beginTransaction().hide(functionFrag).commit();
-                hideFrag(functionFrag);
-                return false;
-            }
 
             if (isTwice) {
                 finish();
@@ -899,7 +1268,8 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     public void chooseDriverCar(int requestCode, int position) {
         if (requestCode == REQEST_CHOOSE_CAR) {
             mDriverCar = driverCarBean.getDriverCars().get(position);
-            onLine();
+//            onLine();
+            sendEmptyMsgToHandlerByExecutor(ONLINE);
         }
     }
 
@@ -907,12 +1277,24 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     public void sure(int requestCode, String arg0) {
         if (requestCode == REQEST_CHOOSE_ONLINE_TYPE) {
             String onlineType = arg0;//2:代驾，1：其他
-            Log.i(TAG, "sure: " + onlineType);
+//            Log.i(TAG, "sure: " + onlineType);
             driver.setType(onlineType);
             if (onlineType.equals("2")) {
                 btn_createOrder.setVisibility(View.VISIBLE);
             }
-            onLine();
+//            onLine();
+            sendEmptyMsgToHandlerByExecutor(ONLINE);
+        } else if (requestCode == Str.REQUEST_LOGIN) {
+            if (arg0 != null) {
+                String[] loginInfo = arg0.split(";");
+                if (loginInfo.length == 2) {
+                    String phone, pwd_edt, pwd;
+                    phone = loginInfo[0];
+                    pwd_edt = loginInfo[1];
+                    pwd = MD5.getMD5Str(pwd_edt);
+                    login(phone, pwd_edt, pwd);
+                }
+            }
         }
     }
 
@@ -942,7 +1324,6 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
             ly_sum.setVisibility(View.GONE);
             ly_desk02.setVisibility(View.GONE);
             ly_order.setVisibility(View.VISIBLE);
-            btn_backToCity.setVisibility(View.GONE);//返程按钮不可见
             setLy_orderMsg(mOrderInfos.get(0));
         } else {
             ly_sum.setVisibility(View.VISIBLE);
@@ -1042,9 +1423,29 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         mLocationClient = null;
     }
 
+    @Override
+    public void toLogin() {
+        if (myDialog == null) {
+            myDialog = new MyDialogUtils(mContext);
+        }
+        myDialog.login(Str.REQUEST_LOGIN, this);
+    }
+
+    @Override
+    public void onError(Object object) {
+
+    }
+
+    @Override
+    public void onRefresh() {
+//        handler.sendEmptyMessage(REFRESH_AMOUNT);
+        sendEmptyMsgToHandlerByExecutor(REFRESH_AMOUNT);
+    }
+
     public class OrderMessageReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+//            Log.i(TAG, "onReceive: intent.getAction()" + intent.getAction());
             if (Str.ORDER_MESSAGE_RECEIVED_ACTION.equals(intent.getAction())) {
                 String orderTitle = intent.getStringExtra(Str.KEY_ORDER_TITLE);
                 String orderMessage = intent.getStringExtra(Str.KEY_ORDER_MESSAGE);//订单消息
@@ -1053,18 +1454,50 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                     if (inOrder) {
                         return;//已经接单并且有2单在处理，则不提示有新订单
                     }
-                    showOrder(orderMessage);
-                } else if (orderTitle.equals("4")) {//通知推送
+//                    showOrder(orderMessage);
+                    sendMsgToHandlerByExecutor(SHOW_ORDER, orderMessage);
+                } else if (orderTitle.equals("999")) {//推送语音
                     if (orderMessage != null) {
-                        MyNotificationInfo myNotificationInfo = getNotificationInfo(orderMessage);
-                        if (myNotificationInfo != null && myNotificationInfo.getContent() != null && !myNotificationInfo.getContent().equalsIgnoreCase("")) {
-                            speak("您有新的通知：" + orderMessage);
+                        speak("您有新的消息：" + orderMessage);
+                    }
+                } else if (orderTitle.equals("4")) {//取消订单
+                    if (orderMessage == null) {
+                        return;
+                    }
+                    OrderInfo canceledOrderInfo = getOrderInfoFromReceiver(orderMessage);
+                    if (isNull(mOrderInfos, canceledOrderInfo)) {
+                        return;
+                    }
+                    if (mOrderInfos.size() > 1) {
+                        for (int i = 0; i < mOrderInfos.size(); i++) {
+                            OrderInfo orderInfo = mOrderInfos.get(i);
+                            if (orderInfo.getId() == canceledOrderInfo.getId()) {
+                                mOrderInfos.remove(i);
+                            }
                         }
-                        preferences.edit().putString("notification", orderMessage).commit();
+                        if (notNull(mOrderInfos)) {
+                            if (mOrderInfos.size() > 0) {
+
+                            } else {
+                                onOrderCanceled();
+                            }
+                        } else {
+                            onOrderCanceled();
+                        }
+                        speak("订单已取消,订单号：" + canceledOrderInfo.getId());
+                    } else if (mOrderInfos.size() == 1) {
+                        onOrderCanceled();
+                        speak("订单已取消,订单号：" + canceledOrderInfo.getId());
                     }
                 }
             }
         }
+    }
+
+    public void onOrderCanceled() {
+        mOrderInfos = null;
+        inOrder = false;
+        isInOrder(inOrder);
     }
 
     boolean inOrder;
@@ -1080,9 +1513,34 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         mTipHelper.speak(content);
     }
 
+    public void clickableDelayed(View view) {
+        view.setClickable(false);
+        showProgress(true);
+        sendMsgDelayToHandlerByExecutor(CLICKABLE_DELAYED, view, CLICKABLE_DELAYED_TIMEMILIS);
+    }
+
+    MyProgressDialog mProgressDialog;
+
+    public void showProgress(boolean showProg) {
+        if (showProg) {
+            if (mProgressDialog == null) {
+                mProgressDialog = new MyProgressDialog(context);
+            }
+            if (!mProgressDialog.isShowing()) {
+                mProgressDialog.show();
+            }
+        } else {
+            if (mProgressDialog != null) {
+                if (mProgressDialog.isShowing()) {
+                    mProgressDialog.dismiss();
+                }
+            }
+        }
+    }
+
     public void showOrder(String orderMessage) {
         mOrderInfo = getOrderInfoFromReceiver(orderMessage);
-        Log.i(TAG, "showOrder: " + mOrderInfo);
+//        Log.i(TAG, "showOrder: " + mOrderInfo);
         if (mOrderInfo == null) {
             return;
         }
@@ -1091,32 +1549,40 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
             @Override
             public void take(boolean take) {
                 if (take) {
-                    List<String> orderResult = myHttpUtils.takeOrder(Str.URL_TAKE_ORDER, mOrderInfo.getId());
-                    if (orderResult == null) {
-                        return;
-                    }
-                    if (orderResult.get(0).equalsIgnoreCase("OK")) {
-                        speak("接单成功 ");
-                        if (mOrderInfos == null) {//接单后才添加到接单列表
-                            mOrderInfos = new ArrayList<>();
-                            mOrderInfos.add(mOrderInfo);
-                        }
-                        mFanChengInfo = mOrderInfos.get(0);
-//                        showFrag(orderFrag);
-                        toMyOrderAcitivityForResult(mOrderInfos.get(0), null);
+                    RequestParams params = myHttpHelper.getTakeOrderParams(mOrderInfo.getId());
+                    MyAsyncHttpUtils.post(Str.URL_TAKE_ORDER, params, new MyTextHttpResponseHandler() {
+                        @Override
+                        public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
 
-//                        if (inOrder) {
-//                            //已经接单了
-//                            orderFrag.addOrderInfo(mOrderInfos.get(1));
-//                        } else {
-//                            orderFrag.setmOrderInfo(mOrderInfos.get(0));
-//                        }
-                        inOrder = true;
-                        isInOrder(inOrder);
-                    } else {
-                        speak("抢单失败 ");
-//                        speechSynthesizer.startSpeaking("接单失败 ", mySynthesizerListener);
-                    }
+                        }
+
+                        @Override
+                        public void onSuccess(int i, Header[] headers, String s) {
+                            List<String> orderResult = myHttpHelper.resultByJson(s, DriverActivity.this);
+                            if (orderResult == null) {
+                                return;
+                            }
+                            if (orderResult.get(0).equalsIgnoreCase("OK")) {
+                                if (mOrderInfo.isSet_out_flag()) {
+                                    speak("接单成功,可点击预约订单详情页查看");
+                                } else {
+                                    speak("接单成功 ");
+                                    if (mOrderInfos == null) {//接单后才添加到接单列表
+                                        mOrderInfos = new ArrayList<>();
+                                        mOrderInfos.add(mOrderInfo);
+                                    }
+//                                mFanChengInfo = mOrderInfos.get(0);
+                                    toMyOrderAcitivityForResult(mOrderInfos.get(0), null);
+
+                                    inOrder = true;
+                                    isInOrder(inOrder);
+                                }
+                            } else {
+                                speak("抢单失败 ");
+                            }
+                        }
+                    });
+//                    List<String> orderResult = myHttpUtils.takeOrder(Str.URL_TAKE_ORDER, mOrderInfo.getId());
                 }
             }
         });
@@ -1136,81 +1602,80 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         startActivityForResult(intent, Str.REQUEST_ORDER_ACTIVITY);
     }
 
-    private OrderInfo mFanChengInfo;//返程信息
+//    private OrderInfo mFanChengInfo;//返程信息
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.i(TAG, "onActivityResult: requestCode:" + requestCode + "resultCode:" + resultCode);
+//        initAmountMsg();
+        sendEmptyMsgToHandlerByExecutor(INIT_AMOUNT_MSG);
         if (data == null) {
             return;
         }
         if (resultCode == Str.REQUEST_ORDER_ACTIVITY) {
             if (data.getStringExtra("result").equalsIgnoreCase("OK")) {//完成所有订单
-//                mOrderInterface.orderEnd(true);//传递结束通知
-                mFanChengInfo = mOrderInfos.get(0);
                 mOrderInfos = null;
                 inOrder = false;
                 isInOrder(inOrder);
-                btn_backToCity.setVisibility(View.VISIBLE);//返程按钮可见
                 speak("完成服务");
             } else if (data.getStringExtra("result").equalsIgnoreCase("OK_Two")) {//
                 int position = data.getIntExtra("position", 999);
-                mOrderInfos.remove(position);
+                if (position < mOrderInfos.size()) {
+                    mOrderInfos.remove(position);
+                }
 //                mOrderInterface.positionFromMain(position);//传递第几位乘客订单完成
                 setLy_orderMsg(mOrderInfos.get(0));//刷新主界面订单布局数据
                 speak("完成服务");
             } else if (data.getStringExtra("result").equalsIgnoreCase("NO")) {//取消结算，无操作
 
             }
-            checkInOrder();
+            sendEmptyMsgToHandlerByExecutor(CHECK_ORDER);
         } else if (resultCode == Str.REQUEST_CREATE_ORDER) {//创建订单
             Bundle bundle = data.getBundleExtra("bundle");
             OrderInfo orderInfo = (OrderInfo) bundle.getSerializable("orderInfo");
-
-            Log.i(TAG, "driverCreateOrder: " + orderInfo);
-
+//            Log.i(TAG, "driverCreateOrder: " + orderInfo);
             if (orderInfo == null) {
                 return;
             }
-            if (mOrderInfos == null) {
-                mOrderInfos = new ArrayList<>();
-            }
-            if (mOrderInfos.size() == 0) {
-                OrderInfo createOrderInfo = myHttpUtils.driverCreateOrder(Str.URL_DRIVER_CREATE_ORDER, orderInfo);
-                if (createOrderInfo != null) {
-                    if (createOrderInfo.getEndLatitude() == 0) {
-                        createOrderInfo.setStartLatitude(orderInfo.getStartLatitude());
-                        createOrderInfo.setStartLongitude(orderInfo.getStartLongitude());
-                        createOrderInfo.setEndLatitude(orderInfo.getEndLatitude());
-                        createOrderInfo.setEndLongitude(orderInfo.getEndLongitude());
-                    }
-                    if (createOrderInfo.getReservationAddress() == null || createOrderInfo.getReservationAddress().equalsIgnoreCase("")) {
-                        createOrderInfo.setReservationAddress(orderInfo.getReservationAddress());
-                    }
-                    if (createOrderInfo.getDestination() == null || createOrderInfo.getDestination().equalsIgnoreCase("")) {
-                        createOrderInfo.setDestination(orderInfo.getDestination());
-                    }
-                    if (createOrderInfo.getDistance() == 0) {
-                        createOrderInfo.setDistance(orderInfo.getDistance());
-                    }
-                    mOrderInfos.add(createOrderInfo);
-//                    orderFrag.setmOrderInfo(mOrderInfos.get(0));
-                    inOrder = true;
-                    isInOrder(inOrder);
-//                    showFrag(orderFrag);
-                    toMyOrderAcitivityForResult(mOrderInfos.get(0), null);
-                    mFanChengInfo = mOrderInfos.get(0);
-                } else {
-                    ToastUtil.show(this, "创建失败，请重试");
-                }
-            } else {
-                speak("有未处理完的订单，请先处理完订单！");
-            }
-
+            sendMsgToHandlerByExecutor(CREATE_ORDER_BY_DRIVER, orderInfo);
         }
     }
 
+    private void createOrderByDriver(OrderInfo orderInfo) {
+        if (mOrderInfos == null) {
+            mOrderInfos = new ArrayList<>();
+        }
+        if (mOrderInfos.size() == 0) {
+            RequestParams params = myHttpHelper.getCreateOrderParams(orderInfo);
+            final OrderInfo finalOrderInfo = orderInfo;
+            MyAsyncHttpUtils.post(Str.URL_DRIVER_CREATE_ORDER, params, new MyProgTextHttpResponseHandler(mActivity) {
+                @Override
+                public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+//                    Log.i(TAG, "onFailure: " + s);
+                }
+
+                @Override
+                public void onSuccess(int i, Header[] headers, String s) {
+//                    Log.i(TAG, "onSuccess:getCreatedOrderInfosByJson:// " + s);
+                    OrderInfo createOrderInfo = myHttpHelper.getCreatedOrderInfosByJson(s, DriverActivity.this);
+//                    Log.i(TAG, "onSuccess:getCreatedOrderInfosByJson:/// " + createOrderInfo);
+                    if (createOrderInfo != null) {
+                        mOrderInfos.add(createOrderInfo);
+                        inOrder = true;
+                        isInOrder(inOrder);
+                        toMyOrderAcitivityForResult(mOrderInfos.get(0), null);
+//                        mFanChengInfo = mOrderInfos.get(0);
+                    } else {
+                        MyToastDialog.show(mContext, "创建失败，请重试");
+                    }
+                }
+            });
+//                OrderInfo createOrderInfo = myHttpUtils.driverCreateOrder(Str.URL_DRIVER_CREATE_ORDER, orderInfo);
+        } else {
+            speak("有未处理完的订单，请先处理完订单！");
+        }
+
+    }
 
     private MapView mMapView = null;
     private AMap aMap = null;
@@ -1255,7 +1720,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         myLocationStyle.radiusFillColor(Color.argb(0, 0, 0, 0));// 设置圆形的填充颜色
         aMap.setMyLocationStyle(myLocationStyle);
         //设置方向监听
-        myOrientationListener = new MyOrientationListener(context);
+        myOrientationListener = new MyOrientationListener(MyApp.getInstance());
         myOrientationListener.setmOnOritationListener(new MyOrientationListener.OnOritationListener() {
             @Override
             public void onOritationChanged(float x) {
@@ -1289,38 +1754,25 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
 
     RelativeLayout rl_map;
     ImageView img_map_top02;//展开地图箭头
-    TextView tv_map_top02;//显示当前位置地名
+    TextView tv_map_top01, tv_map_top02;//显示当前位置地名
     ImageButton loc;
 
     private void initMapView() {
         rl_map = (RelativeLayout) findViewById(R.id.rl_map);
         img_map_top02 = (ImageView) findViewById(R.id.img_map_top02);
+        tv_map_top01 = (TextView) findViewById(R.id.tv_map_top01);
         tv_map_top02 = (TextView) findViewById(R.id.tv_map_top02);
         loc = (ImageButton) findViewById(R.id.loc);
         img_map_top02.setOnClickListener(this);
         loc.setOnClickListener(this);
     }
-//    WindowManager wm;Display display;FrameLayout.LayoutParams params;
-//    public RelativeLayout.LayoutParams setViewParams(View view, int weightScale, int hightScale) {
-//        wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-//        display = wm.getDefaultDisplay();
-//        int hight = display.getHeight();
-//        int width = display.getWidth();
-//        params = (FrameLayout.LayoutParams) view.getLayoutParams();
-//        params.height = hight;
-//        if (hightScale == 2){
-//            params.width = width / weightScale;
-//        }else {
-//            params.width = 10;
-//        }
-//        return params;
-//    }
 
     private boolean isFirstIn = true;
     private LatLng startLat, endLat;
     public MyAMapLocation myAMapLocation;
     AMapLocation mAMapLocation;
     LatLng updateLocLatlng;
+    String city;
 
     /**
      * 定位
@@ -1339,66 +1791,89 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 double endLat_longi = aMapLocation.getLongitude();
                 updateLocLatlng = new LatLng(endLat_lati, endLat_longi);
 
-                mAMapLocation = aMapLocation;
-                myAMapLocation = new MyAMapLocation(mAMapLocation.getCountry(), mAMapLocation.getProvince(),
-                        mAMapLocation.getCity(), mAMapLocation.getDistrict(), mAMapLocation.getAddress(), mAMapLocation.getAdCode());
-                tv_map_top02.setText(mAMapLocation.getPoiName());
+                if (notEmpty(aMapLocation.getAddress(), aMapLocation.getPoiName(), aMapLocation.getAdCode())) {
+                    mAMapLocation = aMapLocation;
+                }
+                if (notEmpty(aMapLocation.getAddress())) {
+                    mAMapLocation.setAddress(aMapLocation.getAddress());
+                }
+                if (notEmpty(aMapLocation.getPoiName())) {
+                    mAMapLocation.setPoiName(aMapLocation.getPoiName());
+                }
+                if (notEmpty(aMapLocation.getAdCode())) {
+                    mAMapLocation.setAdCode(aMapLocation.getAdCode());
+                }
+                mAMapLocation.setLatitude(aMapLocation.getLatitude());
+                mAMapLocation.setLongitude(aMapLocation.getLongitude());
+                mAMapLocation.setLocationType(aMapLocation.getLocationType());
+                mAMapLocation.setSpeed(aMapLocation.getSpeed());
+
+//                myAMapLocation = new MyAMapLocation(aMapLocation.getCountry(), aMapLocation.getProvince(),
+//                        aMapLocation.getCity(), aMapLocation.getDistrict(), aMapLocation.getAddress(), aMapLocation.getAdCode());
+                if (aMapLocation.getCity() != null && !aMapLocation.getCity().equals("")) {
+                    city = aMapLocation.getCity();
+                }
+                String addr = "";
+                if (!aMapLocation.getPoiName().isEmpty()) {
+                    addr = aMapLocation.getPoiName();
+                } else {
+                    if (!aMapLocation.getAddress().isEmpty()) {
+                        addr = aMapLocation.getAddress();
+                    }
+                }
+                if (!addr.isEmpty()) {
+//                    tv_map_top01.setVisibility(View.VISIBLE);
+                    tv_map_top02.setText(addr);
+                } else {
+//                    tv_map_top01.setVisibility(View.GONE);
+                }
+//                tv_map_top02.setText(!aMapLocation.getPoiName().isEmpty() ? aMapLocation.getPoiName() : !aMapLocation.getAddress().isEmpty()?aMapLocation.getAddress():"");
                 //首次进入定位到我的位置
                 if (isFirstIn) {
-                    centerToMyLocation(aMap, mLocationClient, myOrientationListener, mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
+                    mAMapLocation = aMapLocation;
+                    centerToMyLocation(aMap, mLocationClient, myOrientationListener, mAMapLocation);
+                    aMap.moveCamera(CameraUpdateFactory.zoomTo(18.0f));
+
                     double latitude_0 = mAMapLocation.getLatitude();
                     double longitude_0 = mAMapLocation.getLongitude();
                     startLat = new LatLng(latitude_0, longitude_0);
-                    if (driver == null) {
-                        driver = myHttpUtils.getDriverByGET(Str.URL_MEMBER);
-                    }
-                    handler.sendEmptyMessageDelayed(CHECK_ADCODE, 6000);//上传adcode
-                    handler.sendEmptyMessageDelayed(CHECK_AD_UPDATE, 60000);//广告需要定位
+//                    initDriver();
+                    sendEmptyMsgToHandlerByExecutor(INIT_DRIVER);
+                    sendEmptyMsgDelayToHandlerByExecutor(CHECK_ADCODE, 1000);//上传adcode
+                    sendEmptyMsgDelayToHandlerByExecutor(CHECK_AD_UPDATE, 3000);//广告需要定位
                     updateLoc = true;
-                    handler.sendEmptyMessageDelayed(UPDATE_LOCATION, 10000);
+                    sendEmptyMsgDelayToHandlerByExecutor(UPDATE_LOCATION, 10000);
                     isFirstIn = false;
                 } else {//判断是否上传位置
-                    myActivityLocInterface.getMyLocation(mAMapLocation);
-//                    if (updateLoc) {
-//                        upDateLocation(aMapLocation);
-//                        updateLoc = false;
-//                    }
-
+//                    myActivityLocInterface.getMyLocation(mAMapLocation);
                 }
             } else {
-                String errText = "定位失败," + aMapLocation.getErrorCode() + ": " + aMapLocation.getErrorInfo();
-                Log.e("AmapErr", errText);
+//                String errText = "定位失败," + aMapLocation.getErrorCode() + ": " + aMapLocation.getErrorInfo();
+//                Log.e("AmapErr", errText);
 //                Toast.makeText(this, errText, Toast.LENGTH_SHORT).show();
             }
         }
     }
 
-    /**
-     * 上传会员位置(判断与原位置相差10米)
-     */
-//    private void upDateLocation(boolean upDate) {
-//        if (mAMapLocation == null) {
-//            return;
-//        }
-//        endLat = new LatLng(mAMapLocation.getLatitude(), mAMapLocation.getLongitude());
-//        float distance = 0;
-//        if (startLat != null && endLat != null) {
-//            distance = AMapUtils.calculateLineDistance(startLat, endLat);
-//        }
-//        if (distance > 10) {
-//            Log.i(TAG, "upDateLocation: ");
-//            startLat = new LatLng(endLat.latitude, endLat.longitude);
-//            //上传位置
-//            upDateLocation();
-//        }
-//    }
     private void upDateLocation(AMapLocation mAMapLocation, LatLng updateLocLatlng) {
         if (mAMapLocation == null || updateLocLatlng == null) {
             return;
         }
         ClientLocationInfo locationInfo = new ClientLocationInfo(updateLocLatlng.longitude + "",
-                updateLocLatlng.latitude + "", mAMapLocation.getSpeed() + "", mCurrentX + "", mAMapLocation.getLocationType());
-        List<String> list = myHttpUtils.upDateLocation(Str.URL_UPDATELOCATION_DRIVER, locationInfo);
+                updateLocLatlng.latitude + "", mAMapLocation.getSpeed() + "", mCurrentX + "", mAMapLocation.getLocationType(), mAMapLocation.getAccuracy());
+        RequestParams params = myHttpHelper.getupDateLocationParams(locationInfo);
+        MyAsyncHttpUtils.post(Str.URL_UPDATELOCATION_DRIVER, params, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+
+            }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+//                Log.i(TAG, "onSuccess: upDateLocation:" + s);
+            }
+        });
+//        List<String> list = myHttpUtils.upDateLocation(Str.URL_UPDATELOCATION_DRIVER, locationInfo);
     }
     /**
      * 回调当前位置
@@ -1431,22 +1906,21 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     /**
      * 传递aMapLocation给其他fragment
      */
-    MyActivityLocationInterface myActivityLocInterface;
+//    MyActivityLocationInterface myActivityLocInterface;
+//
+//    public void setMyActivityLocationInterface(MyActivityLocationInterface myActivityLocInterface) {
+//        this.myActivityLocInterface = myActivityLocInterface;
+//    }
+//
+//    public interface MyActivityLocationInterface {
+//        void getMyLocation(AMapLocation aMapLocation);
+//    }
 
-    public void setMyActivityLocationInterface(MyActivityLocationInterface myActivityLocInterface) {
-        this.myActivityLocInterface = myActivityLocInterface;
-    }
-
-    public interface MyActivityLocationInterface {
-        void getMyLocation(AMapLocation aMapLocation);
-
-    }
-
-    MyOrderInterface mOrderInterface;
-
-    public void setMyOrderInterface(MyOrderInterface myOrderInterface) {
-        this.mOrderInterface = myOrderInterface;
-    }
+//    MyOrderInterface mOrderInterface;
+//
+//    public void setMyOrderInterface(MyOrderInterface myOrderInterface) {
+//        this.mOrderInterface = myOrderInterface;
+//    }
 
 //    /**
 //     * 1分钟更新一次上线时间

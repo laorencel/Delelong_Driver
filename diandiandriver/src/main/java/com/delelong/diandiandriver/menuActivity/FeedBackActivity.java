@@ -105,7 +105,6 @@ public class FeedBackActivity extends BaseActivity implements View.OnClickListen
         }
     }
 
-
     Client client;
     MyAMapLocation myAMapLocation;
     SharedPreferences preferences;

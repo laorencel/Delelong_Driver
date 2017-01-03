@@ -49,7 +49,13 @@ public class MyOrderDialog implements View.OnClickListener, WiperSwitch.OnSlippe
                 case SPEAK:
                     if (speak_continue) {
                         if (orderInfo != null) {
-                            speak(orderInfo.getServiceType() + "订单。距离您" + dstr + "公里，从" + orderInfo.getReservationAddress() + "出发，到" + orderInfo.getDestination());
+                            String content;
+                            if (orderInfo.getDestination() == null || orderInfo.getDestination().equalsIgnoreCase("")) {
+                                content = orderInfo.getServiceType() + "订单。距离您" + dstr + "公里，从" + orderInfo.getReservationAddress() + "出发";
+                            } else {
+                                content = orderInfo.getServiceType() + "订单。距离您" + dstr + "公里，从" + orderInfo.getReservationAddress() + "出发，到" + orderInfo.getDestination();
+                            }
+                            speak(content);
                         }
                     }
                     break;
@@ -85,7 +91,7 @@ public class MyOrderDialog implements View.OnClickListener, WiperSwitch.OnSlippe
 
         Window window = dialog.getWindow();
         window.setContentView(R.layout.dialog_take_order);
-        speak("距离客户约");
+        speak("");
         initView(window);
 //        setRouteSearchListner();
 //        routeSearch(false);
@@ -162,6 +168,9 @@ public class MyOrderDialog implements View.OnClickListener, WiperSwitch.OnSlippe
     public void dismiss() {
         if (speak_continue) {
             speak_continue = false;
+            if (tipHelper != null) {
+                tipHelper.stopSpeak();
+            }
             if (dialogHandler.hasMessages(SPEAK)) {
                 dialogHandler.removeMessages(SPEAK);
             }

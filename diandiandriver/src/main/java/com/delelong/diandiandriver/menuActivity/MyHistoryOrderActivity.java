@@ -20,10 +20,17 @@ import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.DriverAmount;
 import com.delelong.diandiandriver.bean.MyHistoryOrderInfo;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.http.MyHttpUtils;
+import com.delelong.diandiandriver.http.MyAsyncHttpUtils;
+import com.delelong.diandiandriver.http.MyHttpHelper;
+import com.delelong.diandiandriver.http.MyProgTextHttpResponseHandler;
+import com.delelong.diandiandriver.listener.MyHttpDataListener;
+import com.delelong.diandiandriver.utils.ToastUtil;
+import com.loopj.android.http.RequestParams;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import cz.msebera.android.httpclient.Header;
 
 
 /**
@@ -44,17 +51,31 @@ public class MyHistoryOrderActivity extends BaseActivity implements View.OnClick
         initMsg();
     }
 
-    MyHttpUtils myHttpUtils;
+    //    MyHttpUtils myHttpUtils;
+    MyHttpHelper mHttpHelper;
     DriverAmount mDriverAmount;
     List<MyHistoryOrderInfo> mHistoryOrderInfos;
     MyHistoryOrderAdapter myHistoryOrderAdapter;
 
     private void initMsg() {
-        myHttpUtils = new MyHttpUtils(this);
-        mDriverAmount = myHttpUtils.getDriverYeAmount(Str.URL_DRIVER_YE_AMOUNT);
-        if (mDriverAmount != null) {
-            tv_myBalance.setText(mDriverAmount.getYe() + " 元");
-        }
+//        myHttpUtils = new MyHttpUtils(this);
+        mHttpHelper = new MyHttpHelper(this);
+        MyAsyncHttpUtils.post(Str.URL_DRIVER_YE_AMOUNT, new MyProgTextHttpResponseHandler(this) {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+
+            }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                mDriverAmount = mHttpHelper.getDriverYeAmountByJson(s, null);
+                if (mDriverAmount != null) {
+                    tv_myBalance.setText(mDriverAmount.getYe() + " 元");
+                }
+            }
+        });
+//        mDriverAmount = myHttpUtils.getDriverYeAmount(Str.URL_DRIVER_YE_AMOUNT);
+
         setHistoryAdapter(timeType, serviceType);
     }
 
@@ -64,21 +85,43 @@ public class MyHistoryOrderActivity extends BaseActivity implements View.OnClick
      */
     private void setHistoryAdapter(int type, int serviceType) {
         mHistoryOrderInfos = null;
-        mHistoryOrderInfos = myHttpUtils.getHistoryOrder(Str.URL_HISTORY_ORDER, type, serviceType);
-        if (mHistoryOrderInfos == null || mHistoryOrderInfos.size() == 0) {
-            Log.i(TAG, "setHistoryAdapter: null");
-            tv_no_info.setVisibility(View.VISIBLE);
-            lv_history_order.setVisibility(View.GONE);
-            return;
-        }
-        tv_no_info.setVisibility(View.GONE);
-        lv_history_order.setVisibility(View.VISIBLE);
+        RequestParams params = mHttpHelper.getHistoryOrderParams(type, serviceType);
+        MyAsyncHttpUtils.post(Str.URL_HISTORY_ORDER, params, new MyProgTextHttpResponseHandler(this) {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+
+            }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                mHistoryOrderInfos = mHttpHelper.getHistoryOrderInfoByJson(s, new MyHttpDataListener() {
+                    @Override
+                    public void toLogin() {
+                        ToastUtil.show(MyHistoryOrderActivity.this,"未登陆，请重新登陆");
+                    }
+
+                    @Override
+                    public void onError(Object object) {
+
+                    }
+                });
+                if (mHistoryOrderInfos == null || mHistoryOrderInfos.size() == 0) {
+                    Log.i(TAG, "setHistoryAdapter: null");
+                    tv_no_info.setVisibility(View.VISIBLE);
+                    lv_history_order.setVisibility(View.GONE);
+                    return;
+                }
+                tv_no_info.setVisibility(View.GONE);
+                lv_history_order.setVisibility(View.VISIBLE);
 //        if (myHistoryOrderAdapter == null) {
-        myHistoryOrderAdapter = new MyHistoryOrderAdapter(this, mHistoryOrderInfos);
-        lv_history_order.setAdapter(myHistoryOrderAdapter);
+                myHistoryOrderAdapter = new MyHistoryOrderAdapter(MyHistoryOrderActivity.this, mHistoryOrderInfos);
+                lv_history_order.setAdapter(myHistoryOrderAdapter);
 //        } else {
-        myHistoryOrderAdapter.notifyDataSetChanged();
+                myHistoryOrderAdapter.notifyDataSetChanged();
 //        }
+            }
+        });
+//        mHistoryOrderInfos = myHttpUtils.getHistoryOrder(Str.URL_HISTORY_ORDER, type, serviceType);
     }
 
     TextView tv_myBalance, tv_choose_date, tv_no_info;
@@ -127,12 +170,14 @@ public class MyHistoryOrderActivity extends BaseActivity implements View.OnClick
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Log.i(TAG, "onItemClick: " + position);
                 window.dismiss();
-                timeType = position+1;
+                timeType = position + 1;
                 setHistoryAdapter(timeType, serviceType);
             }
         });
     }
+
     int timeType = 4;
+
     private void setPopWindow() {
         if (window == null) {
             //创建PopupWindow

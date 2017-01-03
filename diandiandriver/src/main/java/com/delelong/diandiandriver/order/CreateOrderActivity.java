@@ -58,24 +58,22 @@ public class CreateOrderActivity extends BaseActivity implements View.OnClickLis
         aMap = mMapView.getMap();
     }
 
-    String city, poiName,poiAddr;
+    String city,poiName, poiAddr;
+    String adcode = "340104";
     private void initMsg() {
         Bundle bundle = getIntent().getBundleExtra("bundle");
-        if (bundle == null){
+        if (bundle == null) {
             return;
         }
         city = bundle.getString("city");
+        adcode = bundle.getString("adcode");
         poiName = bundle.getString("poiName");
         poiAddr = bundle.getString("poiAddr");
         double lati = bundle.getDouble("posi_lati");
         double longi = bundle.getDouble("posi_longi");
-        mPositionPoiItem = new PoiItem("11",new LatLonPoint(lati,longi),poiName,poiAddr);
-        Log.i(TAG, "initMsg: "+city);
-        Log.i(TAG, "initMsg: "+poiName);
-        Log.i(TAG, "initMsg: "+poiAddr);
-        Log.i(TAG, "initMsg: "+mPositionPoiItem);
-        Log.i(TAG, "initMsg: "+mPositionPoiItem.getTitle());
-        if (mPositionPoiItem != null){
+        mPositionPoiItem = new PoiItem("11", new LatLonPoint(lati, longi), poiName, poiAddr);
+        mDestinationPoiItem = new PoiItem("12", new LatLonPoint(0, 0), "", "");
+        if (mPositionPoiItem != null) {
             tv_position.setText(mPositionPoiItem.getTitle());
         }
     }
@@ -130,7 +128,7 @@ public class CreateOrderActivity extends BaseActivity implements View.OnClickLis
                 break;
             case R.id.btn_confirm:
                 if (mPositionPoiItem == null || mDestinationPoiItem == null) {
-                    ToastUtil.show(this, "请先设置起始点");
+                    ToastUtil.show(this, "请先设置起点");
                     return;
                 }
                 phone = edt_phone.getText().toString();
@@ -143,13 +141,14 @@ public class CreateOrderActivity extends BaseActivity implements View.OnClickLis
                  * no改为预算时间
                  *
                  */
-                long duration = 0;float distance = 0;
-                if (mDrivePath != null){
-                    duration = mDrivePath.getDuration()/60;
-                    distance = mDrivePath.getDistance()/1000;
+                long duration = 0;
+                float distance = 0;
+                if (mDrivePath != null) {
+                    duration = mDrivePath.getDuration() / 60;
+                    distance = mDrivePath.getDistance() / 1000;
                 }
-                OrderInfo orderInfo = new OrderInfo(1,1, phone, name, "",
-                        ""+duration, "现在", "", "代驾", false, 0, distance, 0,
+                OrderInfo orderInfo = new OrderInfo(1, 1, phone, name, "",
+                        "" + duration, "现在", "", "代驾", false, 0, distance, 0,
                         mPositionPoiItem.getLatLonPoint().getLatitude(),
                         mPositionPoiItem.getLatLonPoint().getLongitude(),
                         mDestinationPoiItem.getLatLonPoint().getLatitude(),
@@ -170,6 +169,7 @@ public class CreateOrderActivity extends BaseActivity implements View.OnClickLis
         Bundle bundle = new Bundle();
         bundle.putString("choose", choose);
         bundle.putString("city", city);
+        bundle.putString("adcode", adcode);
         return bundle;
     }
 
@@ -182,31 +182,31 @@ public class CreateOrderActivity extends BaseActivity implements View.OnClickLis
         switch (resultCode) {
             case Str.REQUEST_CHOOSE_ADDR_POSITION://起点
                 bundle = data.getBundleExtra("bundle");
-                if (bundle == null){
+                if (bundle == null) {
                     return;
                 }
                 mPositionPoiItem = bundle.getParcelable("PoiInfo");
-                tv_position.setText(mDestinationPoiItem.getTitle());
-                if (mDestinationPoiItem != null){
+                tv_position.setText(mPositionPoiItem.getTitle());
+                if (mDestinationPoiItem != null) {
                     LatLonPoint start = mPositionPoiItem.getLatLonPoint();
                     LatLonPoint end = mDestinationPoiItem.getLatLonPoint();
-                    if (aMap != null){
-                        routeSearch(start,end,false);
+                    if (aMap != null) {
+                        routeSearch(start, end, false);
                     }
                 }
                 break;
             case Str.REQUEST_CHOOSE_ADDR_DESTINATION:
                 bundle = data.getBundleExtra("bundle");
-                if (bundle == null){
+                if (bundle == null) {
                     return;
                 }
                 mDestinationPoiItem = bundle.getParcelable("PoiInfo");
                 tv_destination.setText(mDestinationPoiItem.getTitle());
-                if (mPositionPoiItem != null){
+                if (mPositionPoiItem != null) {
                     LatLonPoint start = mPositionPoiItem.getLatLonPoint();
                     LatLonPoint end = mDestinationPoiItem.getLatLonPoint();
-                    if (aMap != null){
-                        routeSearch(start,end,false);
+                    if (aMap != null) {
+                        routeSearch(start, end, false);
                     }
                 }
                 break;

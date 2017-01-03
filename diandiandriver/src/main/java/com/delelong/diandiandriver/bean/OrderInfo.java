@@ -12,7 +12,7 @@ public class OrderInfo implements Serializable{
     private int status;//订单状态
     private int timeOut;//订单超时时间，设置dialog多少秒自动消失
     private int car_id;//如未完成的订单会有carId
-    private int waitMinutes;//等待时间
+    private int waitMinutes;//等待时间（包括未完成订单）
     private String phone;//手机号
     private String nick_name;//昵称
     private String head_portrait;//头像地址
@@ -23,6 +23,7 @@ public class OrderInfo implements Serializable{
     private boolean set_out_flag;//是否是预约
     private long id;//主键
     private double distance;//订单距离
+    private double realDistance;//订单实际距离
     private double yg_amount;//预算费用
     private double startLatitude;
     private double startLongitude;
@@ -190,6 +191,14 @@ public class OrderInfo implements Serializable{
         this.distance = distance;
     }
 
+    public double getRealDistance() {
+        return realDistance;
+    }
+
+    public void setRealDistance(double realDistance) {
+        this.realDistance = realDistance;
+    }
+
     public double getYg_amount() {
         return yg_amount;
     }
@@ -266,7 +275,10 @@ public class OrderInfo implements Serializable{
     public String toString() {
         return "OrderInfo{" +
                 "title=" + title +
+                ", status=" + status +
+                ", timeOut=" + timeOut +
                 ", car_id=" + car_id +
+                ", waitMinutes=" + waitMinutes +
                 ", phone='" + phone + '\'' +
                 ", nick_name='" + nick_name + '\'' +
                 ", head_portrait='" + head_portrait + '\'' +
@@ -277,6 +289,7 @@ public class OrderInfo implements Serializable{
                 ", set_out_flag=" + set_out_flag +
                 ", id=" + id +
                 ", distance=" + distance +
+                ", realDistance=" + realDistance +
                 ", yg_amount=" + yg_amount +
                 ", startLatitude=" + startLatitude +
                 ", startLongitude=" + startLongitude +

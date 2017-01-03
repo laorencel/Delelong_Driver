@@ -7,6 +7,7 @@ import com.amap.api.maps.AMap;
 import com.amap.api.services.route.BusRouteResult;
 import com.amap.api.services.route.DrivePath;
 import com.amap.api.services.route.DriveRouteResult;
+import com.amap.api.services.route.RideRouteResult;
 import com.amap.api.services.route.RouteSearch;
 import com.amap.api.services.route.WalkRouteResult;
 import com.delelong.diandiandriver.R;
@@ -52,9 +53,10 @@ public class MyRouteSearchListener implements RouteSearch.OnRouteSearchListener 
         if (errorCode == 1000) {
             if (driveRouteResult != null && driveRouteResult.getPaths() != null) {
                 if (driveRouteResult.getPaths().size() > 0) {
-
                     final DrivePath drivePath = driveRouteResult.getPaths().get(0);
-                    myDrivePathListener.getDrivePath(drivePath);
+                    if (myDrivePathListener != null) {
+                        myDrivePathListener.getDrivePath(drivePath);
+                    }
                     if (showRoute) {
                         DriveRouteColorfulOverLay drivingRouteOverlay = new DriveRouteColorfulOverLay(
                                 aMap, drivePath,
@@ -85,6 +87,11 @@ public class MyRouteSearchListener implements RouteSearch.OnRouteSearchListener 
 
     @Override
     public void onWalkRouteSearched(WalkRouteResult walkRouteResult, int errorCode) {
+
+    }
+
+    @Override
+    public void onRideRouteSearched(RideRouteResult rideRouteResult, int i) {
 
     }
 

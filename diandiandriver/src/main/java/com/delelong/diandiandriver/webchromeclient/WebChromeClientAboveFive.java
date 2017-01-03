@@ -52,7 +52,9 @@ public class WebChromeClientAboveFive extends BaseWebChromeClient {
         Intent i = new Intent(Intent.ACTION_GET_CONTENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType("*/*");
-        mActivity.startActivityForResult(Intent.createChooser(i, "File Chooser"), Str.FILECHOOSER_RESULTCODE);
+        if (!mActivity.isFinishing()){
+            mActivity.startActivityForResult(Intent.createChooser(i, "File Chooser"), Str.FILECHOOSER_RESULTCODE);
+        }
         return true;
     }
 
@@ -82,7 +84,9 @@ public class WebChromeClientAboveFive extends BaseWebChromeClient {
                     }
                 }
             }
-            mUploadCallbackAboveFive.onReceiveValue(results);
+            if (mActivity!=null&&!mActivity.isFinishing()){
+                mUploadCallbackAboveFive.onReceiveValue(results);
+            }
             mUploadCallbackAboveFive = null;
             return;
         }
