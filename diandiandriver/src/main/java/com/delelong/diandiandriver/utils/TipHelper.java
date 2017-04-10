@@ -53,9 +53,9 @@ public class TipHelper {
         if (isVoiceEnable) {
 //        mTts.startSpeaking("科大讯飞，让世界聆听我们的声音", mSynListener);
             if (mTts == null) {
-                Log.i(TAG, "speak: ");
                 return;
             }
+//            Log.i(TAG, "speak: content");
             mTts.startSpeaking(content, mSynListener);
         }
     }

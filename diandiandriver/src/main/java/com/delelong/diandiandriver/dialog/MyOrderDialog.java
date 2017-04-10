@@ -50,10 +50,21 @@ public class MyOrderDialog implements View.OnClickListener, WiperSwitch.OnSlippe
                     if (speak_continue) {
                         if (orderInfo != null) {
                             String content;
-                            if (orderInfo.getDestination() == null || orderInfo.getDestination().equalsIgnoreCase("")) {
-                                content = orderInfo.getServiceType() + "订单。距离您" + dstr + "公里，从" + orderInfo.getReservationAddress() + "出发";
+                            String addAmountTips;
+                            if (orderInfo.isAddAmountFlag()){
+                                addAmountTips = "客户额外加价"+orderInfo.getAddAmount()+"元";
+                            }else {
+                                addAmountTips = "";
+                            }
+                            if (dstr != null) {
+                                dstr = "距离您" + dstr + "公里，";
                             } else {
-                                content = orderInfo.getServiceType() + "订单。距离您" + dstr + "公里，从" + orderInfo.getReservationAddress() + "出发，到" + orderInfo.getDestination();
+                                dstr = "";
+                            }
+                            if (orderInfo.getDestination() == null || orderInfo.getDestination().equalsIgnoreCase("")) {
+                                content ="来新订单啦， "+ orderInfo.getServiceType()+"订单。"+addAmountTips + dstr +"从"+ orderInfo.getReservationAddress() + "出发";
+                            } else {
+                                content ="来新订单啦， "+ orderInfo.getServiceType() +"订单。"+addAmountTips + dstr + "从"+orderInfo.getReservationAddress() + "出发，到" + orderInfo.getDestination();
                             }
                             speak(content);
                         }
@@ -77,7 +88,7 @@ public class MyOrderDialog implements View.OnClickListener, WiperSwitch.OnSlippe
     OrderInterface orderInterface;
     ImageView img_cancel;
     WiperSwitch wiper_take;
-    TextView tv_order_type, tv_order_time, tv_order_des;
+    TextView tv_order_type, tv_pdFlag,tv_people, tv_order_time, tv_order_des,tv_add_amount;
     TextView tv_reservationAddress, tv_destination;
     int mTimeOut = 30 * 1000;
     String dstr;
@@ -86,12 +97,11 @@ public class MyOrderDialog implements View.OnClickListener, WiperSwitch.OnSlippe
         mTimeOut = timeOut * 1000;
         this.orderInterface = orderInterface;
         dialog.show();
-//        activity = (DriverActivity) dialog.getOwnerActivity();//回调路线距离
         tipHelper = new TipHelper(activity);
 
         Window window = dialog.getWindow();
         window.setContentView(R.layout.dialog_take_order);
-        speak("");
+//        speak("");
         initView(window);
 //        setRouteSearchListner();
 //        routeSearch(false);
@@ -104,6 +114,8 @@ public class MyOrderDialog implements View.OnClickListener, WiperSwitch.OnSlippe
             dstr = fnum.format(distance / 1000);
             tv_order_des.setText(Html.fromHtml("距离客户约 <big><font color='#Fe8a03'> " + dstr + " 千米</font></big>,大约需要 <big><font color='#Fe8a03'>" +
                     distance_time + "</font></big> 分钟"));
+        }else {
+            tv_order_des.setVisibility(View.GONE);
         }
 
         dialogHandler.sendEmptyMessageDelayed(HIDE_ORDERDIALOG, mTimeOut);
@@ -116,12 +128,35 @@ public class MyOrderDialog implements View.OnClickListener, WiperSwitch.OnSlippe
         wiper_take = (WiperSwitch) window.findViewById(R.id.wiper_take);
         wiper_take.setDrawable(R.drawable.img_order_on, R.drawable.img_order_off, R.drawable.img_order_slipper);
         tv_order_type = (TextView) window.findViewById(R.id.tv_order_type);
+        tv_pdFlag = (TextView) window.findViewById(R.id.tv_pdFlag);
+        tv_people = (TextView) window.findViewById(R.id.tv_people);
         tv_order_time = (TextView) window.findViewById(R.id.tv_order_time);
         tv_order_des = (TextView) window.findViewById(R.id.tv_order_des);
+        tv_add_amount = (TextView) window.findViewById(R.id.tv_add_amount);
         tv_reservationAddress = (TextView) window.findViewById(R.id.tv_reservationAddress);
         tv_destination = (TextView) window.findViewById(R.id.tv_destination);
 
+        if (orderInfo.isAddAmountFlag()){
+            tv_add_amount.setVisibility(View.VISIBLE);
+            tv_add_amount.setText(Html.fromHtml("该订单为加价订单，加价金额： <big><font color='#Fe8a03'> " + orderInfo.getAddAmount() + "</font></big> 元"));
+        }else {
+            tv_add_amount.setVisibility(View.GONE);
+        }
+
+        if (orderInfo.getPeople()>0){
+            tv_people.setText(orderInfo.getPeople()+" 人");
+            tv_people.setVisibility(View.VISIBLE);
+        }
+//        Log.i(TAG, "initView: "+orderInfo);
         tv_order_type.setText(orderInfo.getServiceType());
+        if (orderInfo.getServiceType().equals("快车")) {
+            tv_pdFlag.setVisibility(View.VISIBLE);
+            if (orderInfo.isPdFlag()) {
+                tv_pdFlag.setText("拼车");
+            } else {
+                tv_pdFlag.setText("不拼车");
+            }
+        }
         if (orderInfo.isSet_out_flag()) {
             tv_order_time.setText(getDateToString(Longs.tryParse(orderInfo.getSetouttime())));
         } else {

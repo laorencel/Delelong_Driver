@@ -26,16 +26,11 @@ import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.CarBrandBean;
 import com.delelong.diandiandriver.bean.Str;
 import com.delelong.diandiandriver.dialog.MyToastDialog;
-import com.delelong.diandiandriver.http.MyAsyncHttpUtils;
 import com.delelong.diandiandriver.http.MyHttpUtils;
+import com.delelong.diandiandriver.utils.ImageLoaderUtils;
 import com.delelong.diandiandriver.utils.ToastUtil;
-import com.loopj.android.http.BinaryHttpResponseHandler;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.List;
-
-import cz.msebera.android.httpclient.Header;
 
 import static com.delelong.diandiandriver.R.id.img_brand;
 
@@ -48,7 +43,7 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
     private static final String TAG = "BAIDUMAPFORTEST";
     Context context;
     private int pageIndex = 1;
-    private final int pageSize = 5;
+    private final int pageSize = 6;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -123,7 +118,6 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        Log.i(TAG, "onItemClick: ");
         Intent intent = new Intent();
         intent.putExtra("carBrand", carBrands.get(position));
         setResult(Str.REQUESTBRANDCODE, intent);
@@ -224,8 +218,8 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
                 holder = new ViewHolder();
                 holder.tv_brand = (TextView) convertView.findViewById(R.id.tv_brand);
                 holder.img_brand = (ImageView) convertView.findViewById(img_brand);
-                holder.tv_brand.setTag(position);
-                holder.img_brand.setTag(carBrand);
+//                holder.tv_brand.setTag(position);
+//                holder.img_brand.setTag(carBrand);
                 convertView.setTag(holder);
             } else {
                 holder = (ViewHolder) convertView.getTag();
@@ -234,38 +228,7 @@ public class ChooseBrandActivity extends BaseActivity implements AdapterView.OnI
                 return convertView;
             }
             if (carBrand.getLogo() != null && !carBrand.getLogo().equals("")) {
-//                sendMsgToHandlerByExecutor(DOWNLOAD_PIC, position, holder);
-                int postion_tag = (int) holder.tv_brand.getTag();
-                if (postion_tag == position) {
-                    final ViewHolder finalHolder = holder;
-                    MyAsyncHttpUtils.get(Str.URL_SERVICE_IMAGEPATH + carBrand.getLogo(), new BinaryHttpResponseHandler() {
-
-                        @Override
-                        public void onSuccess(int i, Header[] headers, byte[] bytes) {
-                            countNum++;
-                            Log.i(TAG, "onSuccess:countNum: " + countNum);
-                            InputStream inputStream = new ByteArrayInputStream(bytes);
-                            if (inputStream == null) {
-                                return;
-                            }
-                            head = getBitMapFormInputStream(ChooseBrandActivity.this, inputStream);
-                            if (head != null) {
-                                int postion_tag = (int) finalHolder.tv_brand.getTag();
-                                if (postion_tag == position) {
-                                    finalHolder.img_brand.setImageBitmap(head);
-                                }
-                                if (head != null && head.isRecycled()) {
-                                    head.recycle();
-                                }
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(int i, Header[] headers, byte[] bytes, Throwable throwable) {
-
-                        }
-                    });
-                }
+                ImageLoaderUtils.display(context,holder.img_brand,Str.URL_SERVICE_IMAGEPATH + carBrand.getLogo());
             }
 
             holder.tv_brand.setText(carBrand.getName());

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -319,6 +320,10 @@ public class MyHistoryOrderActivity extends BaseActivity implements View.OnClick
                 holder.tv_create_time = (TextView) convertView.findViewById(R.id.tv_create_time);
                 holder.tv_reservation_address = (TextView) convertView.findViewById(R.id.tv_reservation_address);
                 holder.tv_destination = (TextView) convertView.findViewById(R.id.tv_destination);
+                holder.tv_distance = (TextView) convertView.findViewById(R.id.tv_distance);
+                holder.tv_remote_fee = (TextView) convertView.findViewById(R.id.tv_remote_fee);
+                holder.tv_road_toll = (TextView) convertView.findViewById(R.id.tv_road_toll);
+                holder.tv_other_charges = (TextView) convertView.findViewById(R.id.tv_other_charges);
 
                 convertView.setTag(holder);
             } else {
@@ -332,12 +337,17 @@ public class MyHistoryOrderActivity extends BaseActivity implements View.OnClick
             holder.tv_create_time.setText(historyOrderInfo.getCreate_time());
             holder.tv_reservation_address.setText("从 " + historyOrderInfo.getReservation_address());
             holder.tv_destination.setText("到 " + historyOrderInfo.getDestination());
+            holder.tv_distance.setText(Html.fromHtml("<small>里程</small><br/>" + historyOrderInfo.getDistance() + " km"));
+            holder.tv_remote_fee.setText(Html.fromHtml("<small>远程费</small><br/>￥ " + historyOrderInfo.getRemote_fee()));
+            holder.tv_road_toll.setText(Html.fromHtml("<small>过路费</small><br/>￥ " + historyOrderInfo.getRoad_toll()));
+            holder.tv_other_charges.setText(Html.fromHtml("<small>其他费用</small><br/>￥ " + historyOrderInfo.getOther_charges()));
 
             return convertView;
         }
 
         class ViewHolder {
-            TextView tv_orderNo, tv_real_pay, tv_create_time, tv_reservation_address, tv_destination;
+            TextView tv_orderNo, tv_real_pay, tv_create_time, tv_reservation_address, tv_destination,
+                    tv_distance, tv_remote_fee, tv_road_toll, tv_other_charges;
         }
     }
 

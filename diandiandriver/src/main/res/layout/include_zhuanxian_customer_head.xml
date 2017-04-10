@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="1dp"
+    android:background="@color/white"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:id="@+id/rl_driver"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:gravity="center_vertical"
+        android:padding="5dp">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/circle_head"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginLeft="10dp"
+            android:src="@drawable/logo"
+            app:border_color="@color/colorAlpha"
+            app:border_width="1dp" />
+
+
+        <TextView
+            android:id="@+id/tv_driver"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10dp"
+            android:layout_toRightOf="@id/circle_head"
+            android:text=""
+            android:textColor="@color/lightBlack"
+            android:textSize="@dimen/text_12sp" />
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/phone"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_alignParentRight="true"
+            android:src="@drawable/img_phone"
+            app:border_color="@color/colorAlpha"
+            app:border_width="1dp" />
+    </RelativeLayout>
+
+</LinearLayout>

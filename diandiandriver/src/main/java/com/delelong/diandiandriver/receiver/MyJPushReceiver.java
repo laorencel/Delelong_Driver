@@ -1,17 +1,23 @@
 package com.delelong.diandiandriver.receiver;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import com.delelong.diandiandriver.BaseActivity;
+import com.delelong.diandiandriver.DriverActivity;
 import com.delelong.diandiandriver.MainActivity;
+import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.Str;
-import com.delelong.diandiandriver.dialog.MyDialogUtils;
-import com.delelong.diandiandriver.menuActivity.SettingActivity;
+import com.delelong.diandiandriver.service.MyPushService;
 import com.delelong.diandiandriver.utils.ExampleUtil;
+import com.google.common.primitives.Ints;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -36,10 +42,17 @@ public class MyJPushReceiver extends BroadcastReceiver {
 
     private static final String TAG = "BAIDUMAPFORTEST";
     boolean firstLogin;
-    MyDialogUtils dialog;
+
     @Override
     public void onReceive(Context context, Intent intent) {
-
+        if (intent.getAction().equals("android.intent.action.BOOT_COMPLETED")) {
+            boolean c = BaseActivity.isServiceWorked(context, "com.delelong.diandiandriver.service.MyPushService");
+            if (!c) {
+                Intent service = new Intent(context, MyPushService.class);
+                context.startService(service);
+                Log.i(TAG, "Start MyPushService");
+            }
+        }
         SharedPreferences preferences = context.getSharedPreferences("user", Context.MODE_PRIVATE);
         firstLogin = preferences.getBoolean("firstLogin", true);
 
@@ -55,13 +68,27 @@ public class MyJPushReceiver extends BroadcastReceiver {
             Log.i(TAG, "[MyReceiver] 接收Registration Id : " + registrationId);
             //send the Registration Id to your server...
         } else if (JPushInterface.ACTION_MESSAGE_RECEIVED.equals(intent.getAction())) {
-//            Log.i(TAG, "[MyReceiver] 接收到推送下来的自定义消息: " + bundle.getString(JPushInterface.EXTRA_MESSAGE));
-//            String title = bundle.getString(JPushInterface.EXTRA_TITLE);
-//            if (title.equals("1")){//收到订单消息
-//                sendOrderMessage(context, bundle);
-//            }else if (title.equals("4")){//收到后台通知消息
-//                sendOrderMessage(context, bundle);
-//            }
+            Log.i(TAG, "[MyReceiver] 接收到推送下来的自定义消息: " + bundle.getString(JPushInterface.EXTRA_MESSAGE));
+            String title = bundle.getString(JPushInterface.EXTRA_TITLE);
+            int titleInt = Ints.tryParse(title);
+//            Log.i(TAG, "onReceive:DriverActivity.class.getName():" + DriverActivity.class.getName());
+            if (titleInt > 0) {//收到订单消息
+                Intent orderIntent = sendOrderMessage(context, bundle);
+                if (BaseActivity.isActivityRunning(context)) {
+                    Log.i(TAG, "onReceive: 111");
+                    context.sendBroadcast(orderIntent);
+                    //应用跳转到前台
+//                    Intent mainIntent = new Intent(context, DriverActivity.class);
+//                    mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+//                    Log.i(TAG, "restartDriverActivity: 2222");
+//                    context.startActivity(mainIntent);
+                } else {
+                    Log.i(TAG, "onReceive: 222");
+                    orderIntent.setClass(context, DriverActivity.class);
+                    orderIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(orderIntent);
+                }
+            }
         } else if (JPushInterface.ACTION_NOTIFICATION_RECEIVED.equals(intent.getAction())) {
             Log.i(TAG, "[MyReceiver] 接收到推送下来的通知");
             int notifactionId = bundle.getInt(JPushInterface.EXTRA_NOTIFICATION_ID);
@@ -72,7 +99,7 @@ public class MyJPushReceiver extends BroadcastReceiver {
             Log.i(TAG, "[MyReceiver] 用户点击打开了通知");
 
             //打开自定义的Activity
-            Intent i = new Intent(context, SettingActivity.class);
+            Intent i = new Intent(context, DriverActivity.class);
             i.putExtras(bundle);
             //i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -85,11 +112,33 @@ public class MyJPushReceiver extends BroadcastReceiver {
         } else if (JPushInterface.ACTION_CONNECTION_CHANGE.equals(intent.getAction())) {
             boolean connected = intent.getBooleanExtra(JPushInterface.EXTRA_CONNECTION_CHANGE, false);
             Log.i(TAG, "[MyReceiver]" + intent.getAction() + " connected state change to " + connected);
+            NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (!connected) {
+                //手机系统原因，退到后台会有推送限制
+                Log.i(TAG, "onReceive: resumePush");
+                JPushInterface.init(context);
+
+                Intent broadcastIntent = new Intent(context, MyNotificationReceiver.class);
+                PendingIntent pendingIntent = PendingIntent.
+                        getBroadcast(context, 0, broadcastIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+                builder.setContentTitle("点点服务")
+                        .setTicker("点点服务发送的通知")
+                        .setContentText("连接已断开，点击尝试重新连接")
+                        .setContentIntent(pendingIntent)
+                        .setSmallIcon(R.drawable.logo);
+                notificationManager.notify(ID_JPUSH_DISCONNECT, builder.build());
+            } else {
+                notificationManager.cancel(ID_JPUSH_DISCONNECT);
+            }
         } else {
             Log.i(TAG, "[MyReceiver] Unhandled intent - " + intent.getAction());
         }
-
     }
+
+    public static final int FLAG_JPUSH_DISCONNECT = 1;
+    public static final int ID_JPUSH_DISCONNECT = 11;
 
     // 打印所有的 intent extra 数据
     private static String printBundle(Bundle bundle) {
@@ -142,7 +191,8 @@ public class MyJPushReceiver extends BroadcastReceiver {
         }
         context.sendBroadcast(msgIntent);
     }
-    private void sendOrderMessage(Context context, Bundle bundle){
+
+    private Intent sendOrderMessage(Context context, Bundle bundle) {
         String title = bundle.getString(JPushInterface.EXTRA_TITLE);
         String orderMessage = bundle.getString(JPushInterface.EXTRA_MESSAGE);
         String orderExtras = bundle.getString(JPushInterface.EXTRA_EXTRA);
@@ -159,7 +209,8 @@ public class MyJPushReceiver extends BroadcastReceiver {
 
             }
         }
-        context.sendBroadcast(orderIntent);
+        return orderIntent;
+//        context.sendBroadcast(orderIntent);
     }
 
 }

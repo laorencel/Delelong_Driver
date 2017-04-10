@@ -20,6 +20,10 @@ public class MyHistoryOrderInfo implements Serializable {
     private String real_pay;//订单金额
     private String reservation_address;//起点
     private String destination;//终点
+    private String distance;//距离
+    private String remote_fee;//远程费
+    private String road_toll;//过路费
+    private String other_charges;//其他费用
 
     public MyHistoryOrderInfo(int orderId, String orderNo, String create_time, String status, String pay_status, String real_pay, String reservation_address, String destination) {
         this.orderId = orderId;
@@ -127,5 +131,37 @@ public class MyHistoryOrderInfo implements Serializable {
 
     public void setDestination(String destination) {
         this.destination = destination;
+    }
+
+    public String getDistance() {
+        return distance;
+    }
+
+    public void setDistance(String distance) {
+        this.distance = distance;
+    }
+
+    public String getRemote_fee() {
+        return remote_fee;
+    }
+
+    public void setRemote_fee(String remote_fee) {
+        this.remote_fee = remote_fee;
+    }
+
+    public String getRoad_toll() {
+        return road_toll;
+    }
+
+    public void setRoad_toll(String road_toll) {
+        this.road_toll = road_toll;
+    }
+
+    public String getOther_charges() {
+        return other_charges;
+    }
+
+    public void setOther_charges(String other_charges) {
+        this.other_charges = other_charges;
     }
 }

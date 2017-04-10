@@ -3,6 +3,7 @@ package com.delelong.diandiandriver;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -60,6 +61,8 @@ import com.amap.api.location.AMapLocationClient;
 import com.amap.api.maps.AMap;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.model.LatLng;
+import com.delelong.diandiandriver.alipay.util.Alipay;
+import com.delelong.diandiandriver.base.bean.BaseBean;
 import com.delelong.diandiandriver.bean.ADBean;
 import com.delelong.diandiandriver.bean.Client;
 import com.delelong.diandiandriver.bean.Driver;
@@ -74,13 +77,17 @@ import com.delelong.diandiandriver.http.MyHttpHelper;
 import com.delelong.diandiandriver.http.MyTextHttpResponseHandler;
 import com.delelong.diandiandriver.listener.MyHttpDataListener;
 import com.delelong.diandiandriver.listener.MyOrientationListener;
+import com.delelong.diandiandriver.listener.MyPayResultInterface;
 import com.delelong.diandiandriver.pace.MyAMapLocation;
+import com.delelong.diandiandriver.receiver.MyPushNotificationBuilder;
 import com.delelong.diandiandriver.utils.AMapCityUtils;
 import com.delelong.diandiandriver.utils.ExampleUtil;
+import com.delelong.diandiandriver.utils.MyApp;
 import com.delelong.diandiandriver.utils.SystemUtils;
 import com.delelong.diandiandriver.utils.TipHelper;
 import com.delelong.diandiandriver.utils.ToastUtil;
 import com.delelong.diandiandriver.view.FullScreenDlgFragment;
+import com.delelong.diandiandriver.wxapi.WXPay;
 import com.flyco.animation.BaseAnimatorSet;
 import com.flyco.animation.BounceEnter.BounceTopEnter;
 import com.flyco.animation.SlideExit.SlideBottomExit;
@@ -113,17 +120,16 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+import cn.jpush.android.api.JPushInterface;
 import cz.msebera.android.httpclient.Header;
-
-import static com.delelong.diandiandriver.bean.Str.APPTYPE_CLIENT;
+import de.greenrobot.event.EventBus;
+import de.greenrobot.event.Subscribe;
 
 
 public class BaseActivity extends AppCompatActivity {
-    private static final String TAG = "BAIDUMAPFORTEST";
+    public static final String TAG = "BAIDUMAPFORTEST";
     //    public static final String URL_LOGIN = "http://121.40.142.141:8090/Jfinal/api/login";
     private String registrationId;
     /**
@@ -138,12 +144,12 @@ public class BaseActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);//禁止横屏
+        EventBus.getDefault().register(this);
+
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
         }
         mContext = BaseActivity.this;
-        Map<String, String> header = getAsyncHttpHeader();
-        MyAsyncHttpUtils.setHeader(header);
         setTargetHeapUtilization(TARGET_HEAP_UTILIZATION);
 //        initJPush();
 //        setWindowBar();
@@ -152,24 +158,57 @@ public class BaseActivity extends AppCompatActivity {
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
-    public Map<String, String> getAsyncHttpHeader() {
-        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
-        String token = preferences.getString("token", null);
-        String secret = preferences.getString("sercet", null);
-        String serialNumber = getSerialNumber();
-        Map<String, String> header = new HashMap<>();
-        //appType：请求的类型，1:表示司机端;2:表示普通会员
-        header.put("appType", APPTYPE_CLIENT);
-        //devicetype：设备序类型，1:android;2:ios
-        header.put("devicetype", Str.DEVICE_TYPE);
-        //deviceno：设备序列号
-        header.put("deviceno", serialNumber);
-        if (notNull(token)) {
-            header.put("token", token);
-            header.put("secret", secret);
-        }
-        return header;
+    @Subscribe
+    public void onEventMainThread(BaseBean bean) {
+
     }
+
+    public static boolean isActivityRunning(Context mContext) {
+        ActivityManager am = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningTaskInfo> list = am.getRunningTasks(100);
+        boolean isAppRunning = false;
+        Log.i(TAG, "isActivityRunning: " + list.size() + "//" + mContext.getPackageName());
+        String MY_PKG_NAME = "com.delelong.diandiandriver";
+        for (ActivityManager.RunningTaskInfo info : list) {
+            if (info.topActivity.getPackageName().equals(MY_PKG_NAME) || info.baseActivity.getPackageName().equals(MY_PKG_NAME)) {
+                isAppRunning = true;
+                Log.i(TAG, info.topActivity.getPackageName() + " info.baseActivity.getPackageName()=" + info.baseActivity.getPackageName());
+                break;
+            }
+        }
+        return isAppRunning;
+    }
+
+    public static boolean isServiceWorked(Context context, String serviceName) {
+        ActivityManager myManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        ArrayList<ActivityManager.RunningServiceInfo> runningService = (ArrayList<ActivityManager.RunningServiceInfo>) myManager.getRunningServices(Integer.MAX_VALUE);
+        for (int i = 0; i < runningService.size(); i++) {
+            if (runningService.get(i).service.getClassName().toString().equals(serviceName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isApplicationBackground(Context context) {
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningAppProcessInfo> appProcesses = activityManager.getRunningAppProcesses();
+        for (ActivityManager.RunningAppProcessInfo appProcess : appProcesses) {
+            if (appProcess.processName.equals(context.getPackageName())) {
+                Log.i(TAG, "isApplicationBackground: " + appProcess.importance);
+                if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                        || appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE) {
+                    Log.i("前台", appProcess.processName);
+                    return false;
+                } else {
+                    Log.i("后台", appProcess.processName);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 
     public static void setTargetHeapUtilization(float heapUtilization) {
         try {
@@ -388,7 +427,20 @@ public class BaseActivity extends AppCompatActivity {
         //获取资源图片
         return BitmapFactory.decodeStream(is, null, opt);
     }
+
     ////////////////////////////////////////////////////////////
+    public void PayByAli(String orderInfo, MyPayResultInterface payResultInterface) {
+        //测试
+        Alipay alipay = new Alipay(BaseActivity.this);
+        alipay.payV2(orderInfo, payResultInterface);
+    }
+
+    public void PayByWX(String orderInfo) {
+        //测试
+        WXPay wxPay = new WXPay(BaseActivity.this);
+        wxPay.pay(orderInfo);
+    }
+    //////////////////////////////////////////
 
     /**
      * 判断网络是否连接
@@ -489,21 +541,6 @@ public class BaseActivity extends AppCompatActivity {
         Intent intent = new Intent(context, tClass);
         intent.putExtra("bundle", bundle);
         startActivity(intent);
-    }
-
-    /**
-     * @return 获取手机序列号
-     */
-    public String getSerialNumber() {
-        String serial = null;
-        try {
-            Class<?> c = Class.forName("android.os.SystemProperties");
-            Method get = c.getMethod("get", String.class);
-            serial = (String) get.invoke(c, "ro.serialno");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return serial;
     }
 
     /**
@@ -619,19 +656,19 @@ public class BaseActivity extends AppCompatActivity {
                 File file = new File(Str.ADIMAGEPATH_START);
                 if (!file.exists()) {
                     file.mkdirs();
-                }else {
+                } else {
                     try {
                         Log.i(TAG, "onSuccess: delete");
                         File[] files = file.listFiles();
-                        if (files!=null&&files.length>0){
+                        if (files != null && files.length > 0) {
                             for (File file1 : files) {
-                                if (file1!=null){
+                                if (file1 != null) {
                                     file1.delete();
                                     Log.i(TAG, "onSuccess: delete111");
                                 }
                             }
                         }
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -910,7 +947,7 @@ public class BaseActivity extends AppCompatActivity {
                 MyAsyncHttpUtils.post(Str.URL_LOGIN, params, new MyTextHttpResponseHandler() {
                     @Override
                     public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
-                        Log.i(TAG, "onFailure: login");
+                        Log.i(TAG, "onFailure: login" + s);
                         if (progressDialog != null && progressDialog.isShowing()) {
                             progressDialog.dismiss();
                         }
@@ -933,9 +970,20 @@ public class BaseActivity extends AppCompatActivity {
                             overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
                             //存储用户(token)、密码(sercet)
                             setPreferences(result, phone, pwd, pwd_edt);
+                            //登录后重置请求头
+                            MyAsyncHttpUtils.setHeader(MyAsyncHttpUtils.getAsyncHttpHeader());
                             finish();
                         } else if (result.get(0).equals("ERROR")) {
-                            Toast.makeText(mContext, "登陆出错," + result.get(1), Toast.LENGTH_SHORT).show();
+                            if (result.get(1).equalsIgnoreCase("极光推送参数不能为空！")) {
+                                try {
+                                    Thread.sleep(800);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                login(phone, pwd_edt, pwd);
+                            } else {
+                                Toast.makeText(mContext, "登陆出错," + result.get(1), Toast.LENGTH_SHORT).show();
+                            }
                             return;
                         } else if (result.get(0).equals("FAILURE")) {
                             Toast.makeText(mContext, "登陆失败," + result.get(1), Toast.LENGTH_SHORT).show();
@@ -951,8 +999,11 @@ public class BaseActivity extends AppCompatActivity {
     }
 
     public void setPreferences(List<String> result, String phone, String pwd, String pwd_edt) {
-        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_MULTI_PROCESS | Context.MODE_PRIVATE);
         boolean firstLogin = false;
+        if (result.size() < 4) {
+            return;
+        }
         int loginTimes = preferences.getInt("loginTimes", 0);
         preferences.edit()
                 .putString("token", result.get(2))
@@ -1017,10 +1068,10 @@ public class BaseActivity extends AppCompatActivity {
      */
     public Bitmap getCamera(Intent data, Bitmap bitmap) {
         String sdStatus = Environment.getExternalStorageState();
-//        if (!sdStatus.equals(Environment.MEDIA_MOUNTED)) { // 检测sd是否可用
-//            Log.i(TAG, "SD card is not avaiable/writeable right now.");
-//            return null;
-//        }
+        if (!sdStatus.equals(Environment.MEDIA_MOUNTED)) { // 检测sd是否可用
+            Log.i(TAG, "SD card is not avaiable/writeable right now.");
+            return null;
+        }
         if (isNull(data, data.getExtras())) {
             return null;
         }
@@ -1046,9 +1097,54 @@ public class BaseActivity extends AppCompatActivity {
         cursor.moveToFirst();
         int columnIndex = cursor.getColumnIndex(filePathColumns[0]);
         String imagePath = cursor.getString(columnIndex);
+        BitmapFactory.Options opt = new BitmapFactory.Options();
+        opt.inPreferredConfig = Bitmap.Config.RGB_565;
+        opt.inPurgeable = true;//bitmap可回收
+        opt.inInputShareable = true;//
+        opt.inSampleSize = computeSampleSize(opt, -1, 128 * 128);
+        BitmapFactory.decodeFile(imagePath, opt);
         bitmap = BitmapFactory.decodeFile(imagePath);
         cursor.close();
         return bitmap;
+    }
+
+    public static int computeSampleSize(BitmapFactory.Options options,
+                                        int minSideLength, int maxNumOfPixels) {
+        int initialSize = computeInitialSampleSize(options, minSideLength,
+                maxNumOfPixels);
+        int roundedSize;
+        if (initialSize <= 8) {
+            roundedSize = 1;
+            while (roundedSize < initialSize) {
+                roundedSize <<= 1;
+            }
+        } else {
+            roundedSize = (initialSize + 7) / 8 * 8;
+        }
+        return roundedSize;
+    }
+
+    private static int computeInitialSampleSize(BitmapFactory.Options options,
+                                                int minSideLength, int maxNumOfPixels) {
+        double w = options.outWidth;
+        double h = options.outHeight;
+        int lowerBound = (maxNumOfPixels == -1) ? 1 :
+                (int) Math.ceil(Math.sqrt(w * h / maxNumOfPixels));
+        int upperBound = (minSideLength == -1) ? 128 :
+                (int) Math.min(Math.floor(w / minSideLength),
+                        Math.floor(h / minSideLength));
+        if (upperBound < lowerBound) {
+            // return the larger one when there is no overlapping zone.
+            return lowerBound;
+        }
+        if ((maxNumOfPixels == -1) &&
+                (minSideLength == -1)) {
+            return 1;
+        } else if (minSideLength == -1) {
+            return lowerBound;
+        } else {
+            return upperBound;
+        }
     }
 
     /**
@@ -1144,7 +1240,10 @@ public class BaseActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-//        JPushInterface.onResume(this);
+        if (JPushInterface.isPushStopped(MyApp.getInstance())) {
+            Log.i(TAG, "onResume: JPushInterface.isPushStopped(this)");
+            JPushInterface.resumePush(MyApp.getInstance());//恢复推送
+        }
     }
 
     @Override
@@ -1156,6 +1255,7 @@ public class BaseActivity extends AppCompatActivity {
         if (mMessageReceiver != null) {
             unregisterReceiver(mMessageReceiver);
         }
+        EventBus.getDefault().unregister(this);
     }
 
     /**
@@ -1169,11 +1269,11 @@ public class BaseActivity extends AppCompatActivity {
     }
 
     private void initJPush() {
-//        JPushInterface.init(this);
-//        MyPushNotificationBuilder builder = new MyPushNotificationBuilder(this);
-//        builder.setOrderNotificationBuilder();
+        JPushInterface.init(this);
+        MyPushNotificationBuilder builder = new MyPushNotificationBuilder(this);
+        builder.setOrderNotificationBuilder();
 //        registerMessageReceiver();
-//        Log.i(TAG, "initJPush: " + JPushInterface.getRegistrationID(this));
+        Log.i(TAG, "initJPush: " + JPushInterface.getRegistrationID(this));
     }
 
     //for receive customer msg from jpush server
@@ -1511,19 +1611,25 @@ public class BaseActivity extends AppCompatActivity {
             int title = object.has("title") ? !object.getString("title").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("title")) : 1 : 1;
             int status = object.has("status") ? !object.getString("status").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("status")) : 1 : 1;
             int timeOut = object.has("timeOut") ? !object.getString("timeOut").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("timeOut")) : 30 : 30;
+            int people = object.has("people") ? !object.getString("people").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("people")) : 0 : 0;
             String phone = object.has("phone") ? object.getString("phone") : "";
             String nick_name = object.has("nick_name") ? object.getString("nick_name") : "";
             String head_portrait = object.has("head_portrait") ? object.getString("head_portrait") : "";
             String no = object.has("no") ? object.getString("no") : "";
             String setouttime = object.has("setouttime") ? object.getString("setouttime") : "";
+            String createTime = object.has("createTime") ? object.getString("createTime") : "";
             int type_ = object.has("type") ? !object.getString("type").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("type")) : 4 : 4;
             int serviceType_ = object.has("serviceType") ? !object.getString("serviceType").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("serviceType")) : 1 : 1;
+            int orderType = object.has("orderType") ? !object.getString("orderType").equalsIgnoreCase("null") ? Ints.tryParse(object.getString("orderType")) : 1 : 1;
             String type = type2String(type_);//小分类
             String serviceType = serviceType2String(serviceType_);//大分类
             boolean set_out_flag = object.has("setOutFlag") ? !object.getString("setOutFlag").equalsIgnoreCase("null") ? object.getBoolean("setOutFlag") : false : false;
+            boolean addAmountFlag = object.has("addFlag") ? !object.getString("addFlag").equalsIgnoreCase("null") ? object.getBoolean("addFlag") : false : false;
+            boolean pdFlag = object.has("pdFlag") ? !object.getString("pdFlag").equalsIgnoreCase("null") ? object.getBoolean("pdFlag") : false : false;
             long id = object.has("id") ? !object.getString("id").equalsIgnoreCase("null") ? Longs.tryParse(object.getString("id")) : 0 : 0;
             double distance = object.has("distance") ? !object.getString("distance").equalsIgnoreCase("null") ? Doubles.tryParse(object.getString("distance")) : 0 : 0;
             double yg_amount = object.has("ygAmount") ? !object.getString("ygAmount").equalsIgnoreCase("null") ? Doubles.tryParse(object.getString("ygAmount")) : 0 : 0;
+            double addAmount = object.has("addAmount") ? !object.getString("addAmount").equalsIgnoreCase("null") ? Doubles.tryParse(object.getString("addAmount")) : 0 : 0;
             JSONObject trip = object.has("trip") ? object.getJSONObject("trip") : null;
             double startLatitude = 0, startLongitude = 0, endLatitude = 0, endLongitude = 0;
             if (trip != null) {
@@ -1538,8 +1644,15 @@ public class BaseActivity extends AppCompatActivity {
             orderInfo = new OrderInfo(title, status, phone, nick_name, head_portrait, no, setouttime, type, serviceType, set_out_flag, id, distance,
                     yg_amount, startLatitude, startLongitude, endLatitude, endLongitude, reservationAddress, destination, remark);
             orderInfo.setTimeOut(timeOut);
+            orderInfo.setCreateTime(createTime);
+            orderInfo.setPdFlag(pdFlag);
+            orderInfo.setAddAmountFlag(addAmountFlag);
+            orderInfo.setAddAmount(addAmount);
+            orderInfo.setPeople(people);
+            orderInfo.setOrderType(orderType);
         } catch (JSONException e) {
             e.printStackTrace();
+            Log.i(TAG, "getOrderInfoFromReceiver: " + e);
         }
         return orderInfo;
     }
@@ -1660,52 +1773,52 @@ public class BaseActivity extends AppCompatActivity {
      * 申请定位权限
      */
     public void permissionLocation() {
-        Log.i(TAG, "permissionLocation: ");
+//        Log.i(TAG, "permissionLocation: ");
         if (ContextCompat.checkSelfPermission(this, Str.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG, "permissionLocation: ACCESS_COARSE_LOCATION");
+//            Log.i(TAG, "permissionLocation: ACCESS_COARSE_LOCATION");
             //申请android.permission.ACCESS_COARSE_LOCATION权限
             ActivityCompat.requestPermissions(this, new String[]{Str.ACCESS_COARSE_LOCATION}, Str.REQUEST_ACCESS_COARSE_LOCATION);
         }
         if (ContextCompat.checkSelfPermission(this, Str.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG, "permissionLocation: ACCESS_FINE_LOCATION");
+//            Log.i(TAG, "permissionLocation: ACCESS_FINE_LOCATION");
             //申请android.permission.ACCESS_FINE_LOCATION权限
             ActivityCompat.requestPermissions(this, new String[]{Str.ACCESS_FINE_LOCATION}, Str.REQUEST_ACCESS_FINE_LOCATION);
         }
     }
 
     public void permissionExternalStorage() {
-        Log.i(TAG, "permissionExternalStorage: ");
+//        Log.i(TAG, "permissionExternalStorage: ");
         if (ContextCompat.checkSelfPermission(this, Str.WRITE_EXTERNALSTORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG, "permissionExternalStorage: WRITE_EXTERNALSTORAGE");
+//            Log.i(TAG, "permissionExternalStorage: WRITE_EXTERNALSTORAGE");
             //申请android.permission.ACCESS_COARSE_LOCATION权限
             ActivityCompat.requestPermissions(this, new String[]{Str.WRITE_EXTERNALSTORAGE}, Str.REQUEST_WRITE_EXTERNALSTORAGE);
         }
         if (ContextCompat.checkSelfPermission(this, Str.DELE_CREATE_EXTERNALSTORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG, "permissionExternalStorage: DELE_CREATE_EXTERNALSTORAGE");
+//            Log.i(TAG, "permissionExternalStorage: DELE_CREATE_EXTERNALSTORAGE");
             //申请android.permission.ACCESS_FINE_LOCATION权限
             ActivityCompat.requestPermissions(this, new String[]{Str.DELE_CREATE_EXTERNALSTORAGE}, Str.REQUEST_DELE_CREATE_EXTERNALSTORAGE);
         }
     }
 
     public void permissionWriteExternalStorage() {
-        Log.i(TAG, "permissionExternalStorage: ");
+//        Log.i(TAG, "permissionExternalStorage: ");
         if (ContextCompat.checkSelfPermission(this, Str.WRITE_EXTERNALSTORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG, "permissionExternalStorage: WRITE_EXTERNALSTORAGE");
+//            Log.i(TAG, "permissionExternalStorage: WRITE_EXTERNALSTORAGE");
             //申请android.permission.ACCESS_COARSE_LOCATION权限
             ActivityCompat.requestPermissions(this, new String[]{Str.WRITE_EXTERNALSTORAGE}, Str.REQUEST_WRITE_EXTERNALSTORAGE);
         }
     }
 
     public boolean checkPermissionWriteExternalStorage() {
-        Log.i(TAG, "permissionExternalStorage: ");
+//        Log.i(TAG, "permissionExternalStorage: ");
         if (ContextCompat.checkSelfPermission(this, Str.WRITE_EXTERNALSTORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG, "permissionExternalStorage: WRITE_EXTERNALSTORAGE");
+//            Log.i(TAG, "permissionExternalStorage: WRITE_EXTERNALSTORAGE");
             return false;
         }
 //        if (ContextCompat.checkSelfPermission(this, Str.DELE_CREATE_EXTERNALSTORAGE)
@@ -1729,12 +1842,12 @@ public class BaseActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        for (int i = 0; i < permissions.length; i++) {
-            Log.i(TAG, "onRequestPermissionsResult:permissions: " + permissions[i]);
-        }
-        for (int i = 0; i < grantResults.length; i++) {
-            Log.i(TAG, "onRequestPermissionsResult:grantResults: " + grantResults[i]);
-        }
+//        for (int i = 0; i < permissions.length; i++) {
+////            Log.i(TAG, "onRequestPermissionsResult:permissions: " + permissions[i]);
+//        }
+//        for (int i = 0; i < grantResults.length; i++) {
+////            Log.i(TAG, "onRequestPermissionsResult:grantResults: " + grantResults[i]);
+//        }
     }
 
     /**

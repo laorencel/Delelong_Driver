@@ -1,9 +1,10 @@
 package com.delelong.diandiandriver.listener;
 
 import android.content.Context;
-import android.util.Log;
 
 import com.amap.api.maps.AMap;
+import com.amap.api.maps.CameraUpdateFactory;
+import com.amap.api.maps.model.LatLng;
 import com.amap.api.services.route.BusRouteResult;
 import com.amap.api.services.route.DrivePath;
 import com.amap.api.services.route.DriveRouteResult;
@@ -12,7 +13,6 @@ import com.amap.api.services.route.RouteSearch;
 import com.amap.api.services.route.WalkRouteResult;
 import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.route.DriveRouteColorfulOverLay;
-import com.delelong.diandiandriver.utils.AMapUtil;
 import com.delelong.diandiandriver.utils.ToastUtil;
 
 /**
@@ -49,30 +49,37 @@ public class MyRouteSearchListener implements RouteSearch.OnRouteSearchListener 
 
     @Override
     public void onDriveRouteSearched(DriveRouteResult driveRouteResult, int errorCode) {
-        aMap.clear();// 清理地图上的所有覆盖物
         if (errorCode == 1000) {
             if (driveRouteResult != null && driveRouteResult.getPaths() != null) {
                 if (driveRouteResult.getPaths().size() > 0) {
+                    if (aMap!=null){
+                        aMap.clear();// 清理地图上的所有覆盖物
+                    }
                     final DrivePath drivePath = driveRouteResult.getPaths().get(0);
+                    if (showRoute) {
+                        if (aMap!=null){
+                            DriveRouteColorfulOverLay drivingRouteOverlay = new DriveRouteColorfulOverLay(
+                                    aMap, drivePath,
+                                    driveRouteResult.getStartPos(),
+                                    driveRouteResult.getTargetPos(), null);
+                            drivingRouteOverlay.setNodeIconVisibility(false);//设置节点marker是否显示
+                            drivingRouteOverlay.setIsColorfulline(true);//是否用颜色展示交通拥堵情况，默认true
+                            drivingRouteOverlay.removeFromMap();
+                            drivingRouteOverlay.addToMap();
+                            drivingRouteOverlay.zoomToSpan();
+                            float zoom = aMap.getZoomToSpanLevel(new LatLng(driveRouteResult.getStartPos().getLatitude(),driveRouteResult.getStartPos().getLongitude()),
+                                    new LatLng(driveRouteResult.getTargetPos().getLatitude(),driveRouteResult.getTargetPos().getLongitude()));
+                            aMap.moveCamera(CameraUpdateFactory.zoomTo((float) (zoom-1.5)));
+                        }
+                    }
                     if (myDrivePathListener != null) {
                         myDrivePathListener.getDrivePath(drivePath);
                     }
-                    if (showRoute) {
-                        DriveRouteColorfulOverLay drivingRouteOverlay = new DriveRouteColorfulOverLay(
-                                aMap, drivePath,
-                                driveRouteResult.getStartPos(),
-                                driveRouteResult.getTargetPos(), null);
-                        drivingRouteOverlay.setNodeIconVisibility(false);//设置节点marker是否显示
-                        drivingRouteOverlay.setIsColorfulline(true);//是否用颜色展示交通拥堵情况，默认true
-                        drivingRouteOverlay.removeFromMap();
-                        drivingRouteOverlay.addToMap();
-                        drivingRouteOverlay.zoomToSpan();
-                    }
-                    int dis = (int) drivePath.getDistance();//行驶里程（单位：米）
-                    int dur = (int) drivePath.getDuration();//行驶时间（单位：秒）
-                    String des = AMapUtil.getFriendlyTime(dur) + "(" + AMapUtil.getFriendlyLength(dis) + ")";
-                    int taxiCost = (int) driveRouteResult.getTaxiCost();
-                    Log.i(TAG, "onDriveRouteSearched: " + des + "//" + taxiCost);
+//                    int dis = (int) drivePath.getDistance();//行驶里程（单位：米）
+//                    int dur = (int) drivePath.getDuration();//行驶时间（单位：秒）
+//                    String des = AMapUtil.getFriendlyTime(dur) + "(" + AMapUtil.getFriendlyLength(dis) + ")";
+//                    int taxiCost = (int) driveRouteResult.getTaxiCost();
+//                    Log.i(TAG, "onDriveRouteSearched: " + des + "//" + taxiCost);
 
                 } else if (driveRouteResult != null && driveRouteResult.getPaths() == null) {
                     ToastUtil.show(context, context.getString(R.string.no_result));

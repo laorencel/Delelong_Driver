@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white"
+    android:layout_marginTop="2dp"
+    android:layout_marginBottom="2dp"
+    android:orientation="vertical">
+
+
+    <include layout="@layout/include_zhuanxian_customer_head"></include>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.1dp"
+        android:layout_marginLeft="@dimen/margin_30px"
+        android:layout_marginRight="@dimen/margin_30px"
+        android:background="#ececec"></View>
+
+    <include layout="@layout/include_execution_customer_info"></include>
+    <!--<LinearLayout-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:orientation="horizontal"-->
+        <!--android:padding="5dp">-->
+
+        <!--<TextView-->
+            <!--android:id="@+id/tv_pd"-->
+            <!--android:layout_width="0dp"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_weight="1"-->
+            <!--android:gravity="center"-->
+            <!--android:text="拼车"-->
+            <!--android:textColor="@color/lightBlack"-->
+            <!--android:textSize="@dimen/text_12sp" />-->
+
+        <!--<TextView-->
+            <!--android:id="@+id/tv_people"-->
+            <!--android:layout_width="0dp"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_weight="1"-->
+            <!--android:gravity="center"-->
+            <!--android:text="1人"-->
+            <!--android:textColor="@color/lightBlack"-->
+            <!--android:textSize="@dimen/text_12sp" />-->
+
+        <!--<TextView-->
+            <!--android:id="@+id/tv_amount"-->
+            <!--android:layout_width="0dp"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_weight="1"-->
+            <!--android:gravity="center"-->
+            <!--android:text="￥50.0"-->
+            <!--android:textColor="@color/lightBlack"-->
+            <!--android:textSize="@dimen/text_12sp" />-->
+    <!--</LinearLayout>-->
+</LinearLayout>

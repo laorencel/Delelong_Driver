@@ -13,18 +13,24 @@ public class OrderInfo implements Serializable{
     private int timeOut;//订单超时时间，设置dialog多少秒自动消失
     private int car_id;//如未完成的订单会有carId
     private int waitMinutes;//等待时间（包括未完成订单）
+    private int people;//用车人数
     private String phone;//手机号
     private String nick_name;//昵称
     private String head_portrait;//头像地址
     private String no;//订单号
     private String setouttime;//预约时间
+    private String createTime;//订单创建时间
+    private int orderType = 1;//订单类型：1：顺风车、专线之外的订单；2：顺风车；3：专线
     private String type;//订单类型
     private String serviceType;//服务项（小分类）
+    private boolean pdFlag;//是否是拼车单
+    private boolean addAmountFlag;//是否是加价订单
     private boolean set_out_flag;//是否是预约
     private long id;//主键
     private double distance;//订单距离
     private double realDistance;//订单实际距离
     private double yg_amount;//预算费用
+    private double addAmount;//订单加价金额
     private double startLatitude;
     private double startLongitude;
     private double endLatitude;
@@ -103,6 +109,14 @@ public class OrderInfo implements Serializable{
         this.timeOut = timeOut;
     }
 
+    public int getPeople() {
+        return people;
+    }
+
+    public void setPeople(int people) {
+        this.people = people;
+    }
+
     public int getCar_id() {
         return car_id;
     }
@@ -143,6 +157,14 @@ public class OrderInfo implements Serializable{
         this.no = no;
     }
 
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
     public String getSetouttime() {
         return setouttime;
     }
@@ -161,6 +183,30 @@ public class OrderInfo implements Serializable{
 
     public String getServiceType() {
         return serviceType;
+    }
+
+    public boolean isPdFlag() {
+        return pdFlag;
+    }
+
+    public void setPdFlag(boolean pdFlag) {
+        this.pdFlag = pdFlag;
+    }
+
+    public boolean isAddAmountFlag() {
+        return addAmountFlag;
+    }
+
+    public void setAddAmountFlag(boolean addAmountFlag) {
+        this.addAmountFlag = addAmountFlag;
+    }
+
+    public double getAddAmount() {
+        return addAmount;
+    }
+
+    public void setAddAmount(double addAmount) {
+        this.addAmount = addAmount;
     }
 
     public void setServiceType(String serviceType) {
@@ -271,6 +317,14 @@ public class OrderInfo implements Serializable{
         this.remark = remark;
     }
 
+    public int getOrderType() {
+        return orderType;
+    }
+
+    public void setOrderType(int orderType) {
+        this.orderType = orderType;
+    }
+
     @Override
     public String toString() {
         return "OrderInfo{" +
@@ -279,18 +333,23 @@ public class OrderInfo implements Serializable{
                 ", timeOut=" + timeOut +
                 ", car_id=" + car_id +
                 ", waitMinutes=" + waitMinutes +
+                ", people=" + people +
                 ", phone='" + phone + '\'' +
                 ", nick_name='" + nick_name + '\'' +
                 ", head_portrait='" + head_portrait + '\'' +
                 ", no='" + no + '\'' +
                 ", setouttime='" + setouttime + '\'' +
+                ", createTime='" + createTime + '\'' +
                 ", type='" + type + '\'' +
                 ", serviceType='" + serviceType + '\'' +
+                ", pdFlag=" + pdFlag +
+                ", addAmountFlag=" + addAmountFlag +
                 ", set_out_flag=" + set_out_flag +
                 ", id=" + id +
                 ", distance=" + distance +
                 ", realDistance=" + realDistance +
                 ", yg_amount=" + yg_amount +
+                ", addAmount=" + addAmount +
                 ", startLatitude=" + startLatitude +
                 ", startLongitude=" + startLongitude +
                 ", endLatitude=" + endLatitude +

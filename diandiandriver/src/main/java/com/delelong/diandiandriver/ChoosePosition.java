@@ -19,11 +19,15 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.amap.api.maps.model.LatLng;
 import com.amap.api.services.core.LatLonPoint;
 import com.amap.api.services.core.PoiItem;
 import com.amap.api.services.poisearch.PoiResult;
 import com.amap.api.services.poisearch.PoiSearch;
 import com.delelong.diandiandriver.bean.Str;
+import com.delelong.diandiandriver.numberPicker.ChooseCityInterface;
+import com.delelong.diandiandriver.traver.activity.PublishTraverActivity;
+import com.delelong.diandiandriver.utils.MyChooseCityUtil;
 
 import java.util.List;
 
@@ -39,6 +43,8 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
     ListView lv_address;
     LinearLayout ly_home_company;
 
+    LatLng myPosition;
+    String adcode = "340104";
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,12 +76,26 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
 
         initCommonAddress();
 
-        //设置不同的提示语
-        intentValue = getIntent().getStringExtra("choose");
-        city = getIntent().getStringExtra("city");
+        Bundle bundle = getIntent().getBundleExtra("bundle");
+        if (bundle != null) {
+            intentValue = bundle.getString("choose");
+            city = bundle.getString("city");
+            adcode = bundle.getString("adcode");
+
+            double latitude = bundle.getDouble("myLatitude",0);
+            double longtitude = bundle.getDouble("myLongitude",0);
+            if (latitude != 0 && longtitude != 0) {
+                myPosition = new LatLng(latitude, longtitude);
+            }
+        } else {
+            intentValue = getIntent().getStringExtra("choose");
+            city = getIntent().getStringExtra("city");
+        }
+
         if (city != null) {
             tv_city.setText(city);
         }
+        //设置不同的提示语
         if (intentValue != null) {
             if (intentValue.equals("myPosition")) {
                 edt_choose.setHint("从哪里出发");
@@ -86,6 +106,14 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
                 ly_home_company.setVisibility(View.GONE);
             } else if (intentValue.equals("company")) {
                 edt_choose.setHint("设置公司地址");
+                ly_home_company.setVisibility(View.GONE);
+            }else if (intentValue.equals("publish_start")) {
+                edt_choose.setHint("从哪里出发");
+                tv_city.setEnabled(false);
+                ly_home_company.setVisibility(View.GONE);
+            }else if (intentValue.equals("publish_end")) {
+                edt_choose.setHint("到哪里去");
+                tv_city.setEnabled(false);
                 ly_home_company.setVisibility(View.GONE);
             }
         }
@@ -124,7 +152,7 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
     List<PoiItem> poiItems;
 
     private void searchPosition() {
-        query = new PoiSearch.Query("美食", null, city);
+        query = new PoiSearch.Query(searchStr, null, city);
         mPoiSearch = new PoiSearch(this, query);
         mPoiSearch.setOnPoiSearchListener(this);
         mPoiSearch.searchPOIAsyn();
@@ -174,10 +202,11 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
     @Override
     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
     }
-
+    String searchStr = "美食";
     @Override
     public void onTextChanged(CharSequence s, int start, int before, int count) {
-        query = new PoiSearch.Query(s.toString(), null, city);
+        searchStr = s.toString();
+        query = new PoiSearch.Query(searchStr, null, city);
         mPoiSearch = new PoiSearch(this, query);
         mPoiSearch.setOnPoiSearchListener(this);
         mPoiSearch.searchPOIAsyn();
@@ -206,6 +235,10 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
             setResult(item, "home", Str.REQUESTHOMECODE);
         } else if (intentValue.equals("company")) {
             setResult(item, "company", Str.REQUESTCOMPANYCODE);
+        }else if (intentValue.equals("publish_start")) {
+            setResult(item, "publish_start", PublishTraverActivity.REQUEST_START);
+        }else if (intentValue.equals("publish_end")) {
+            setResult(item, "publish_end", PublishTraverActivity.REQUEST_END);
         }
     }
 
@@ -242,9 +275,47 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
                     }
                 }
                 break;
+            case R.id.tv_city:
+                initDB();
+                if (isNull(cityUtil)) {
+                    cityUtil = new MyChooseCityUtil();
+                    cityUtil.setHideCounty(true);
+                }
+                cityUtil.createDialog(this, adcode, new ChooseCityInterface() {
+                    @Override
+                    public void sure(String[] newCityArray) {
+
+                        if (newCityArray == null || isNull(newCityArray[0], newCityArray[1], newCityArray[2])) {
+                            return;
+                        }
+                        Log.i(TAG, "sure:/" + newCityArray[0] + "/" + newCityArray[1] + "/" + newCityArray[2]);
+                        city = newCityArray[1];
+                        tv_city.setText(newCityArray[1]);
+                        if (searchStr.isEmpty()) {
+                            return;
+                        }
+                        query = new PoiSearch.Query(searchStr, null, city);
+                        mPoiSearch = new PoiSearch(ChoosePosition.this, query);
+                        mPoiSearch.setOnPoiSearchListener(ChoosePosition.this);
+                        mPoiSearch.searchPOIAsyn();
+                    }
+                });
+                break;
         }
     }
+    MyChooseCityUtil cityUtil;
+    boolean isCheckedDB;
 
+    private void initDB() {
+        if (!isCheckedDB) {
+            SharedPreferences preferences1 = getSharedPreferences("user", Context.MODE_PRIVATE);
+            if (preferences1.getBoolean("initDB", true)) {
+                Log.i(TAG, "handleMessage: initDB");
+                insert2DB();
+            }
+            isCheckedDB = !isCheckedDB;
+        }
+    }
     private void setResult(PoiItem poiItem, String commonAddr, int requestCode) {
         Bundle bundle = new Bundle();
         Intent intent = new Intent();
@@ -346,7 +417,8 @@ public class ChoosePosition extends BaseActivity implements PoiSearch.OnPoiSearc
 
             holder.addressName.setText(item.getTitle());
             int distance = item.getDistance()>0?item.getDistance():0;
-            holder.addressDetail.setText(item.getSnippet() + "\t距离" + distance + "米");
+//            holder.addressDetail.setText(item.getSnippet() + "\t距离" + distance + "米");
+            holder.addressDetail.setText(item.getSnippet());
 
             return convertView;
         }

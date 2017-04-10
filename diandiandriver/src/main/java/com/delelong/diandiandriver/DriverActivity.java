@@ -3,6 +3,7 @@ package com.delelong.diandiandriver;
 import android.animation.LayoutTransition;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -20,6 +21,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AlertDialog;
 import android.text.Html;
 import android.util.Log;
 import android.view.Gravity;
@@ -33,6 +35,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alibaba.fastjson.JSON;
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
@@ -52,10 +55,14 @@ import com.delelong.diandiandriver.bean.DriverAmount;
 import com.delelong.diandiandriver.bean.DriverCarBean;
 import com.delelong.diandiandriver.bean.OrderInfo;
 import com.delelong.diandiandriver.bean.Str;
+import com.delelong.diandiandriver.bean.TraverOrderBean;
+import com.delelong.diandiandriver.bean.ZhuanXianOrderBean;
 import com.delelong.diandiandriver.dialog.MyDialogUtils;
 import com.delelong.diandiandriver.dialog.MyOrderDialog;
 import com.delelong.diandiandriver.dialog.MyProgressDialog;
 import com.delelong.diandiandriver.dialog.MyToastDialog;
+import com.delelong.diandiandriver.dialog.MyTraverOrderDialog;
+import com.delelong.diandiandriver.dialog.MyZhuanXianOrderDialog;
 import com.delelong.diandiandriver.fragment.DriverMenuFrag;
 import com.delelong.diandiandriver.fragment.MyAppUpdate;
 import com.delelong.diandiandriver.function.MyFunctionActivity;
@@ -72,9 +79,10 @@ import com.delelong.diandiandriver.menuActivity.MyReservationOrderActivity;
 import com.delelong.diandiandriver.order.CreateOrderActivity;
 import com.delelong.diandiandriver.order.MyCheckOrderListener;
 import com.delelong.diandiandriver.order.MyOrderActivity;
-import com.delelong.diandiandriver.pace.MyAMapLocation;
 import com.delelong.diandiandriver.receiver.NetReceiver;
-import com.delelong.diandiandriver.service.MyWebSocketService;
+import com.delelong.diandiandriver.service.CoreService;
+import com.delelong.diandiandriver.traver.activity.ExecutionTraverActivity;
+import com.delelong.diandiandriver.traver.activity.TraverActivity;
 import com.delelong.diandiandriver.utils.MD5;
 import com.delelong.diandiandriver.utils.MyApp;
 import com.delelong.diandiandriver.utils.TipHelper;
@@ -93,7 +101,9 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import cn.jpush.android.api.JPushInterface;
 import cz.msebera.android.httpclient.Header;
+import de.greenrobot.event.EventBus;
 
 /**
  * Created by Administrator on 2016/9/21.
@@ -127,6 +137,11 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     public static final int CREATE_ORDER_BY_DRIVER = 26;//司机创建新订单
     public static final int CHECK_RESERVATION_ORDER = 27;//检测是否有预约订单
     private static final int CLICKABLE_DELAYED = 120;//点击后延迟恢复可点击状态
+    public static final int CHECK_IS_ONLINE = 28;//检查是否已经上线
+    public static final int CHECK_JPUSH = 30;//检查是否已经上线
+    public static final int SHOW_TRAVER_ORDER = 31;//显示顺风车新订单
+    public static final int SHOW_ZHUANXIAN_ORDER = 32;//显示专线新订单
+
 
     private static final long CLICKABLE_DELAYED_TIMEMILIS = 3500;//点击后延迟时间
     public Handler handler = new Handler() {
@@ -139,6 +154,10 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                         updateStatus();
                         sendEmptyMsgDelayToHandlerByExecutor(UPDATE_CARSTATUS, 55000);
                     }
+                    break;
+                case CHECK_JPUSH:
+//                    checkJpush();
+//                    sendEmptyMsgDelayToHandlerByExecutor(CHECK_JPUSH, 40000);
                     break;
                 case REFRESH_AMOUNT:
                     initAmountMsg();
@@ -183,7 +202,6 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 case UPDATE_LOCATION:
                     upDateLocation(mAMapLocation, updateLocLatlng);
                     if (updateLoc) {
-//                        handler.sendEmptyMessageDelayed(UPDATE_LOCATION, 15000);
                         sendEmptyMsgDelayToHandlerByExecutor(UPDATE_LOCATION, 15000);
                     }
                     break;
@@ -199,6 +217,9 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 case CHECK_TO_ONLINE:
                     checkToOnLine();
                     break;
+                case CHECK_IS_ONLINE:
+                    CheckIsOnline();
+                    break;
                 case ONLINE:
                     onLine();
                     break;
@@ -208,6 +229,14 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 case SHOW_ORDER:
                     String orderMessage = (String) msg.obj;
                     showOrder(orderMessage);
+                    break;
+                case SHOW_TRAVER_ORDER:
+                    String traverOrderMessage = (String) msg.obj;
+                    showTraverOrder(traverOrderMessage);
+                    break;
+                case SHOW_ZHUANXIAN_ORDER:
+                    String zhuanXianOrderMessage = (String) msg.obj;
+                    showZhuanXianOrder(zhuanXianOrderMessage);
                     break;
                 case CREATE_ORDER_BY_DRIVER:
                     OrderInfo orderInfo = (OrderInfo) msg.obj;
@@ -221,6 +250,19 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
             }
         }
     };
+//
+//    boolean checkJpushs;
+//
+//    private void checkJpush() {
+//        if (checkJpushs) {
+//            if (JPushInterface.isPushStopped(MyApp.getInstance())) {
+//                JPushInterface.resumePush(MyApp.getInstance());
+//            }
+//        } else {
+//            JPushInterface.stopPush(MyApp.getInstance());
+//        }
+//        checkJpushs = !checkJpushs;
+//    }
 
     private void sendEmptyMsgToHandlerByExecutor(final int what) {
         threadPool.submit(new Runnable() {
@@ -314,6 +356,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                     if (resultForStatus.get(1).equalsIgnoreCase("true")) {
                     } else {//下线状态，重新上线
                         online = false;
+                        autoOnline = true;
                         checkDriverType();
 //                onLine();
                     }
@@ -347,7 +390,10 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
             public void onSuccess(int statusCode, Header[] headers, String s) {
                 Log.i(TAG, "onSuccess:getOrderInfosByJson: " + s);
                 List<OrderInfo> orderInfoList = myHttpHelper.getOrderInfosByJson(s, DriverActivity.this);
-                if (orderInfoList == null) {
+                if (orderInfoList == null || orderInfoList.size() == 0) {
+                    mOrderInfos = null;
+                    inOrder = false;
+                    isInOrder(inOrder);
                     return;
                 }
                 if (orderInfoList != null && orderInfoList.size() != 0) {//如果在处理订单状态
@@ -441,6 +487,8 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         });
     }
 
+    boolean autoOnline;//自动上线
+
     private void setOnLineView(List<String> result, boolean speak) {
         if (result == null) {
             return;
@@ -450,24 +498,34 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
 //            speechSynthesizer.startSpeaking("开始接单啦 ", mySynthesizerListener);
             if (online) {//上线重置时间
                 if (speak) {
-                    speak("开始接单啦，快去赚钱吧");
+                    if (!autoOnline) {
+                        speak("开始接单啦，快去赚钱吧");
+                    }
+                    autoOnline = false;
                 }
                 resetOnlineTime(result);
-                if (!driver.getType().equals("2")) {
-                    updateStatus = true;
-                    sendEmptyMsgToHandlerByExecutor(UPDATE_CARSTATUS);
-                }
+//                if (!driver.getType().equals("2")) {
+//                    updateStatus = true;
+//                    sendEmptyMsgToHandlerByExecutor(UPDATE_CARSTATUS);
+//                }
             } else {
                 setOnlineTime(20, "上线");
                 updateStatus = false;
+                driver.setType("");
+                mDriverCar = null;
                 if (handler.hasMessages(UPDATE_CARSTATUS)) {
                     handler.removeMessages(UPDATE_CARSTATUS);
                 }
-                if (speak)
-                    speak("停止接单啦，享受生活吧");
+                if (speak) {
+                    if (!autoOnline) {
+                        speak("停止接单啦，享受生活吧");
+                    }
+                    autoOnline = false;
+                }
             }
         } else if (result.get(0).equalsIgnoreCase("ERROR")) {
             driver.setType("");
+            mDriverCar = null;
 //            ToastUtil.show(this, result.get(1));
             MyToastDialog.show(mContext, result.get(1));
             return;
@@ -496,18 +554,32 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         initMsg();
         initView();
 
+
         registerMessageReceiver();
         mNetFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(mNetReceiver, mNetFilter);//监听网络连接
-        mServiceIntents = new Intent(this, MyWebSocketService.class);
-        startService(mServiceIntents);//websocket获取推送消息
+//        mServiceIntents = new Intent(this, MyWebSocketService.class);
+//        startService(mServiceIntents);//websocket获取推送消息
 
-//        handler.sendEmptyMessage(INIT_FRAG);//加载fragment
-//        handler.sendEmptyMessageDelayed(CHECK_APP_UPDATE, 30000);
-//        handler.sendEmptyMessageDelayed(CHECK_ORDER, 10000);
+        if (JPushInterface.isPushStopped(MyApp.getInstance())) {
+            JPushInterface.resumePush(MyApp.getInstance());//恢复推送
+        }
+
+        boolean b = BaseActivity.isServiceWorked(MyApp.getInstance(), "com.delelong.diandiandriver.service.CoreService");
+        if (!b) {
+            Intent service = new Intent(MyApp.getInstance(), CoreService.class);
+            startService(service);
+            Log.i(TAG, "Start CoreService");
+        }
+
         sendEmptyMsgToHandlerByExecutor(INIT_FRAG);
+        sendEmptyMsgToHandlerByExecutor(CHECK_IS_ONLINE);
         sendEmptyMsgDelayToHandlerByExecutor(CHECK_APP_UPDATE, 30000);
         sendEmptyMsgDelayToHandlerByExecutor(CHECK_ORDER, 3000);
+//        sendEmptyMsgDelayToHandlerByExecutor(CHECK_JPUSH, 40000);
+
+        Intent orderIntent = getIntent();
+        getOrderIntent(orderIntent);
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
@@ -518,7 +590,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
 //        super.onSaveInstanceState(outState);//注释掉，让其不再保存Fragment的状态，达到其随着Activity一起被回收的效果！
     }
 
-    public Intent mServiceIntents;
+    //    public Intent mServiceIntents;
     DateTime onlineTime;
     SharedPreferences preferences;
     //    MyHttpUtils myHttpUtils;
@@ -610,7 +682,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     LayoutTransition transition;
     public DrawerLayout drawerly;
     SwipeRefreshLayout ly_refresh;
-    RelativeLayout menu_left, menu_right;//左右菜单布局
+    RelativeLayout menu_left;//左右菜单布局
 
     LinearLayout ly_desk;//切换界面大小，显示 隐藏地图
     RelativeLayout rl_desk;
@@ -623,9 +695,9 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     LinearLayout ly_desk_show;//显示、隐藏收入明细
     ImageView img_desk_show;
 
+    LinearLayout ly_traver;
+    TextView tv_traver;
     Button btn_createOrder, btn_onLine, btn_backToCity;//创建订单、上线、返城按钮
-
-    RelativeLayout rl_order;//订单界面fragment
 
     private void initView() {
         transition = new LayoutTransition();
@@ -637,7 +709,6 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         ly_refresh.setOnRefreshListener(this);
 
         menu_left = (RelativeLayout) findViewById(R.id.menu_left);
-        menu_right = (RelativeLayout) findViewById(R.id.menu_right);
 
         ly_desk = (LinearLayout) findViewById(R.id.ly_desk);
         ly_desk.setLayoutTransition(transition);
@@ -653,6 +724,9 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         tv_sum_yesterday = (TextView) findViewById(R.id.tv_sum_yesterday);
         tv_sum_today = (TextView) findViewById(R.id.tv_sum_today);
 
+        ly_traver = (LinearLayout) findViewById(R.id.ly_traver);
+        tv_traver = (TextView) findViewById(R.id.tv_traver);
+
         ly_desk02 = (LinearLayout) findViewById(R.id.ly_desk02);
         ly_desk02.setLayoutTransition(transition);
         ly_desk_detail = (LinearLayout) findViewById(R.id.ly_desk_detail);
@@ -665,15 +739,12 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         btn_onLine.setClickable(false);
         btn_backToCity = (Button) findViewById(R.id.btn_backToCity);
 
-        rl_order = (RelativeLayout) findViewById(R.id.rl_order);
-
 //        initAmountMsg();
         sendEmptyMsgToHandlerByExecutor(INIT_AMOUNT_MSG);
         initListener();
     }
 
     private void initAmountMsg() {
-//        ly_refresh.setRefreshing(true);//停止刷新
         MyAsyncHttpUtils.post(Str.URL_DRIVER_YE_AMOUNT, new MyTextHttpResponseHandler() {
             @Override
             public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
@@ -750,6 +821,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         ly_sum_yesterday.setOnClickListener(this);
         ly_sum_today.setOnClickListener(this);
         img_desk_show.setOnClickListener(this);
+        ly_traver.setOnClickListener(this);
         btn_createOrder.setOnClickListener(this);
         btn_onLine.setOnClickListener(this);
         btn_backToCity.setOnClickListener(this);
@@ -764,26 +836,26 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
             case R.id.img_menu:
                 //左侧菜单
                 try {
-//                    if (menuFrag == null) {
-//                        menuFrag = new DriverMenuFrag();
-//                        fragmentManager.beginTransaction().add(R.id.menu_left, menuFrag, "menuFrag").addToBackStack(null).show(menuFrag).commit();
-//                    } else {
-//                        //退回栈后fragment重新添加
-//                        fragmentManager.beginTransaction().setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN).replace(R.id.menu_left, menuFrag, "menuFrag").addToBackStack(null).show(menuFrag).commit();
-//                    }
-//                    drawerly.openDrawer(GravityCompat.START);
                     drawerly.openDrawer(Gravity.LEFT);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 break;
+            case R.id.ly_traver:
+                //顺风车|专线
+                Intent traverIntent = new Intent(this, TraverActivity.class);
+//                Bundle traverBundle = ActivityUtils.getIntentBundle("traver", city, mAMapLocation);
+//                traverIntent.putExtra("bundle", traverBundle);
+                EventBus.getDefault().postSticky(mAMapLocation);
+                startActivity(traverIntent);
+                break;
             case R.id.img_function:
                 //右侧功能菜单
                 Bundle functionBundle = new Bundle();
-                functionBundle.putString("adcode",mAMapLocation.getAdCode());
-                functionBundle.putString("city",mAMapLocation.getCity());
+                functionBundle.putString("adcode", mAMapLocation.getAdCode());
+                functionBundle.putString("city", mAMapLocation.getCity());
                 Intent functionIntent = new Intent(this, MyFunctionActivity.class);
-                functionIntent.putExtra("bundle",functionBundle);
+                functionIntent.putExtra("bundle", functionBundle);
                 startActivity(functionIntent);
                 break;
             case R.id.ly_sum_yesterday:
@@ -842,7 +914,11 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
             case R.id.btn_onLine:
                 //上线
                 clickableDelayed(btn_onLine);
-                sendEmptyMsgToHandlerByExecutor(CHECK_TO_ONLINE);
+                if (online) {
+                    DJOnLine(true);//下线
+                } else {
+                    sendEmptyMsgToHandlerByExecutor(CHECK_TO_ONLINE);
+                }
                 break;
             case R.id.btn_backToCity:
                 //预约订单
@@ -885,7 +961,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                 @Override
                 public void onSuccess(int i, Header[] headers, String s) {
                     if (driver == null) {
-//                        Log.i(TAG, "onSuccess:getDriverByJson: " + s);
+                        Log.i(TAG, "onSuccess:getDriverByJson: " + s);
                         driver = myHttpHelper.getDriverByJson(s, DriverActivity.this);
                         if (driver != null) {
                             checkDriverType();
@@ -898,6 +974,28 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         }
     }
 
+    private void CheckIsOnline() {
+        MyAsyncHttpUtils.get(Str.URL_CHECK_ONLINE, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+            }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                Log.i(TAG, "onSuccess:CheckIsOnline: " + s);
+                List<String> resultForStatus = myHttpHelper.resultByJson(s, null);
+                if (resultForStatus != null) {
+                    if (resultForStatus.size() > 0) {
+                        if (resultForStatus.get(0).equalsIgnoreCase("OK")) {
+                            setOnLineView(resultForStatus, false);
+                        }
+                    }
+                }
+
+            }
+        });
+    }
+
     boolean showMap;
 
     private void toCreateOrder() {
@@ -908,6 +1006,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
      * 上线确定接单类型
      */
     private void checkDriverType() {
+        Log.i(TAG, "checkDriverType: " + driver + "//" + driver.getTypes());
         if (driver.getType().equals("")) {
             if (driver.getTypes().size() == 1) {
                 if (driver.getTypes().get(0).equals("2")) {
@@ -917,11 +1016,18 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                     driver.setType("1");
                 }
 //                onLine();
+                if (handler != null && handler.hasMessages(UPDATE_CARSTATUS)) {
+                    handler.removeMessages(UPDATE_CARSTATUS);
+//                    Log.i(TAG, "checkDriverType: ");
+                }
                 sendEmptyMsgToHandlerByExecutor(ONLINE);
                 return;
             } else {//类型不止一个
                 for (int i = 0; i < driver.getTypes().size(); i++) {
                     if (driver.getTypes().get(i).equals("2")) {
+                        if (myDialog == null) {
+                            myDialog = new MyDialogUtils(this);
+                        }
                         myDialog.chooseOnLineType(REQEST_CHOOSE_ONLINE_TYPE, this);
                         return;
                     } else {
@@ -929,11 +1035,19 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                     }
                 }
 //                onLine();//不为代驾
+                if (handler != null && handler.hasMessages(UPDATE_CARSTATUS)) {
+                    handler.removeMessages(UPDATE_CARSTATUS);
+                    Log.i(TAG, "checkDriverType: 000");
+                }
                 sendEmptyMsgToHandlerByExecutor(ONLINE);
                 return;
             }
         } else {
 //            onLine();
+            if (handler != null && handler.hasMessages(UPDATE_CARSTATUS)) {
+                handler.removeMessages(UPDATE_CARSTATUS);
+                Log.i(TAG, "checkDriverType: 111");
+            }
             sendEmptyMsgToHandlerByExecutor(ONLINE);
         }
     }
@@ -974,6 +1088,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
                         return;
                     } else {
                         mDriverCar = driverCarBean.getDriverCars().get(0);
+                        sendEmptyMsgToHandlerByExecutor(ONLINE);
                     }
                 }
             }
@@ -1027,11 +1142,12 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         MyAsyncHttpUtils.post(Str.URL_ONLINE_DJ, params, new MyProgTextHttpResponseHandler(mActivity) {
             @Override
             public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
-
+                Log.i(TAG, "DJOnLine:onFailure: " + s);
             }
 
             @Override
             public void onSuccess(int i, Header[] headers, String s) {
+                Log.i(TAG, "DJOnLine:onSuccess: " + s);
                 List<String> result = myHttpHelper.resultByJson(s, DriverActivity.this);
                 setOnLineView(result, speak);
             }
@@ -1041,7 +1157,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     private void otherOnLine(int driverCarId, final boolean speak) {
 //        mDriverCar.setId(driverCarId);
         RequestParams params = myHttpHelper.getOnLineParams(driverCarId, !online, onLineTimeMillis, offLineTimeMillis);
-        Log.i(TAG, "otherOnLine: onLineTimeMillis:"+online+"/" + onLineTimeMillis + "/offLineTimeMillis/" + offLineTimeMillis);
+        Log.i(TAG, "otherOnLine: onLineTimeMillis:" + online + "/" + onLineTimeMillis + "/offLineTimeMillis/" + offLineTimeMillis);
         MyAsyncHttpUtils.post(Str.URL_ONLINE, params, new MyProgTextHttpResponseHandler(mActivity) {
             @Override
             public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
@@ -1134,51 +1250,51 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         if (aMap != null) {
             aMap = null;
         }
-        if (mTipHelper!=null){
+        if (mTipHelper != null) {
             mTipHelper.stopSpeak();
         }
-        if (online) {
-            if (online) {
-                offLineTimeMillis = System.currentTimeMillis();
-            } else {
-                onLineTimeMillis = System.currentTimeMillis();
-            }
-//            online = false;
-            if (driver.getType().equals("2")) {
-                RequestParams params = myHttpHelper.getDJOnLineParams(!online, onLineTimeMillis, offLineTimeMillis);
-                MyAsyncHttpUtils.post(Str.URL_ONLINE_DJ, params, new MyProgTextHttpResponseHandler(mActivity) {
-                    @Override
-                    public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+//        if (online) {
+//            if (online) {
+//                offLineTimeMillis = System.currentTimeMillis();
+//            } else {
+//                onLineTimeMillis = System.currentTimeMillis();
+//            }
+////            online = false;
+//            if (driver.getType().equals("2")) {
+//                RequestParams params = myHttpHelper.getDJOnLineParams(!online, onLineTimeMillis, offLineTimeMillis);
+//                MyAsyncHttpUtils.post(Str.URL_ONLINE_DJ, params, new MyProgTextHttpResponseHandler(mActivity) {
+//                    @Override
+//                    public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+//
+//                    }
+//
+//                    @Override
+//                    public void onSuccess(int i, Header[] headers, String s) {
+////                        Log.i(TAG, "onSuccess: resultByJson:" + s);
+//                    }
+//                });
+////                DJOnLine(false);
+////                myHttpUtils.onlineAppDJ(Str.URL_ONLINE_DJ, online, onLineTimeMillis, offLineTimeMillis);//下线
+//            } else {
+//                RequestParams params = myHttpHelper.getOnLineParams(mDriverCar.getId(), !online, onLineTimeMillis, offLineTimeMillis);
+//                MyAsyncHttpUtils.post(Str.URL_ONLINE, params, new MyProgTextHttpResponseHandler(mActivity) {
+//                    @Override
+//                    public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+//
+//                    }
+//
+//                    @Override
+//                    public void onSuccess(int i, Header[] headers, String s) {
+//                    }
+//                });
+////                otherOnLine(mDriverCar.getId(), false);
+////                myHttpUtils.onlineApp(Str.URL_ONLINE, mDriverCar.getId(), online, onLineTimeMillis, offLineTimeMillis);//下线
+//            }
+//        }
 
-                    }
-
-                    @Override
-                    public void onSuccess(int i, Header[] headers, String s) {
-//                        Log.i(TAG, "onSuccess: resultByJson:" + s);
-                    }
-                });
-//                DJOnLine(false);
-//                myHttpUtils.onlineAppDJ(Str.URL_ONLINE_DJ, online, onLineTimeMillis, offLineTimeMillis);//下线
-            } else {
-                RequestParams params = myHttpHelper.getOnLineParams(mDriverCar.getId(), !online, onLineTimeMillis, offLineTimeMillis);
-                MyAsyncHttpUtils.post(Str.URL_ONLINE, params, new MyProgTextHttpResponseHandler(mActivity) {
-                    @Override
-                    public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
-
-                    }
-
-                    @Override
-                    public void onSuccess(int i, Header[] headers, String s) {
-                    }
-                });
-//                otherOnLine(mDriverCar.getId(), false);
-//                myHttpUtils.onlineApp(Str.URL_ONLINE, mDriverCar.getId(), online, onLineTimeMillis, offLineTimeMillis);//下线
-            }
-        }
-
-        if (mServiceIntents != null) {
-            stopService(mServiceIntents);
-        }
+//        if (mServiceIntents != null) {
+//            stopService(mServiceIntents);
+//        }
         if (mNetReceiver != null) {
             unregisterReceiver(mNetReceiver);
             mNetReceiver = null;
@@ -1234,32 +1350,28 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         if (mLocationClient != null) {
             mLocationClient.startLocation();
         }
-//        if (JPushInterface.isPushStopped(this)) {
-//            Log.i(TAG, "onResume: JPushInterface.isPushStopped(this)");
-//            JPushInterface.init(this);
-//        }
     }
 
-    private boolean isTwice = false;
+    long exitTime = 0;// 退出时间
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-
-            if (isTwice) {
-                finish();
-            } else {
-                isTwice = !isTwice;
+            if ((System.currentTimeMillis() - exitTime) > 3000) {
                 Toast.makeText(this, "再按一次退出", Toast.LENGTH_SHORT).show();
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        isTwice = false;
-                    }
-                }, 3000);
+                exitTime = System.currentTimeMillis();
                 return false;
+            } else {
+                //结束
+//                finish();
+                // 返回桌面操作
+//                Intent home = new Intent(Intent.ACTION_MAIN);
+//                home.addCategory(Intent.CATEGORY_HOME);
+//                startActivity(home);
+                moveTaskToBack(true);
             }
+        } else if (keyCode == KeyEvent.KEYCODE_HOME) {
+            moveTaskToBack(true);
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -1268,7 +1380,6 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     public void chooseDriverCar(int requestCode, int position) {
         if (requestCode == REQEST_CHOOSE_CAR) {
             mDriverCar = driverCarBean.getDriverCars().get(position);
-//            onLine();
             sendEmptyMsgToHandlerByExecutor(ONLINE);
         }
     }
@@ -1439,56 +1550,99 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     @Override
     public void onRefresh() {
 //        handler.sendEmptyMessage(REFRESH_AMOUNT);
-        sendEmptyMsgToHandlerByExecutor(REFRESH_AMOUNT);
+//        sendEmptyMsgToHandlerByExecutor(REFRESH_AMOUNT);
+        Log.i(TAG, "onRefresh: 11111");
+        sendEmptyMsgToHandlerByExecutor(INIT_AMOUNT_MSG);
     }
 
     public class OrderMessageReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
 //            Log.i(TAG, "onReceive: intent.getAction()" + intent.getAction());
-            if (Str.ORDER_MESSAGE_RECEIVED_ACTION.equals(intent.getAction())) {
-                String orderTitle = intent.getStringExtra(Str.KEY_ORDER_TITLE);
-                String orderMessage = intent.getStringExtra(Str.KEY_ORDER_MESSAGE);//订单消息
-                String orderExtras = intent.getStringExtra(Str.KEY_ORDER_EXTRA);//可能为空
-                if (orderTitle.equals("1")) {//订单消息
-                    if (inOrder) {
-                        return;//已经接单并且有2单在处理，则不提示有新订单
-                    }
-//                    showOrder(orderMessage);
-                    sendMsgToHandlerByExecutor(SHOW_ORDER, orderMessage);
-                } else if (orderTitle.equals("999")) {//推送语音
-                    if (orderMessage != null) {
-                        speak("您有新的消息：" + orderMessage);
-                    }
-                } else if (orderTitle.equals("4")) {//取消订单
-                    if (orderMessage == null) {
-                        return;
-                    }
-                    OrderInfo canceledOrderInfo = getOrderInfoFromReceiver(orderMessage);
-                    if (isNull(mOrderInfos, canceledOrderInfo)) {
-                        return;
-                    }
-                    if (mOrderInfos.size() > 1) {
-                        for (int i = 0; i < mOrderInfos.size(); i++) {
-                            OrderInfo orderInfo = mOrderInfos.get(i);
-                            if (orderInfo.getId() == canceledOrderInfo.getId()) {
-                                mOrderInfos.remove(i);
-                            }
-                        }
-                        if (notNull(mOrderInfos)) {
-                            if (mOrderInfos.size() > 0) {
+            getOrderIntent(intent);
+        }
+    }
 
-                            } else {
-                                onOrderCanceled();
-                            }
+    private void getOrderIntent(Intent intent) {
+        if (Str.ORDER_MESSAGE_RECEIVED_ACTION.equals(intent.getAction())) {
+            String orderTitle = intent.getStringExtra(Str.KEY_ORDER_TITLE);
+            String orderMessage = intent.getStringExtra(Str.KEY_ORDER_MESSAGE);//订单消息
+            String orderExtras = intent.getStringExtra(Str.KEY_ORDER_EXTRA);//可能为空
+            Log.i(TAG, "DriverActivity:onReceive:orderTitle: " + orderTitle + "//" + orderMessage);
+            if (orderTitle.equals("1")) {//订单消息
+                if (inOrder) {
+                    return;//已经接单并且有2单在处理，则不提示有新订单
+                }
+//                    Log.i(TAG, "onReceive: "+orderMessage);
+                sendMsgToHandlerByExecutor(SHOW_ORDER, orderMessage);
+            } else if (orderTitle.equals("7")) {//顺风车新订单
+                if (orderMessage != null) {
+                    sendMsgToHandlerByExecutor(SHOW_TRAVER_ORDER, orderMessage);
+                }
+            } else if (orderTitle.equals("12")) {//专线新订单
+                if (orderMessage != null) {
+                    sendMsgToHandlerByExecutor(SHOW_ZHUANXIAN_ORDER, orderMessage);
+                }
+            } else if (orderTitle.equals("4")) {//取消订单
+                if (orderMessage == null) {
+                    return;
+                }
+                OrderInfo canceledOrderInfo = getOrderInfoFromReceiver(orderMessage);
+                if (isNull(canceledOrderInfo)) {
+                    return;
+                }
+                //订单类型：1：顺风车、专线之外的订单；2：顺风车；3：专线
+                if (canceledOrderInfo.getOrderType() != 1) {
+                    String title = "";
+                    if (canceledOrderInfo.getOrderType() == 2) {
+                        title = "您的顺风车订单已取消";
+                    } else if (canceledOrderInfo.getOrderType() == 3) {
+                        title = "您的专线订单已取消";
+                    }
+                    AlertDialog.Builder cancelBuilder = new AlertDialog.Builder(mActivity)
+                            .setTitle(title)
+                            .setCancelable(false)//点击返回键或对话框外部时是否消失，默认为true
+                            .setPositiveButton("确定", null);
+                    cancelBuilder.create().show();
+                    speak("订单已取消,订单号：" + canceledOrderInfo.getId());
+                    return;
+                }
+                if (isNull(mOrderInfos)) {
+                    return;
+                }
+                if (mOrderInfos.size() > 1) {
+                    for (int i = 0; i < mOrderInfos.size(); i++) {
+                        OrderInfo orderInfo = mOrderInfos.get(i);
+                        if (orderInfo.getId() == canceledOrderInfo.getId()) {
+                            mOrderInfos.remove(i);
+                        }
+                    }
+                    if (notNull(mOrderInfos)) {
+                        if (mOrderInfos.size() > 0) {
+
                         } else {
                             onOrderCanceled();
                         }
-                        speak("订单已取消,订单号：" + canceledOrderInfo.getId());
-                    } else if (mOrderInfos.size() == 1) {
+                    } else {
                         onOrderCanceled();
-                        speak("订单已取消,订单号：" + canceledOrderInfo.getId());
                     }
+                    speak("订单已取消,订单号：" + canceledOrderInfo.getId());
+                } else if (mOrderInfos.size() == 1) {
+                    onOrderCanceled();
+                    speak("订单已取消,订单号：" + canceledOrderInfo.getId());
+                }
+            } else if (orderTitle.equals("6")) {//推送语音
+                if (orderMessage != null) {
+                    speak("您有新的消息：" + orderMessage);
+                }
+            } else if (orderTitle.equals("11")) {//推送信息
+                if (orderMessage != null) {
+                    AlertDialog.Builder cancelBuilder = new AlertDialog.Builder(mActivity)
+                            .setTitle("您有新的消息")
+                            .setMessage(orderMessage)
+                            .setCancelable(false)//点击返回键或对话框外部时是否消失，默认为true
+                            .setPositiveButton("确定", null);
+                    cancelBuilder.create().show();
                 }
             }
         }
@@ -1504,9 +1658,11 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
 
     private void speak(String content) {
         if (mTipHelper == null) {
+            Log.i(TAG, "speak: mTipHelper == null");
             mTipHelper = new TipHelper(this);
         }
         if (mTipHelper == null) {
+            Log.i(TAG, "speak: mTipHelper == null:222");
             return;
         }
         mTipHelper.Vibrate(500);//震动0.5秒
@@ -1539,54 +1695,163 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     }
 
     public void showOrder(String orderMessage) {
-        mOrderInfo = getOrderInfoFromReceiver(orderMessage);
-//        Log.i(TAG, "showOrder: " + mOrderInfo);
-        if (mOrderInfo == null) {
+        try {
+            mOrderInfo = getOrderInfoFromReceiver(orderMessage);
+            Log.i(TAG, "showOrder: " + mOrderInfo);
+            if (mOrderInfo == null) {
+                return;
+            }
+
+            long timeOut = System.currentTimeMillis() - Longs.tryParse(mOrderInfo.getSetouttime());
+//            Log.i(TAG, "showOrder:timeOut: " + timeOut);
+            if (timeOut / (1000 * 60) > 5) {//超过5分钟不显示
+//                Log.i(TAG, "showOrder:timeOut/(1000*60): " + timeOut / (1000 * 60));
+                return;
+            }
+
+            final MyOrderDialog orderDialog = new MyOrderDialog(this, this, mAMapLocation, mOrderInfo);
+            orderDialog.show(mOrderInfo.getTimeOut(), new MyOrderDialog.OrderInterface() {
+                @Override
+                public void take(boolean take) {
+                    if (take) {
+                        RequestParams params = myHttpHelper.getTakeOrderParams(mOrderInfo.getId());
+                        MyAsyncHttpUtils.post(Str.URL_TAKE_ORDER, params, new MyTextHttpResponseHandler() {
+                            @Override
+                            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+                                Log.i(TAG, "showOrder:onFailure: " + s);
+                            }
+
+                            @Override
+                            public void onSuccess(int i, Header[] headers, String s) {
+                                Log.i(TAG, "showOrder:onSuccess: " + s);
+                                List<String> orderResult = myHttpHelper.resultByJson(s, DriverActivity.this);
+                                if (orderResult == null) {
+                                    return;
+                                }
+                                if (orderResult.get(0).equalsIgnoreCase("OK")) {
+                                    if (mOrderInfo.isSet_out_flag()) {
+                                        speak("接单成功,可点击预约订单详情页查看");
+                                    } else {
+                                        speak("接单成功 ");
+                                        if (mOrderInfos == null) {//接单后才添加到接单列表
+                                            mOrderInfos = new ArrayList<>();
+                                            mOrderInfos.add(mOrderInfo);
+                                        }
+//                                mFanChengInfo = mOrderInfos.get(0);
+                                        toMyOrderAcitivityForResult(mOrderInfos.get(0), null);
+
+                                        inOrder = true;
+                                        isInOrder(inOrder);
+                                    }
+                                } else {
+                                    speak("抢单失败 ");
+                                }
+                            }
+                        });
+//                    List<String> orderResult = myHttpUtils.takeOrder(Str.URL_TAKE_ORDER, mOrderInfo.getId());
+                    }
+                }
+            });
+//            speak("来新订单了 ");
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.i(TAG, "showOrder: " + e);
+        }
+    }
+
+    private void showTraverOrder(String traverOrderMessage) {
+        final TraverOrderBean traverOrderBean = JSON.parseObject(traverOrderMessage, TraverOrderBean.class);
+        if (traverOrderBean == null) {
             return;
         }
-        final MyOrderDialog orderDialog = new MyOrderDialog(this, this, mAMapLocation, mOrderInfo);
-        orderDialog.show(mOrderInfo.getTimeOut(), new MyOrderDialog.OrderInterface() {
+        MyTraverOrderDialog traverOrderDialog = new MyTraverOrderDialog(DriverActivity.this, traverOrderBean);
+        traverOrderDialog.show(new MyTraverOrderDialog.OrderInterface() {
             @Override
             public void take(boolean take) {
                 if (take) {
-                    RequestParams params = myHttpHelper.getTakeOrderParams(mOrderInfo.getId());
-                    MyAsyncHttpUtils.post(Str.URL_TAKE_ORDER, params, new MyTextHttpResponseHandler() {
+                    RequestParams params = myHttpHelper.getTakeTraverOrderParams(traverOrderBean.getId());
+                    MyAsyncHttpUtils.post(Str.URL_TAKE_TRAVER_ORDER, params, new MyTextHttpResponseHandler() {
                         @Override
                         public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
-
+                            Log.i(TAG, "showTraverOrder:onFailure: " + s);
                         }
 
                         @Override
                         public void onSuccess(int i, Header[] headers, String s) {
+                            Log.i(TAG, "showTraverOrder:onSuccess: " + s);
                             List<String> orderResult = myHttpHelper.resultByJson(s, DriverActivity.this);
                             if (orderResult == null) {
                                 return;
                             }
                             if (orderResult.get(0).equalsIgnoreCase("OK")) {
-                                if (mOrderInfo.isSet_out_flag()) {
-                                    speak("接单成功,可点击预约订单详情页查看");
-                                } else {
-                                    speak("接单成功 ");
-                                    if (mOrderInfos == null) {//接单后才添加到接单列表
-                                        mOrderInfos = new ArrayList<>();
-                                        mOrderInfos.add(mOrderInfo);
-                                    }
-//                                mFanChengInfo = mOrderInfos.get(0);
-                                    toMyOrderAcitivityForResult(mOrderInfos.get(0), null);
-
-                                    inOrder = true;
-                                    isInOrder(inOrder);
-                                }
+                                AlertDialog.Builder peerBuilder = new AlertDialog.Builder(mActivity)
+                                        .setTitle("接单成功")
+                                        .setMessage("是否进入顺风车界面查看？")
+                                        .setCancelable(false)//点击返回键或对话框外部时是否消失，默认为true
+                                        .setNegativeButton("取消", null)//
+                                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                startActivity(new Intent(DriverActivity.this, ExecutionTraverActivity.class));
+                                            }
+                                        });
+                                peerBuilder.create().show();
+                                speak("接单成功 ");
                             } else {
-                                speak("抢单失败 ");
+                                speak("接单失败 ");
                             }
                         }
                     });
-//                    List<String> orderResult = myHttpUtils.takeOrder(Str.URL_TAKE_ORDER, mOrderInfo.getId());
                 }
             }
         });
-        speak("来新订单了 ");
+    }
+
+    private void showZhuanXianOrder(String zhuanXianOrderMessage) {
+        final ZhuanXianOrderBean zhuanXianOrderBean = JSON.parseObject(zhuanXianOrderMessage, ZhuanXianOrderBean.class);
+        if (zhuanXianOrderBean == null) {
+            return;
+        }
+        MyZhuanXianOrderDialog zhuanXianOrderDialog = new MyZhuanXianOrderDialog(DriverActivity.this, zhuanXianOrderBean);
+        zhuanXianOrderDialog.show(new MyZhuanXianOrderDialog.OrderInterface() {
+            @Override
+            public void take(boolean take) {
+                if (take) {
+                    RequestParams params = myHttpHelper.getTakeTraverOrderParams(zhuanXianOrderBean.getId());
+                    MyAsyncHttpUtils.post(Str.URL_TAKE_ZHUANXIAN_ORDER, params, new MyTextHttpResponseHandler() {
+                        @Override
+                        public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+                            Log.i(TAG, "showTraverOrder:onFailure: " + s);
+                        }
+
+                        @Override
+                        public void onSuccess(int i, Header[] headers, String s) {
+                            Log.i(TAG, "showTraverOrder:onSuccess: " + s);
+                            List<String> orderResult = myHttpHelper.resultByJson(s, DriverActivity.this);
+                            if (orderResult == null) {
+                                return;
+                            }
+                            if (orderResult.get(0).equalsIgnoreCase("OK")) {
+                                AlertDialog.Builder peerBuilder = new AlertDialog.Builder(mActivity)
+                                        .setTitle("接单成功")
+                                        .setMessage("是否进入专线界面查看？")
+                                        .setCancelable(false)//点击返回键或对话框外部时是否消失，默认为true
+                                        .setNegativeButton("取消", null)//
+                                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                startActivity(new Intent(DriverActivity.this, ExecutionTraverActivity.class));
+                                            }
+                                        });
+                                peerBuilder.create().show();
+                                speak("接单成功 ");
+                            } else {
+                                speak("接单失败 ");
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
     }
 
     private void toMyOrderAcitivityForResult(OrderInfo orderInfo_0, OrderInfo orderInfo_1) {
@@ -1599,7 +1864,9 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         }
         Intent intent = new Intent(this, MyOrderActivity.class);
         intent.putExtra("bundle", bundle);
+        Log.i(TAG, "toMyOrderAcitivityForResult: 111");
         startActivityForResult(intent, Str.REQUEST_ORDER_ACTIVITY);
+        Log.i(TAG, "toMyOrderAcitivityForResult: 222");
     }
 
 //    private OrderInfo mFanChengInfo;//返程信息
@@ -1608,6 +1875,7 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 //        initAmountMsg();
+        Log.i(TAG, "onActivityResult: 1111");
         sendEmptyMsgToHandlerByExecutor(INIT_AMOUNT_MSG);
         if (data == null) {
             return;
@@ -1769,7 +2037,6 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
 
     private boolean isFirstIn = true;
     private LatLng startLat, endLat;
-    public MyAMapLocation myAMapLocation;
     AMapLocation mAMapLocation;
     LatLng updateLocLatlng;
     String city;
@@ -1859,8 +2126,16 @@ public class DriverActivity extends BaseActivity implements View.OnClickListener
         if (mAMapLocation == null || updateLocLatlng == null) {
             return;
         }
-        ClientLocationInfo locationInfo = new ClientLocationInfo(updateLocLatlng.longitude + "",
-                updateLocLatlng.latitude + "", mAMapLocation.getSpeed() + "", mCurrentX + "", mAMapLocation.getLocationType(), mAMapLocation.getAccuracy());
+        ClientLocationInfo locationInfo;
+//        if (inOrder){
+        locationInfo = new ClientLocationInfo(updateLocLatlng.longitude + "",
+                updateLocLatlng.latitude + "", mAMapLocation.getSpeed() + "", mCurrentX + "",
+                mAMapLocation.getLocationType(), mAMapLocation.getAccuracy());
+//        }else {
+//            locationInfo = new ClientLocationInfo(117.86424637 + "",
+//                    31.60880267 + "", mAMapLocation.getSpeed() + "", mCurrentX + "",
+//                    mAMapLocation.getLocationType(), mAMapLocation.getAccuracy());
+//        }
         RequestParams params = myHttpHelper.getupDateLocationParams(locationInfo);
         MyAsyncHttpUtils.post(Str.URL_UPDATELOCATION_DRIVER, params, new MyTextHttpResponseHandler() {
             @Override

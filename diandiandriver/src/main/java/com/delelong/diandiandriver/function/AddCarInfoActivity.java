@@ -1,6 +1,5 @@
 package com.delelong.diandiandriver.function;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -22,13 +21,20 @@ import com.delelong.diandiandriver.R;
 import com.delelong.diandiandriver.bean.CarBrandBean;
 import com.delelong.diandiandriver.bean.CarModelBean;
 import com.delelong.diandiandriver.bean.Str;
+import com.delelong.diandiandriver.dialog.MyProgressDialog;
+import com.delelong.diandiandriver.http.MyAsyncHttpUtils;
 import com.delelong.diandiandriver.http.MyHttpHelper;
 import com.delelong.diandiandriver.http.MyHttpUtils;
+import com.delelong.diandiandriver.http.MyTextHttpResponseHandler;
+import com.delelong.diandiandriver.utils.FileUtils;
 import com.delelong.diandiandriver.utils.ToastUtil;
+import com.loopj.android.http.RequestParams;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+
+import cz.msebera.android.httpclient.Header;
 
 import static com.delelong.diandiandriver.R.array.carType;
 
@@ -169,14 +175,14 @@ public class AddCarInfoActivity extends BaseActivity implements View.OnClickList
 //                });
                 List<String> result = myHttpUtils.plusCar(Str.URL_PLUS_CAR, mAddCarInfo);
                 if (result == null) {
-                    ToastUtil.show(AddCarInfoActivity.this,"添加失败，请重试！");
+                    ToastUtil.show(AddCarInfoActivity.this, "添加失败，请重试！");
                     return;
                 }
                 if (result.get(0).equalsIgnoreCase("OK")) {
-                    ToastUtil.show(AddCarInfoActivity.this,"添加车辆信息成功,等待审核！");
+                    ToastUtil.show(AddCarInfoActivity.this, "添加车辆信息成功,等待审核！");
                     finish();
                 } else {
-                    ToastUtil.show(AddCarInfoActivity.this,"添加失败，" + result.get(1));
+                    ToastUtil.show(AddCarInfoActivity.this, "添加失败，" + result.get(1));
                 }
                 break;
             case R.id.rl_brand:
@@ -185,7 +191,7 @@ public class AddCarInfoActivity extends BaseActivity implements View.OnClickList
             case R.id.rl_model:
                 if (mCarBrand == null) {
 //                    MyToastDialog.show(AddCarInfoActivity.this,"请先选择车辆品牌");
-                    ToastUtil.show(AddCarInfoActivity.this,"请先选择车辆品牌");
+                    ToastUtil.show(AddCarInfoActivity.this, "请先选择车辆品牌");
                     return;
                 }
                 Bundle bundle = new Bundle();
@@ -262,48 +268,57 @@ public class AddCarInfoActivity extends BaseActivity implements View.OnClickList
         });
     }
 
-    ProgressDialog progressDialog;
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (data == null) {
-            return;
-        }
-        progressDialog = ProgressDialog.show(this, null, null);
         Bitmap bitmap = null;
-        if (requestCode == Str.REQUESTBRANDCODE) {//brand
-            Log.i(TAG, "onActivityResult: carBrand");
-            mCarBrand = (CarBrandBean.CarBrand) data.getSerializableExtra("carBrand");
-            if (mCarBrand == null) {
+        try {
+            if (data == null) {
                 return;
             }
-            mCarModel = null;//重置mCarModel
-            tv_brand.setText(mCarBrand.getName());
-            mAddCarInfo.setBrand(mCarBrand.getId());
-        } else if (requestCode == Str.REQUESTMODELCODE) {//brand_model
-            Log.i(TAG, "onActivityResult: carModel");
-
-            mCarModel = (CarModelBean.CarModel) data.getSerializableExtra("carModel");
-            if (mCarModel == null) {
-                return;
+            MyProgressDialog mProgressDialog = new MyProgressDialog(this);
+            if (!mProgressDialog.isShowing()) {
+                Log.i(TAG, "onActivityResult: aaa");
+                mProgressDialog.show();
             }
-            tv_model.setText(mCarModel.getName());
-            mAddCarInfo.setModel(mCarModel.getId());
-        } else if (requestCode == Str.REQUESTCODECAMERA) {//camera
-            bitmap = getCamera(data, bitmap);
-            updateFile(bitmap);
+            if (requestCode == Str.REQUESTBRANDCODE) {//brand
+                Log.i(TAG, "onActivityResult: carBrand");
+                mCarBrand = (CarBrandBean.CarBrand) data.getSerializableExtra("carBrand");
+                if (mCarBrand == null) {
+                    return;
+                }
+                mCarModel = null;//重置mCarModel
+                tv_brand.setText(mCarBrand.getName());
+                mAddCarInfo.setBrand(mCarBrand.getId());
+            } else if (requestCode == Str.REQUESTMODELCODE) {//brand_model
+                Log.i(TAG, "onActivityResult: carModel");
 
-        } else if (requestCode == Str.REQUESTCODEALBUM) {//album
-            bitmap = getAlbum(data, bitmap);
-            updateFile(bitmap);
-        }
-        if (progressDialog != null && progressDialog.isShowing()) {
-            progressDialog.dismiss();
+                mCarModel = (CarModelBean.CarModel) data.getSerializableExtra("carModel");
+                if (mCarModel == null) {
+                    return;
+                }
+                tv_model.setText(mCarModel.getName());
+                mAddCarInfo.setModel(mCarModel.getId());
+            } else if (requestCode == Str.REQUESTCODECAMERA) {//camera
+                bitmap = getCamera(data, bitmap);
+                updateFile(bitmap);
+            } else if (requestCode == Str.REQUESTCODEALBUM) {//album
+                bitmap = getAlbum(data, bitmap);
+                updateFile(bitmap);
+            }
+            if (mProgressDialog != null && mProgressDialog.isShowing()) {
+                mProgressDialog.dismiss();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (bitmap != null && bitmap.isRecycled()) {
+                bitmap.recycle();
+            }
         }
     }
 
-    private void updateFile(Bitmap bitmap) {
+    private void updateFile(Bitmap bitmap) throws Exception {
         if (bitmap != null) {//获取到图片
             img_picture.setImageBitmap(bitmap);
             String imgPath = Str.FILEIMAGEPATH + File.separator + "carImage.JPEG";
@@ -320,73 +335,70 @@ public class AddCarInfoActivity extends BaseActivity implements View.OnClickList
                     Log.i(TAG, "updateFile: " + e);
                 }
             }
-            MyCreateImageThread myCreateImageThread = new MyCreateImageThread(bitmap);
-            myCreateImageThread.start();
-            try {
-                myCreateImageThread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-//            createImage(Str.FILEIMAGEPATH, "carImage.JPEG", bitmap);
-            List<String> imageResult = myHttpUtils.upDateFile(Str.URL_UPDATEFILE, imgPath);
-            if (imageResult == null) {
-                return;
-            }
-            mAddCarInfo.setPicture(imageResult.get(2));
+            String headPath = FileUtils.saveToSDCard(Str.FILEIMAGEPATH, File.separator + "carImage.JPEG", bitmap);
+            RequestParams params = myHttpHelper.getUpdateFileParams(headPath);
+            MyAsyncHttpUtils.post(Str.URL_UPDATEFILE, params, new MyTextHttpResponseHandler() {
+                @Override
+                public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+                    super.onFailure(i, headers, s, throwable);
+                    Log.i(TAG, "onFailure:getUpdateFileParams: " + s);
+                }
+
+                @Override
+                public void onSuccess(int i, Header[] headers, String s) {
+                    super.onSuccess(i, headers, s);
+                    Log.i(TAG, "onSuccess:getUpdateFileParams: " + s);
+                    List<String> headImage = myHttpHelper.resultByJson(s, null);
+                    if (headImage != null && headImage.size() >= 3) {
+                        mAddCarInfo.setPicture(headImage.get(2));
+                    }
+                }
+            });
+//            List<String> imageResult = myHttpUtils.upDateFile(Str.URL_UPDATEFILE, imgPath);
+//            if (imageResult == null) {
+//                return;
+//            }
+//            mAddCarInfo.setPicture(imageResult.get(2));
         } else {
-            ToastUtil.show(AddCarInfoActivity.this,"未获取到图片，请重试");
-//            MyToastDialog.show(this,"未获取到图片，请重试");
+            ToastUtil.show(AddCarInfoActivity.this, "未获取到图片，请重试");
         }
     }
 
-    private class MyCreateImageThread extends Thread {
-        Bitmap bitmap;
-
-        MyCreateImageThread(Bitmap bitmap) {
-            this.bitmap = bitmap;
-        }
-
-        @Override
-        public void run() {
-            super.run();
-            createImage(Str.FILEIMAGEPATH, File.separator + "carImage.JPEG", bitmap);
-        }
-    }
 
     public boolean canUpdate() {
         if (mAddCarInfo.getBrand() == 99999) {
 //            MyToastDialog.show(AddCarInfoActivity.this,"未添加品牌");
-            ToastUtil.show(AddCarInfoActivity.this,"未添加品牌");
+            ToastUtil.show(AddCarInfoActivity.this, "未添加品牌");
             return false;
         }
         if (mAddCarInfo.getModel() == 99999) {
 //            MyToastDialog.show(AddCarInfoActivity.this,"未添加型号");
-            ToastUtil.show(AddCarInfoActivity.this,"未添加型号");
+            ToastUtil.show(AddCarInfoActivity.this, "未添加型号");
             return false;
         }
         if (mAddCarInfo.getCarType() == null) {
 //            MyToastDialog.show(AddCarInfoActivity.this,"未选择车辆类型");
-            ToastUtil.show(AddCarInfoActivity.this,"未选择车辆类型");
+            ToastUtil.show(AddCarInfoActivity.this, "未选择车辆类型");
             return false;
         }
         if (mAddCarInfo.getColor() == null) {
 //            MyToastDialog.show(AddCarInfoActivity.this,"未添加车身颜色");
-            ToastUtil.show(AddCarInfoActivity.this,"未添加车身颜色");
+            ToastUtil.show(AddCarInfoActivity.this, "未添加车身颜色");
             return false;
         }
         if (mAddCarInfo.getPicture() == null) {
 //            MyToastDialog.show(AddCarInfoActivity.this,"未添加车辆图片");
-            ToastUtil.show(AddCarInfoActivity.this,"未添加车辆图片");
+            ToastUtil.show(AddCarInfoActivity.this, "未添加车辆图片");
             return false;
         }
         if (mAddCarInfo.getPlateNumber() == null) {
 //            MyToastDialog.show(AddCarInfoActivity.this,"未添加车牌号");
-            ToastUtil.show(AddCarInfoActivity.this,"未添加车牌号");
+            ToastUtil.show(AddCarInfoActivity.this, "未添加车牌号");
             return false;
         }
         if (mAddCarInfo.getVin() == null) {
 //            MyToastDialog.show(AddCarInfoActivity.this,"未添加车架号");
-            ToastUtil.show(AddCarInfoActivity.this,"未添加车架号");
+            ToastUtil.show(AddCarInfoActivity.this, "未添加车架号");
             return false;
         }
         return true;

@@ -2,6 +2,7 @@ package com.delelong.diandiandriver.menuActivity;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.KeyEvent;
@@ -67,7 +68,8 @@ public class MyWebViewActivity  extends BaseActivity {
         //WebChromeClient添加打开本地文件方法
         String version = SystemUtils.getSystemVersion();
         double num = Doubles.tryParse(version.substring(0, 3));
-        if (num >= 5){
+//        if (num >= 5){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
             webView.setWebChromeClient(webChromeClientAboveFive = new WebChromeClientAboveFive(this,progressBar) {
                 @Override
                 public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> valueCallback, WebChromeClient.FileChooserParams fileChooserParams) {

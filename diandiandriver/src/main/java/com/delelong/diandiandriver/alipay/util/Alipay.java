@@ -17,6 +17,7 @@ import com.delelong.diandiandriver.BaseActivity;
 import com.delelong.diandiandriver.alipay.AuthResult;
 import com.delelong.diandiandriver.alipay.H5PayDemoActivity;
 import com.delelong.diandiandriver.alipay.PayResult;
+import com.delelong.diandiandriver.listener.MyPayResultInterface;
 import com.delelong.diandiandriver.utils.MyApp;
 
 import java.util.Map;
@@ -74,9 +75,11 @@ public class Alipay {
                     if (TextUtils.equals(resultStatus, "9000")) {
                         // 该笔订单是否真实支付成功，需要依赖服务端的异步通知。
                         Toast.makeText(activity, "支付成功", Toast.LENGTH_SHORT).show();
+                        mPayResultInterface.payResult("支付成功");
                     } else {
                         // 该笔订单真实的支付结果，需要依赖服务端的异步通知。
                         Toast.makeText(activity, "支付失败", Toast.LENGTH_SHORT).show();
+                        mPayResultInterface.payResult("支付失败"+"resultInfo"+resultInfo+"resultStatus"+resultStatus);
                     }
                     break;
                 }
@@ -113,6 +116,37 @@ public class Alipay {
      * 支付宝支付业务
      *
      */
+    MyPayResultInterface mPayResultInterface;
+    public void payV2(final String orderInfo,MyPayResultInterface payResultInterface) {
+        if (TextUtils.isEmpty(APPID) || TextUtils.isEmpty(RSA_PRIVATE)) {
+            new AlertDialog.Builder(MyApp.getInstance()).setTitle("警告").setMessage("需要配置APPID | RSA_PRIVATE")
+                    .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialoginterface, int i) {
+                            //
+                        }
+                    }).show();
+            return;
+        }
+        mPayResultInterface = payResultInterface;
+        Runnable payRunnable = new Runnable() {
+
+            @Override
+            public void run() {
+                PayTask alipay = new PayTask(activity);
+                Map<String, String> result = alipay.payV2(orderInfo, true);
+                Log.i("msp", result.toString());
+
+                Message msg = new Message();
+                msg.what = SDK_PAY_FLAG;
+                msg.obj = result;
+                mHandler.sendMessage(msg);
+            }
+        };
+
+        Thread payThread = new Thread(payRunnable);
+        payThread.start();
+    }
+
     public void payV2(final String orderInfo) {
         if (TextUtils.isEmpty(APPID) || TextUtils.isEmpty(RSA_PRIVATE)) {
             new AlertDialog.Builder(MyApp.getInstance()).setTitle("警告").setMessage("需要配置APPID | RSA_PRIVATE")

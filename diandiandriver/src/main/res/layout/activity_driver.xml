@@ -227,7 +227,7 @@
                                         android:id="@+id/tv_order_time"
                                         android:layout_width="0dp"
                                         android:layout_height="wrap_content"
-                                        android:layout_weight="4"
+                                        android:layout_weight="2"
                                         android:text="现在"
                                         android:textColor="#ffff"
                                         android:textSize="18sp" />
@@ -271,6 +271,30 @@
                                     android:textColor="@color/mainColor"
                                     android:textSize="20sp" />
                             </LinearLayout>
+                        </LinearLayout>
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="0.5dp"
+                            android:layout_marginTop="5dp"
+                            android:layout_marginBottom="5dp"
+                            android:layout_marginLeft="10dp"
+                            android:layout_marginRight="10dp"
+                            android:background="#ffff"></View>
+                        <LinearLayout
+                            android:id="@+id/ly_traver"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="#3bc7c7c7">
+
+                            <TextView
+                                android:id="@+id/tv_traver"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:padding="5dp"
+                                android:text="顺风车|专线"
+                                android:textColor="#ffff"
+                                android:textSize="18sp" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -418,15 +442,6 @@
 
         <!--<RelativeLayout--><!--android:id="@+id/rl_map"--><!--android:layout_width="match_parent"--><!--android:layout_height="wrap_content"--><!--android:layout_gravity="bottom"></RelativeLayout>-->
 
-        <RelativeLayout
-            android:id="@+id/menu_right"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"></RelativeLayout>
-
-        <RelativeLayout
-            android:id="@+id/rl_order"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"></RelativeLayout>
     </FrameLayout>
 
     <!--侧边栏布局一定要放在最下面 否则出现点击事件无响应-->

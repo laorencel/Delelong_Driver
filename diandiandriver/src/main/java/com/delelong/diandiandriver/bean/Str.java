@@ -11,26 +11,26 @@ import java.io.Serializable;
 public class Str implements Serializable {
     public static final String TAG = "BAIDUMAPFORTEST";
 
-//            private static final String URL_ = "192.168.3.121:8080";//本地
-//    private static final String URL_ = "139.196.42.108:8080";//阿里云(新)
-    private static final String URL_ = "121.40.142.141:8090";//阿里云
+//    public static final String URL_ = "192.168.1.27:8080";//本地
+    public static final String URL_ = "121.40.142.141:8090";//阿里云
+//    public static final String URL_ = "139.196.42.108:8080";//阿里云(新)
+//    public static final String URL_ = "admin.dddriver.com";//阿里云(正式版域名，作用同139服务器)
 
     private static final String URL = "http://" + URL_;
 
+    public static final String URL_WEBSOCKET = "ws://" + URL_ + "/Jfinal/api/websocket?";
+    public static final String URL_TUIJIAN_SHARE = URL + "/Jfinal/share";
+    public static final String URL_SERVICE_PATH = URL + "/Jfinal";//服务器根目录
+    public static final String URL_SERVICE_IMAGEPATH = URL + "/Jfinal/";//图片头地址（本地）
+    public static final String URL_UPDATEFILE = URL + "/Jfinal/file";//上传文件（本地）
+    private static final String URL_API = URL + "/Jfinal/api";//（本地）
+
 //    public static final String URL_WEBSOCKET = "ws://" + URL_ + "/api/websocket?";
-//    private static final String URL_API = URL + "/api";//（本地）
+//    private static final String URL_API = URL + "/api";//（正式版）
 //    public static final String URL_UPDATEFILE = URL + "/file";//上传文件（本地）
 //    public static final String URL_SERVICE_IMAGEPATH = URL + "/";//图片头地址（本地）
 //    public static final String URL_SERVICE_PATH = URL + "";//服务器根目录
 //    public static final String URL_TUIJIAN_SHARE = URL + "/share";
-
-
-    public static final String URL_WEBSOCKET = "ws://" + URL_ + "/Jfinal/api/websocket?";
-    private static final String URL_API = URL + "/Jfinal/api";//（本地）
-    public static final String URL_UPDATEFILE = URL + "/Jfinal/file";//上传文件（本地）
-    public static final String URL_SERVICE_IMAGEPATH = URL + "/Jfinal/";//图片头地址（本地）
-    public static final String URL_SERVICE_PATH = URL + "/Jfinal";//服务器根目录
-    public static final String URL_TUIJIAN_SHARE = URL + "/Jfinal/share";
 
     public static final String URL_LOGIN = URL_API + "/login";
     public static final String URL_ONLINE = URL_API + "/driver/online";
@@ -42,6 +42,7 @@ public class Str implements Serializable {
     public static final String URL_DRIVER_CARS = URL_API + "/driver/cars";//获取会员信息
     public static final String URL_LOGINOUT = URL_API + "/logout";//注销登陆
     public static final String URL_CHECK_LOGIN = URL_API + "/isLogin";//检查是否登录
+    public static final String URL_CHECK_ONLINE = URL_API + "/isOnline";//检查是否上线
     public static final String URL_UPDATE_CARSTATUS = URL_API + "/driver/updateCarStatus";//更新司机状态，防止下线
     public static final String URL_UPDATE_ENDPOINT = URL_API + "/driver/updateEndPoint";//更新终点位置信息
     public static final String URL_UPDATE_DISTANCE = URL_API + "/driver/updateDistance";//订单中途更新等候时间和距离
@@ -56,6 +57,8 @@ public class Str implements Serializable {
     public static final String URL_DETAIL_AMOUNT_RULE = URL_SERVICE_PATH + "/www/calrule";//计价规则，webview展示
 
     public static final String URL_TAKE_ORDER = URL_API + "/driver/grabsingle";//司机接单
+    public static final String URL_TAKE_TRAVER_ORDER = URL_API + "/order/getOrder";//司机接单(顺风车)
+    public static final String URL_TAKE_ZHUANXIAN_ORDER = URL_API + "/special/grabsingle";//司机接单(专线)
     public static final String URL_ORDER_START = URL_API + "/driver/orderStart";//订单行程开始
     public static final String URL_ORDER_WAIT = URL_API + "/driver/orderWait";//订单行程开始
 
@@ -84,24 +87,38 @@ public class Str implements Serializable {
     public static final String URL_DRIVER_YE_AMOUNT = URL_API + "/driver/amount";//获得司机余额
     public static final String URL_ACCOUNT_INFO = URL_API + "/accountlog";//账户明细
     public static final String URL_RECHARGE_AMOUNT = URL_API + "/rechangeItem";//获得充值项
-    public static final String URL_DRIVER_RECHARGE = URL_API + "/order/recharge";//充值
+    public static final String URL_DRIVER_ALIRECHARGE = URL_API + "/order/recharge";//充值
+    public static final String URL_DRIVER_WXRECHARGE = URL_API + "/order/wxrecharge";//充值
     public static final String URL_HISTORY_ORDER = URL_API + "/order/myOrder";//历史订单
     public static final String URL_GET_RESERVATION_ORDER = URL_API + "/order/yuyuedingdan";//预约订单详情
     public static final String URL_RESERVATION_ORDER = URL_API + "/driver/getYuyueOrder";//预约订单
     public static final String URL_UPDATE_APP = URL_API + "/update";//app版本升级
+
+    public static final String URL_TRAVERLIST = URL_API + "/order/getCustomerTraver";//获取顺风车列表
+    public static final String URL_TRAVERLIST_HISTORY = URL_API + "/order/historyRecord";//获取顺风车列表
+    public static final String URL_TRAVER_EXECUTION_CUSTOMER = URL_API + "/order/showCustomer";//获取顺风车行程的乘客信息
+    public static final String URL_ZHUANXIAN_EXECUTION_CUSTOMER = URL_API + "/special/getOrder";//获取专车行程的乘客信息
+    public static final String URL_ZHUANXIANLIST_EXECUTION = URL_API + "/special/getline";//获取执行中专线列表
+    public static final String URL_ZHUANXIANLIST = URL_API + "/special/getSpecialCar";//获取专线列表
+    public static final String URL_TRAVER_PUBLISH = URL_API + "/order/traver";//顺风车发布行程
+    public static final String URL_TRAVER_PEER = URL_API + "/order/choseCustomer";//确认同行顺风车
+    public static final String URL_ZHUANXIAN_PEER = URL_API + "/special/selectline";//确认同行顺风车
+    public static final String URL_TRAVER_CANCEL = URL_API + "/order/shunFengCheCancel";//取消顺风车
+    public static final String URL_TRAVER_START = URL_API + "/order/orderStart";//顺风车行程开始
+    public static final String URL_ZHUANXIAN_START = URL_API + "/special/orderStart";//专线行程开始
+    public static final String URL_ZHUANXIAN_ARRIVE = URL_API + "/special/orderArrived";//专线行程结束（结算）
+    public static final String URL_TRAVER_ARRIVE = URL_API + "/order/orderArrived";//顺风车行程结束（结算）
+    public static final String URL_ZHUANXIAN_CANCEL = URL_API + "/special/deleteline";//取消专线
+    public static final String URL_TRAVER_AMOUNT = URL_API + "/order/shunAmount";//顺风车价格
+    public static final String URL_CUSTOMER_LOCATION = URL_API + "/order/memberLocation";//获取乘客位置（顺风车、专线）
+
     public static final String STORAGEFILEPATH = Environment.getExternalStorageDirectory().getAbsolutePath();//文件本地地址
     public static final String FILEPATH = STORAGEFILEPATH + File.separator + "DianDianDriver" + File.separator;//文件本地地址
     public static final String FILEIMAGEPATH = FILEPATH + "Image";//文件本地地址
-    public static final String ADIMAGEPATH = STORAGEFILEPATH + "/DianDianDriver/Image/adimage.jpg";//广告文件本地地址
-//    public static final String ADIMAGEPATH_START = STORAGEFILEPATH + File.separator + "DianDianDriver" + File.separator + "Image" + File.separator + "Start";//启动页广告文件本地地址（父目录）
-//    public static final String ADIMAGEPATH_MAIN = STORAGEFILEPATH + "/DianDianDriver/Image/Main/";//主界面广告文件本地地址（父目录）
-    public static final String ADIMAGEPATH_MAIN = FILEIMAGEPATH+ File.separator +"Main"+ File.separator ;//主界面广告文件本地地址（父目录）
+    public static final String FILEIMAGEQRCODEPATH = "qrCode.jpg";//推荐二维码文件本地地址
+    public static final String ADIMAGEPATH_MAIN = FILEIMAGEPATH + File.separator + "Main" + File.separator;//主界面广告文件本地地址（父目录）
     public static final String ADIMAGEPATH_START = FILEIMAGEPATH + File.separator + "Start";//启动页广告文件本地地址（父目录）
 
-    //    public static final String FILEIMAGEPATH = "/sdcard/DianDian/Image/";//文件本地地址
-//    public static final String ADIMAGEPATH = "/sdcard/DianDian/Image/adimage.jpg";//广告文件本地地址
-//    public static final String ADIMAGEPATH_START = "/sdcard/DianDianDriver/Image/Start/";//启动页广告文件本地地址（父目录）
-//    public static final String ADIMAGEPATH_MAIN = "/sdcard/DianDianDriver/Image/Main/";//主界面广告文件本地地址（父目录）
     public static final String URL_UPDATELOCATION = URL_API + "/member/update/location";//更新位置
     public static final String URL_UPDATELOCATION_DRIVER = URL_API + "/driver/update/location";//更新位置
     public static final String URL_DRIVERENROLL = URL_SERVICE_PATH + "/driver/enroll";//司机报名页面
@@ -119,6 +136,7 @@ public class Str implements Serializable {
      * devicetype：设备序类型，1:android;2:ios
      */
     public static final String DEVICE_TYPE = "1";
+    public static final String APP_ID_WX = "wxd79e00cf03529e97";
     /**
      * 请求码
      */
@@ -139,8 +157,9 @@ public class Str implements Serializable {
     public static final int REQUEST_ORDER_ACTIVITY = 114;//打开orderActivity
     public static final int REQUEST_OPEN_GPS = 120;//打开gps
     public static final int TIME_Y = 2017;
-    public static final int TIME_M = 3;
+    public static final int TIME_M = 9;
     public static final int REQUESTCHOOSEBANK = 14;//选择银行
+    public static final int REQUESTCONTACT = 15;//选择通讯录联系人
     /**
      * js打开系统文件请求码
      */
@@ -153,6 +172,7 @@ public class Str implements Serializable {
     public static final String SQL_DB_NAME = "dbcity";
     public static final String AMAP_AREA = "dele_area.json";
     public static final String ORDER_MESSAGE_RECEIVED_ACTION = "com.delelong.diandiandriver.ORDER_MESSAGE_RECEIVED_ACTION";
+    public static final String WXPAY_RESULT_ACTION = "com.delelong.diandian.WXPAY_RESULT_ACTION";
     public static final String KEY_ORDER_MESSAGE = "order_message";
     public static final String KEY_ORDER_EXTRA = "order_extra";
     public static final String KEY_ORDER_TITLE = "order_title";

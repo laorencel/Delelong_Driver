@@ -153,6 +153,9 @@ public class MyLoginDialog implements View.OnClickListener{
     public void setPreferences(List<String> result){
         boolean firstLogin = false;
         int loginTimes = preferences.getInt("loginTimes",0);
+        if (result.size()<4){
+            return;
+        }
         preferences.edit()
                 .putString("token", result.get(2))
                 .putString("sercet", result.get(3))

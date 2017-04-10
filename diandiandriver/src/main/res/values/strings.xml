@@ -6,6 +6,8 @@
         <item>专车-七座商务型</item>
         <item>出租车</item>
     </string-array>
+    <string name="drawer_open">open</string>
+    <string name="drawer_close">close</string>
     <string name="app_name">点点服务</string>
     <string name="action_settings">settings</string>
     <string name="normal">普通地图</string>
@@ -76,4 +78,52 @@
     <string name="poi_share">POI分享</string>
     <string name="navi_share">导航分享</string>
     <string name="tip_modify_pay_pwd">确保身份证号码与验证身份时的证件号码一致，如未验证身份，请先验证身份再重置支付密码</string>
+
+    <string name="traver_shunfengche">顺风车</string>
+    <string name="traver_zhuanxian">专线</string>
+    <string name="zhuanxian_type_jichang">机场</string>
+    <string name="zhuanxian_type_chengji">城际</string>
+    <string name="traver_type_shinei">市内</string>
+    <string name="traver_type_chengji">城际</string>
+    <string name="traver_type_jihuo">寄货</string>
+    <string name="traver_type_zhuanxian">专线</string>
+    <string name="peopleNumTip">请选择用车人数</string>
+    <string name="jpushTip">第三方系统收不到推送的消息\n
+    由于第三方 ROM 的管理软件,需要用户根据品牌手动操作\n
+小米【MIUI】\n
+自启动管理：需要把应用加到【自启动管理】列表，否则杀进程或重新开机后进程无法开启\n
+通知栏设置：应用默认都是显示通知栏通知，如果关闭，则收到通知也不会提示\n
+网络助手：可以手动禁止已安装的第三方程序访问2G/3G和WIFI的网络和设置以后新安装程序是否允许访问2G/3G和WIFI的网络\n
+MIUI 7 神隐模式： 允许应用进行自定义配置模式，应用在后台保持联网可用，否则应用进入后台时，应用无法正常接收消息。【设置】下电量和性能中【神隐模式】\n
+华为【Emotion】\n
+自启动管理：需要把应用加到【自启动管理】列表，否则杀进程或重新开机后进程不会开启，只能手动开启应用\n
+后台应用保护：需要手动把应用加到此列表，否则设备进入睡眠后会自动杀掉应用进程，只有手动开启应用才能恢复运行\n
+通知管理：应用状态有三种：提示、允许、禁止。禁止应用则通知栏不会有任何提醒\n
+魅族【Flyme】\n
+自启动管理：需要把应用加到【自启动管理】列表，否则杀进程或重新开机后进程无法开启\n
+通知栏推送：关闭应用通知则收到消息不会有任何展示\n
+省电管理： 安全中心里设置省电模式，在【待机耗电管理】中允许应用待机时，保持允许，否则手机休眠或者应用闲置一段时间，无法正常接收消息。\n
+VIVO【Funtouch OS】\n
+内存一键清理：需要将应用加入【白名单】列表，否则系统自带的“一键加速”，会杀掉进程\n
+自启动管理：需要将应用加入“i管家”中的【自启动管理】列表，否则重启手机后进程不会自启。但强制手动杀进程，即使加了这个列表中，后续进程也无法自启动。\n
+OPPO【ColorOS】\n
+冻结应用管理：需要将应用加入纯净后台，否则锁屏状态下无法及时收到消息\n
+自启动管理：将应用加入【自启动管理】列表的同时，还需要到设置-应用程序-正在运行里锁定应用进程，否则杀进程或者开机后进程不会开启，只能手动开启应用\n
+三星\n
+内存一键优化：需要将应用加入【白名单】列表，否则系统内存优化后，会杀掉应用进程\n
+</string>
+
+    <string-array name="peopleNum">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+    </string-array>
+    <string-array name="payType">
+        <item>其它</item>
+        <item>代收</item>
+    </string-array>
 </resources>

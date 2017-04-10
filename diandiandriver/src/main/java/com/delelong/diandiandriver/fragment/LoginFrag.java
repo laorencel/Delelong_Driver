@@ -99,7 +99,7 @@ public class LoginFrag extends Fragment implements View.OnClickListener {
         tv_law = (TextView) view.findViewById(R.id.tv_law);
         tv_law.setOnClickListener(this);
         //如果以前有登陆过，获取登陆的手机号
-        preferences = getActivity().getSharedPreferences("user", Context.MODE_PRIVATE);
+        preferences = getActivity().getSharedPreferences("user", Context.MODE_MULTI_PROCESS | Context.MODE_PRIVATE);
         String preferenceName = preferences.getString("phone", null);
         if (preferenceName != null) {
             edt_phone.setText(preferenceName);

@@ -38,6 +38,9 @@ public class StartActivity extends BaseActivity {
                 case 0:
                     init();
                     break;
+                case 1:
+                    toAd();
+                    break;
             }
         }
     };
@@ -49,15 +52,41 @@ public class StartActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         getSupportActionBar().hide();
         setContentView(R.layout.activity_start);
+        initDB();
         myHttpUtils = new MyHttpUtils(this);
-        setVoice();
+
+        permissionToAd();
+    }
+
+
+
+    private void permissionToAd() {
         if (!setNetworkDialog(this)) {
         } else {
             if (checkPermissionWriteExternalStorage()) {
-                toAd();
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        handler.sendEmptyMessage(1);
+                    }
+                });
             } else {
                 permissionWriteExternalStorage();
             }
+        }
+    }
+
+    boolean isCheckedDB;
+
+    private void initDB() {
+        if (!isCheckedDB) {
+            permissionExternalStorage();
+            SharedPreferences preferences1 = getSharedPreferences("user", Context.MODE_PRIVATE);
+            if (preferences1.getBoolean("initDB", true)) {
+                Log.i(TAG, "handleMessage: initDB");
+                insert2DB();
+            }
+            isCheckedDB = !isCheckedDB;
         }
     }
 
@@ -67,8 +96,15 @@ public class StartActivity extends BaseActivity {
         if (requestCode == Str.REQUEST_WRITE_EXTERNALSTORAGE) {
             if (grantResults != null && grantResults.length > 0) {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    toAd();
+                    Log.i(TAG, "onRequestPermissionsResult: 111");
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            handler.sendEmptyMessage(1);
+                        }
+                    });
                 } else {
+                    Log.i(TAG, "onRequestPermissionsResult: 222");
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
@@ -77,6 +113,7 @@ public class StartActivity extends BaseActivity {
                     });
                 }
             } else {
+                Log.i(TAG, "onRequestPermissionsResult: 333");
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -89,13 +126,20 @@ public class StartActivity extends BaseActivity {
 
     AudioManager mAudioManager;
 
-    private void setVoice() {
+    private void setVoice(boolean show) {
         mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         if (mAudioManager != null) {
-            //// 音乐音量
-            mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
-                    mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
-                    AudioManager.FLAG_SHOW_UI);
+            if (show) {
+                //// 音乐音量
+                mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                        mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+                        AudioManager.FLAG_SHOW_UI);
+            } else {
+                //// 音乐音量
+                mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                        mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+                        AudioManager.FLAG_PLAY_SOUND);
+            }
             // // 提示声音音量
             mAudioManager.setStreamVolume(AudioManager.STREAM_ALARM,
                     mAudioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM),
@@ -111,23 +155,61 @@ public class StartActivity extends BaseActivity {
      * 跳转广告界面
      */
     public void toAd() {
-        try {
-            new Thread().sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (myHttpHelper == null) {
+            myHttpHelper = new MyHttpHelper(StartActivity.this);
         }
-        File adFile = new File(Str.ADIMAGEPATH_START);
-        if (adFile.exists()) {
-            startActivityForResult(new Intent(this, MyStartViewPagerActivity.class), Str.REQUESTADCODE);
-            overridePendingTransition(R.anim.in_alpha, R.anim.out_alpha);
-        } else {
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    handler.sendEmptyMessage(0);
+        MyAsyncHttpUtils.get(Str.URL_CHECK_ONLINE, new MyTextHttpResponseHandler() {
+            @Override
+            public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
+                super.onFailure(i, headers, s, throwable);
+                Log.i(TAG, "onFailure:toAd " + s);
+                startActivity(new Intent(StartActivity.this, LoginActivity.class));
+                overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
+                finish();
+            }
+
+            @Override
+            public void onSuccess(int i, Header[] headers, String s) {
+                super.onSuccess(i, headers, s);
+                Log.i(TAG, "onSuccess:toAd " + s);
+                List<String> resultForStatus = myHttpHelper.resultByJson(s, null);
+                boolean show = true;
+                if (resultForStatus == null) {
+                    startActivity(new Intent(StartActivity.this, LoginActivity.class));
+                    overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
+                    finish();
+                } else {
+                    if (resultForStatus.size() != 0) {
+                        if (resultForStatus.get(0).equalsIgnoreCase("OK")) {
+                            show = false;
+                            startActivity(new Intent(StartActivity.this, DriverActivity.class));
+                            overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
+                            finish();
+                        } else {
+                            File adFile = new File(Str.ADIMAGEPATH_START);
+                            if (adFile.exists()) {
+                                startActivityForResult(new Intent(StartActivity.this, MyStartViewPagerActivity.class), Str.REQUESTADCODE);
+                                overridePendingTransition(R.anim.in_alpha, R.anim.out_alpha);
+                            } else {
+                                handler.postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        handler.sendEmptyMessage(0);
+                                    }
+                                }, 3000);
+                            }
+                        }
+                    } else {
+                        startActivity(new Intent(StartActivity.this, LoginActivity.class));
+                        overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
+                        finish();
+                    }
                 }
-            }, 3000);
-        }
+                setVoice(show);
+            }
+        });
+
+
     }
 
     @Override
@@ -147,7 +229,7 @@ public class StartActivity extends BaseActivity {
     MyHttpHelper myHttpHelper;
 
     private void init() {
-        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_PRIVATE);
+        SharedPreferences preferences = getSharedPreferences("user", Context.MODE_MULTI_PROCESS | Context.MODE_PRIVATE);
         firstLogin = preferences.getBoolean("firstLogin", true);
         if (firstLogin) {
             startActivity(new Intent(this, LoginActivity.class));
@@ -161,7 +243,7 @@ public class StartActivity extends BaseActivity {
                 @Override
                 public void onFailure(int i, Header[] headers, String s, Throwable throwable) {
                     super.onFailure(i, headers, s, throwable);
-                    Log.i(TAG, "onFailure: " + s);
+                    Log.i(TAG, "onFailure:Str.URL_CHECK_LOGIN " + s);
                     startActivity(new Intent(StartActivity.this, LoginActivity.class));
                     overridePendingTransition(R.anim.in_from_right, R.anim.out_to_left);
                     finish();
@@ -170,8 +252,7 @@ public class StartActivity extends BaseActivity {
                 @Override
                 public void onSuccess(int i, Header[] headers, String s) {
                     super.onSuccess(i, headers, s);
-                    Log.i(TAG, "onSuccess:Str.URL_CHECK_LOGIN: " + Str.URL_CHECK_LOGIN);
-                    Log.i(TAG, "onSuccess: " + s);
+                    Log.i(TAG, "onSuccess:Str.URL_CHECK_LOGIN: " + Str.URL_CHECK_LOGIN + "//" + s);
                     List<String> resultForStatus = myHttpHelper.resultByJson(s, null);
                     if (resultForStatus == null) {
                         startActivity(new Intent(StartActivity.this, LoginActivity.class));
